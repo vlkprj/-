@@ -16,7 +16,7 @@
             margin: 0; padding: 0; -webkit-font-smoothing: antialiased; overflow-x: hidden;
         }
 
-        /* === ФІКСОВАНИЙ ХЕДЕР === */
+        /* === ХЕДЕР === */
         .sticky-header {
             position: sticky; top: 0; left: 0; width: 100%;
             background: rgba(6, 6, 6, 0.85);
@@ -29,8 +29,8 @@
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .branding { display: flex; align-items: center; gap: 8px; }
         .logo-img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #222; border: 1px solid #333; }
-        .app-title { font-size: 20px; font-weight: 900; letter-spacing: 0.5px; margin: 0; display: flex; align-items: center; gap: 4px; }
-        .app-title svg { fill: #888; width: 16px; height: 16px; }
+        .app-title { font-size: 20px; font-weight: 900; letter-spacing: 0.5px; margin: 0; display: flex; align-items: center; gap: 6px; }
+        .app-title svg { fill: var(--c-yellow); width: 22px; height: 22px; margin-top: -2px; }
         .date-badge { background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 12px; font-weight: 800; color: var(--c-yellow); font-size: 13px; }
 
         .dashboard { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -45,24 +45,18 @@
         .timer-time.on { color: var(--c-yellow); text-shadow: 0 0 15px rgba(251, 191, 36, 0.4); }
 
         /* === ТАЙМЛАЙН === */
-        #timelineContainer { padding: 20px; display: flex; flex-direction: column; gap: 0; min-height: 60vh; }
+        #timelineContainer { padding: 20px; display: flex; flex-direction: column; gap: 0; min-height: 60vh; position: relative; }
         
         @keyframes pulseGlow {
             0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); }
             50% { box-shadow: 0 0 20px 0 rgba(255,255,255,0.08); background: rgba(255,255,255,0.06); }
             100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); background: rgba(255,255,255,0.02); }
         }
-        @keyframes breath {
-            0% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.8; }
-        }
+        @keyframes breath { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }
 
         .tl-item { display: flex; flex-direction: column; z-index: 2; position: relative; padding: 10px 0; transition: 0.3s ease; border-radius: 16px; margin-bottom: -5px;}
         .tl-item.active-now { animation: pulseGlow 2.5s infinite; padding: 15px 10px; margin: 5px -10px; border: 1px solid rgba(255,255,255,0.05); }
         .tl-item.active-now::before { content: 'ЗАРАЗ'; position: absolute; right: 15px; top: 15px; font-size: 10px; font-weight: 900; background: #fff; color: #000; padding: 3px 8px; border-radius: 8px; letter-spacing: 0.5px; }
-        
-        /* Приглушення минулих інтервалів */
         .tl-item.past-interval { opacity: 0.35; filter: grayscale(0.8); }
 
         .tl-head { display: flex; align-items: center; min-height: 40px; position: relative; z-index: 2; }
@@ -96,18 +90,33 @@
         .interval { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; line-height: 1; } 
         .interval-icon { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; }
         .interval-icon svg { width: 100%; height: 100%; display: block; }
-        .interval-text { display: flex; align-items: center; line-height: 1; }
         .interval.off { color: var(--c-red); }
         .interval.on { color: var(--c-yellow); }
 
         .waiting-block { text-align: center; padding: 30px 20px; color: #888; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
         
+        /* БЛЮР АВАРІЇ */
+        .emergency-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 15, 15, 0.85);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 20px; text-align: center; padding: 20px; cursor: pointer;
+            transition: opacity 0.4s ease;
+        }
+        .emergency-overlay.hidden-temp { opacity: 0; pointer-events: none; }
+        .em-alert-title { font-size: 26px; font-weight: 900; color: var(--c-red); margin: 15px 0 10px; text-transform: uppercase; letter-spacing: 1px;}
+        .em-alert-time { font-size: 18px; font-weight: 800; color: #000; background: var(--c-red); padding: 6px 16px; border-radius: 12px; display: inline-block;}
+        .em-hint { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 25px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;}
+
         /* === ФУТЕР === */
-        .app-footer { margin-top: 20px; padding: 25px 20px 40px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center; }
-        .footer-links { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        .app-footer { margin-top: 10px; padding: 25px 20px 40px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center; }
+        .footer-links { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }
         .f-link { color: #888; text-decoration: none; font-size: 13px; font-weight: 700; background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 20px; transition: 0.2s; }
         .f-link:active { background: rgba(255,255,255,0.1); color: #fff; }
-        .disclaimer { font-size: 11px; color: #555; line-height: 1.4; }
+        
+        .disclaimer-box { display: flex; align-items: flex-start; text-align: left; gap: 8px; font-size: 13px; color: #777; line-height: 1.4; font-weight: 500; background: rgba(255,255,255,0.03); padding: 12px 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05);}
+        .source-text { font-size: 12px; color: #666; font-weight: 500; }
 
         .loader { text-align: center; color: #888; margin-top: 50px; font-weight: bold; }
     </style>
@@ -130,7 +139,7 @@
         </div>
         <div class="dashboard">
             <div class="status-box">
-                <div class="status-label">Статус:</div>
+                <div class="status-label">Статус</div>
                 <div class="status-value" id="timerStatus">...</div>
             </div>
             <div class="timer-box">
@@ -147,7 +156,11 @@
             <a href="https://t.me/valkychat" class="f-link" target="_blank">💬 Чат</a>
             <a href="https://t.me/valkybazar" class="f-link" target="_blank">📣 Базарчик</a>
         </div>
-        <div class="disclaimer">Фактичний час відключень може змінюватися залежно від стану енергосистеми. Джерело: Харківобленерго.</div>
+        <div class="disclaimer-box">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <div>Фактичний час відключень може змінюватися залежно від стану енергосистеми.</div>
+        </div>
+        <div class="source-text"><b>Джерело:</b><br>Харківобленерго</div>
     </div>
 </div>
 
@@ -157,7 +170,6 @@
     tg.setHeaderColor('#060606');
     tg.setBackgroundColor('#060606');
 
-    // ТУТ ТІЛЬКИ BIN_ID! Ніяких паролів!
     const BIN_ID = '699b325fd0ea881f40cf7aaf'; 
 
     const houseSvg = `<svg class="icon-house" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`;
@@ -165,19 +177,24 @@
     const iconLightningSVG = `<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
     const iconBulb = `<svg class="interval-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1.2 1.5-2.5 1.5-4a6 6 0 0 0-6-6 6 6 0 0 0-6 6c0 1.4.5 2.7 1.5 4 .7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>`;
     const iconZapOff = `<svg class="interval-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"></line><path d="M8.5 8.5L3 14h9l-1 8 5.5-5.5"></path><path d="M16 10h5l-1.5 1.5"></path><path d="M12.4 6.6L13 2l-2.6 2.6"></path></svg>`;
+    
+    // Іконки для статусу
+    const statusIconOn = `<svg viewBox="0 0 24 24" width="16" height="16" fill="var(--c-yellow)"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
+    const statusIconOff = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--c-red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"></line><path d="M8.5 8.5L3 14h9l-1 8 5.5-5.5"></path><path d="M16 10h5l-1.5 1.5"></path><path d="M12.4 6.6L13 2l-2.6 2.6"></path></svg>`;
 
     let globalIntervals = [];
+    let emergencyData = null;
     let initialScrollDone = false;
 
     async function fetchData() {
         try {
-            // ЧИТАЄМО БЕЗ ПАРОЛЯ (Бін має бути Public)
             const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`);
             const result = await response.json();
             const data = result.record;
             
             document.getElementById('dateDisplay').textContent = data.date;
             globalIntervals = data.intervals || [];
+            emergencyData = data.emergency || { active: false };
             
             document.getElementById('loader').style.display = 'none';
             document.getElementById('app').style.display = 'block';
@@ -202,7 +219,7 @@
             const stateClass = isVisuallyOn ? 'on' : 'off';
             
             const isActive = (currentMins >= int.startMin && currentMins < int.endMin);
-            const isPast = (currentMins >= int.endMin); // Інтервал вже минув
+            const isPast = (currentMins >= int.endMin); 
             
             let classes = `tl-item ${stateClass}`;
             if (isActive) classes += ' active-now';
@@ -249,7 +266,7 @@
             }
 
             html += `
-            <div class="${classes}" id="int-${i}">
+            <div class="${classes}">
                 <div class="tl-head">
                     <div class="time-col ${stateClass}">${int.startStr}</div>
                     <div class="icon-node"><div class="icon-circle">${houseSvg}</div></div>
@@ -268,22 +285,43 @@
             </div>`;
         });
 
-        // Блок "Очікуємо завтра" в самому низу
+        // Блок "Очікуємо завтра"
         if (globalIntervals.length > 0) {
-            html += `<div class="waiting-block" style="margin-top: 20px;">Очікуємо графік на завтра...</div>`;
+            html += `<div class="waiting-block" style="margin-top: 10px;">Очікуємо графік на завтра...</div>`;
+        }
+
+        // Рендер оверлею аварії
+        if (emergencyData && emergencyData.active) {
+            let emTimeText = "";
+            if (emergencyData.start && emergencyData.end) emTimeText = `з ${emergencyData.start} до ${emergencyData.end}`;
+            else if (emergencyData.start) emTimeText = `з ${emergencyData.start}`;
+
+            html += `
+            <div class="emergency-overlay" id="emOverlay" onclick="hideEmergencyTemp()">
+                <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="var(--c-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 10px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                <div class="em-alert-title">АВАРІЙНЕ ВІДКЛЮЧЕННЯ</div>
+                ${emTimeText ? `<div class="em-alert-time">${emTimeText}</div>` : ''}
+                <div class="em-hint">Тапни, щоб переглянути графік</div>
+            </div>`;
         }
 
         container.innerHTML = html;
 
-        // Автоскрол до активного елемента при першому завантаженні
         if (!initialScrollDone) {
             setTimeout(() => {
                 const activeEl = document.querySelector('.active-now');
-                if (activeEl) {
-                    activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
+                if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 initialScrollDone = true;
             }, 300);
+        }
+    }
+
+    // Функція приховування блюру на 4 секунди
+    window.hideEmergencyTemp = function() {
+        const el = document.getElementById('emOverlay');
+        if(el) {
+            el.classList.add('hidden-temp');
+            setTimeout(() => el.classList.remove('hidden-temp'), 4000);
         }
     }
 
@@ -309,6 +347,11 @@
                 }
             }
 
+            // Якщо увімкнена аварія, статус примусово "Світла немає"
+            if (emergencyData && emergencyData.active) {
+                currentState = 'off';
+            }
+
             if (currentIntIndex !== lastRenderedIntervalIndex) {
                 renderTimeline(currentMins);
                 lastRenderedIntervalIndex = currentIntIndex;
@@ -321,12 +364,12 @@
             if (globalIntervals.length === 0) {
                 timerDisplay.textContent = "--:--:--";
                 timerLabel.textContent = "Очікування";
-                timerStatus.innerHTML = `⚪️ Немає даних`;
+                timerStatus.innerHTML = `${iconBulb} Немає даних`;
                 timerStatus.style.color = '#888';
                 return;
             }
 
-            if (nextEventMins !== null) {
+            if (nextEventMins !== null && !(emergencyData && emergencyData.active)) {
                 let diffMins = nextEventMins - currentMins - 1;
                 let diffSecs = 60 - currentSecs;
                 if(diffSecs === 60) { diffSecs = 0; diffMins++; }
@@ -340,18 +383,25 @@
                 if (currentState === 'off') {
                     timerDisplay.className = 'timer-time off';
                     timerLabel.textContent = 'До включення:';
-                    timerStatus.innerHTML = `🔴 Світла немає`;
+                    timerStatus.innerHTML = `${statusIconOff} Світла немає`;
                     timerStatus.style.color = 'var(--c-red)';
                 } else {
                     timerDisplay.className = 'timer-time on';
                     timerLabel.textContent = 'До відключення:';
-                    timerStatus.innerHTML = `🟢 Світло є`;
+                    timerStatus.innerHTML = `${statusIconOn} Світло є`;
                     timerStatus.style.color = 'var(--c-yellow)';
                 }
+            } else if (emergencyData && emergencyData.active) {
+                // Якщо аварія — таймер зупиняємо
+                timerDisplay.textContent = "--:--:--";
+                timerDisplay.className = 'timer-time off';
+                timerLabel.textContent = 'Аварійний режим';
+                timerStatus.innerHTML = `${statusIconOff} Світла немає`;
+                timerStatus.style.color = 'var(--c-red)';
             } else {
                 timerDisplay.textContent = "00:00:00";
                 timerLabel.textContent = "Доба завершена";
-                timerStatus.innerHTML = `⏳ Оновлюємо`;
+                timerStatus.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Оновлюємо`;
                 timerStatus.style.color = '#888';
             }
         }, 1000);
