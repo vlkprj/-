@@ -1,6 +1,4 @@
 
-
-
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -36,10 +34,14 @@
         .app-title svg { fill: var(--c-yellow); width: 22px; height: 22px; margin-top: -2px; }
         .date-badge { background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 12px; font-weight: 800; color: var(--c-yellow); font-size: 13px; }
 
-        .dashboard { display: flex; justify-content: space-between; align-items: flex-start; }
-        .status-box { display: flex; flex-direction: column; gap: 6px; }
-        .status-label { font-size: 12px; color: #888; font-weight: 700; text-transform: uppercase; }
-        .status-value { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 800; }
+        .dashboard { display: flex; justify-content: space-between; align-items: flex-end; /* прибиваємо до низу */ margin-top: 5px; }
+        .status-box { display: flex; flex-direction: column; gap: 8px; justify-content: flex-end; }
+        .status-label { font-size: 12px; color: #888; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; letter-spacing: 0.5px; margin-bottom: 2px;}
+        .status-value { display: flex; align-items: center; gap: 6px; font-size: 18px; /* Збільшили шрифт */ font-weight: 800; line-height: 1; margin-bottom: 4px; /* Вирівнюємо з таймером */ }
+        
+        .live-dot { display: inline-block; width: 8px; height: 8px; background-color: var(--c-red); border-radius: 50%; margin-right: 6px; animation: blinkFast 1.5s infinite; }
+        @keyframes blinkFast { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+
         
         .timer-box { text-align: right; }
         .timer-label { font-size: 12px; color: #888; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
@@ -145,10 +147,12 @@
             <div class="date-badge" id="dateDisplay">СЬОГОДНІ</div>
         </div>
         <div class="dashboard">
+
             <div class="status-box">
-                <div class="status-label">Статус</div>
+                <div class="status-label"><span class="live-dot"></span>Статус</div>
                 <div class="status-value" id="timerStatus">...</div>
             </div>
+
             <div class="timer-box">
                 <div class="timer-label" id="timerLabel">Оновлення...</div>
                 <div class="timer-time" id="timerDisplay">--:--:--</div>
