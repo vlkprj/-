@@ -338,22 +338,41 @@
             let currentState = null;
             let nextEventMins = null;
 
+            // Функція, яка визначає ФАКТИЧНИЙ стан (чи є напруга)
+            const getRealState = (int) => {
+                if (int.type === 'off' && !int.isModified) return 'off'; // Звичайне відключення
+                if (int.type === 'on' && int.isModified) return 'off';   // Аварія у світлий час
+                return 'on'; // Все інше - світло є (включно зі скасованими відключеннями)
+            };
+
+            // Шукаємо поточний інтервал
             for (let i = 0; i < globalIntervals.length; i++) {
                 let int = globalIntervals[i];
                 if (currentMins >= int.startMin && currentMins < int.endMin) {
                     currentIntIndex = i;
-                    currentState = (int.type === 'off' && !int.isModified) || (int.type === 'on' && int.isModified) ? 'off' : 'on';
-                    nextEventMins = int.endMin;
+                    currentState = getRealState(int);
                     break;
                 }
             }
 
-            // ЛОГІКА ТАЙМЕРА АВАРІЇ
+            // РОЗУМНИЙ ПОШУК НАСТУПНОЇ ПОДІЇ (ігноруємо фантомні межі)
+            if (currentIntIndex !== -1) {
+                for (let i = currentIntIndex + 1; i < globalIntervals.length; i++) {
+                    let nextInt = globalIntervals[i];
+                    if (getRealState(nextInt) !== currentState) {
+                        nextEventMins = nextInt.startMin;
+                        break; // Знайшли реальну зміну стану
+                    }
+                }
+            }
+
+            // ПЕРЕКРИТТЯ ЛОГІКИ, ЯКЩО АКТИВНА ЕКСТРЕНА АВАРІЯ З АДМІНКИ
             let isEmTimerActive = false;
             if (emergencyData && emergencyData.active) {
                 currentState = 'off';
                 if (emergencyData.end) {
-                    let endMins = timeToMins(emergencyData.end);
+                    let [eh, em] = emergencyData.end.split(':').map(Number);
+                    let endMins = (eh || 0) * 60 + (em || 0);
                     if (endMins && endMins > currentMins) {
                         nextEventMins = endMins;
                         isEmTimerActive = true;
@@ -361,11 +380,13 @@
                 } else { nextEventMins = null; }
             }
 
+            // Оновлюємо візуал тільки при зміні поточного блоку
             if (currentIntIndex !== lastRenderedIntervalIndex) {
                 renderTimeline(currentMins);
                 lastRenderedIntervalIndex = currentIntIndex;
             }
 
+            // РЕНДЕР ТАЙМЕРА
             const timerDisplay = document.getElementById('timerDisplay');
             const timerLabel = document.getElementById('timerLabel');
             const timerStatus = document.getElementById('timerStatus');
@@ -409,6 +430,7 @@
             }
         }, 1000);
     }
+
 
     fetchData();
 </script>
