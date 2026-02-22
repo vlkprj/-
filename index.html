@@ -166,10 +166,9 @@
 
 <script>
     const tg = window.Telegram.WebApp;
-    tg.expand();
-    tg.setHeaderColor('#060606');
-    tg.setBackgroundColor('#060606');
+    tg.expand(); tg.setHeaderColor('#060606'); tg.setBackgroundColor('#060606');
 
+    // ТУТ ТВІЙ BIN_ID
     const BIN_ID = '699b325fd0ea881f40cf7aaf'; 
 
     const houseSvg = `<svg class="icon-house" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`;
@@ -178,13 +177,18 @@
     const iconBulb = `<svg class="interval-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1.2 1.5-2.5 1.5-4a6 6 0 0 0-6-6 6 6 0 0 0-6 6c0 1.4.5 2.7 1.5 4 .7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>`;
     const iconZapOff = `<svg class="interval-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"></line><path d="M8.5 8.5L3 14h9l-1 8 5.5-5.5"></path><path d="M16 10h5l-1.5 1.5"></path><path d="M12.4 6.6L13 2l-2.6 2.6"></path></svg>`;
     
-    // Іконки для статусу
     const statusIconOn = `<svg viewBox="0 0 24 24" width="16" height="16" fill="var(--c-yellow)"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
     const statusIconOff = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--c-red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"></line><path d="M8.5 8.5L3 14h9l-1 8 5.5-5.5"></path><path d="M16 10h5l-1.5 1.5"></path><path d="M12.4 6.6L13 2l-2.6 2.6"></path></svg>`;
 
     let globalIntervals = [];
     let emergencyData = null;
     let initialScrollDone = false;
+
+    function timeToMins(t) {
+        if(!t) return null;
+        let [h, m] = t.split(':').map(Number);
+        return h*60 + m;
+    }
 
     async function fetchData() {
         try {
@@ -228,16 +232,19 @@
             let badgeHtml = '';
             let intervalTextStyle = '';
 
+            // РОЗУМНІ СТАТУСИ ЗАЛЕЖНО ВІД ЧАСУ
             if (int.type === 'off') {
                 if (int.isModified) {
-                    badgeHtml = `<div class="badge-row"><div class="badge off" style="text-decoration: line-through; opacity: 0.5;">${iconBan} ВІДКЛЮЧЕННЯ</div><span class="badge-modifier rescued">💡 Було</span></div>`;
+                    let statusText = isPast ? "💡 БУЛО" : (isActive ? "💡 Є СВІТЛО" : "💡 СКАСОВАНО");
+                    badgeHtml = `<div class="badge-row"><div class="badge off" style="text-decoration: line-through; opacity: 0.5;">${iconBan} ВІДКЛЮЧЕННЯ</div><span class="badge-modifier rescued">${statusText}</span></div>`;
                     intervalTextStyle = `color: rgba(251, 191, 36, 0.7); text-decoration: line-through; text-decoration-color: rgba(251, 191, 36, 0.7);`;
                 } else {
                     badgeHtml = `<div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div>`;
                 }
             } else {
                 if (int.isModified) {
-                    badgeHtml = `<div class="badge-row"><div class="badge on" style="text-decoration: line-through; opacity: 0.5;">${iconLightningSVG} СВІТЛО Є</div><span class="badge-modifier emergency">⚠️ Аварійне</span></div>`;
+                    let statusText = isPast ? "⚠️ НЕ БУЛО" : (isActive ? "⚠️ АВАРІЯ" : "⚠️ ВІДКЛЮЧЕННЯ");
+                    badgeHtml = `<div class="badge-row"><div class="badge on" style="text-decoration: line-through; opacity: 0.5;">${iconLightningSVG} СВІТЛО Є</div><span class="badge-modifier emergency">${statusText}</span></div>`;
                     intervalTextStyle = `color: #888; text-decoration: line-through; text-decoration-color: #888;`;
                 } else {
                     badgeHtml = `<div class="badge on">${iconLightningSVG} СВІТЛО Є</div>`;
@@ -285,12 +292,10 @@
             </div>`;
         });
 
-        // Блок "Очікуємо завтра"
         if (globalIntervals.length > 0) {
             html += `<div class="waiting-block" style="margin-top: 10px;">Очікуємо графік на завтра...</div>`;
         }
 
-        // Рендер оверлею аварії
         if (emergencyData && emergencyData.active) {
             let emTimeText = "";
             if (emergencyData.start && emergencyData.end) emTimeText = `з ${emergencyData.start} до ${emergencyData.end}`;
@@ -316,13 +321,9 @@
         }
     }
 
-    // Функція приховування блюру на 4 секунди
     window.hideEmergencyTemp = function() {
         const el = document.getElementById('emOverlay');
-        if(el) {
-            el.classList.add('hidden-temp');
-            setTimeout(() => el.classList.remove('hidden-temp'), 4000);
-        }
+        if(el) { el.classList.add('hidden-temp'); setTimeout(() => el.classList.remove('hidden-temp'), 4000); }
     }
 
     function startTimerAndRender() {
@@ -347,9 +348,17 @@
                 }
             }
 
-            // Якщо увімкнена аварія, статус примусово "Світла немає"
+            // ЛОГІКА ТАЙМЕРА АВАРІЇ
+            let isEmTimerActive = false;
             if (emergencyData && emergencyData.active) {
                 currentState = 'off';
+                if (emergencyData.end) {
+                    let endMins = timeToMins(emergencyData.end);
+                    if (endMins && endMins > currentMins) {
+                        nextEventMins = endMins;
+                        isEmTimerActive = true;
+                    } else { nextEventMins = null; }
+                } else { nextEventMins = null; }
             }
 
             if (currentIntIndex !== lastRenderedIntervalIndex) {
@@ -362,14 +371,12 @@
             const timerStatus = document.getElementById('timerStatus');
 
             if (globalIntervals.length === 0) {
-                timerDisplay.textContent = "--:--:--";
-                timerLabel.textContent = "Очікування";
-                timerStatus.innerHTML = `${iconBulb} Немає даних`;
-                timerStatus.style.color = '#888';
+                timerDisplay.textContent = "--:--:--"; timerLabel.textContent = "Очікування";
+                timerStatus.innerHTML = `${iconBulb} Немає даних`; timerStatus.style.color = '#888';
                 return;
             }
 
-            if (nextEventMins !== null && !(emergencyData && emergencyData.active)) {
+            if (nextEventMins !== null) {
                 let diffMins = nextEventMins - currentMins - 1;
                 let diffSecs = 60 - currentSecs;
                 if(diffSecs === 60) { diffSecs = 0; diffMins++; }
@@ -382,7 +389,7 @@
 
                 if (currentState === 'off') {
                     timerDisplay.className = 'timer-time off';
-                    timerLabel.textContent = 'До включення:';
+                    timerLabel.textContent = isEmTimerActive ? 'Орієнтовно до:' : 'До включення:';
                     timerStatus.innerHTML = `${statusIconOff} Світла немає`;
                     timerStatus.style.color = 'var(--c-red)';
                 } else {
@@ -392,15 +399,11 @@
                     timerStatus.style.color = 'var(--c-yellow)';
                 }
             } else if (emergencyData && emergencyData.active) {
-                // Якщо аварія — таймер зупиняємо
-                timerDisplay.textContent = "--:--:--";
-                timerDisplay.className = 'timer-time off';
-                timerLabel.textContent = 'Аварійний режим';
-                timerStatus.innerHTML = `${statusIconOff} Світла немає`;
+                timerDisplay.textContent = "--:--:--"; timerDisplay.className = 'timer-time off';
+                timerLabel.textContent = 'Аварійний режим'; timerStatus.innerHTML = `${statusIconOff} Світла немає`;
                 timerStatus.style.color = 'var(--c-red)';
             } else {
-                timerDisplay.textContent = "00:00:00";
-                timerLabel.textContent = "Доба завершена";
+                timerDisplay.textContent = "00:00:00"; timerLabel.textContent = "Доба завершена";
                 timerStatus.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Оновлюємо`;
                 timerStatus.style.color = '#888';
             }
@@ -409,5 +412,6 @@
 
     fetchData();
 </script>
+
 </body>
 </html>
