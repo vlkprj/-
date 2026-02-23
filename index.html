@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -68,7 +69,9 @@
         .tl-item.past-interval:active { opacity: 1; filter: none; }
 
 
-        .tl-head { display: flex; align-items: center; min-height: 40px; position: relative; z-index: 2; }
+  .tl-head { display: flex; align-items: center; min-height: 40px; position: relative; z-index: 2; padding-right: 65px; 
+}
+
         .time-col { width: 70px; text-align: right; padding-right: 15px; font-weight: 800; font-size: 20px; flex-shrink: 0; line-height: 1; margin: 0; letter-spacing: -0.5px; } 
         .time-col.off { color: var(--c-red); }
         .time-col.on { color: var(--c-yellow); text-shadow: 0 0 10px rgba(251, 191, 36, 0.4); }
@@ -255,13 +258,14 @@
                 }
             } else {
                 if (int.isModified) {
-                    let statusText = isPast ? "⛔️ АВАРІЙНЕ" : (isActive ? "⛔️ АВАРІЯ" : "⛔️ ВІДКЛЮЧЕННЯ");
+                    let statusText = "⛔️ АВАРІЙНЕ";
                     badgeHtml = `<div class="badge-row"><div class="badge on" style="text-decoration: line-through; opacity: 0.5;">${iconLightningSVG} СВІТЛО Є</div><span class="badge-modifier emergency">${statusText}</span></div>`;
                     intervalTextStyle = `color: #888; text-decoration: line-through; text-decoration-color: #888;`;
-                } else {
-                    badgeHtml = `<div class="badge on">${iconLightningSVG} СВІТЛО Є</div>`;
-                }
+               } else {
+                let lightText = isActive ? "СВІТЛО Є" : "СВІТЛО";
+                badgeHtml = `<div class="badge on">${iconLightningSVG} ${lightText}</div>`;
             }
+
 
 
             const intIcon = isVisuallyOn ? iconBulb : iconZapOff;
