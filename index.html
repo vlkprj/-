@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -183,7 +184,7 @@
     const tg = window.Telegram.WebApp;
     tg.expand(); tg.setHeaderColor('#060606'); tg.setBackgroundColor('#060606');
 
-    // ТУТ ТВІЙ BIN_ID
+    // BIN_ID
     const BIN_ID = '699b325fd0ea881f40cf7aaf'; 
 
     const houseSvg = `<svg class="icon-house" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`;
@@ -247,7 +248,7 @@
             let badgeHtml = '';
             let intervalTextStyle = '';
 
-               // РОЗУМНІ СТАТУСИ ЗАЛЕЖНО ВІД ЧАСУ
+               // СТАТУСИ ЗАЛЕЖНО ВІД ЧАСУ
             if (int.type === 'off') {
                 if (int.isModified) {
                     let statusText = isPast ? "💡 СВІТЛО БУЛО" : (isActive ? "💡 Є СВІТЛО" : "💡 СКАСОВАНО");
@@ -261,12 +262,14 @@
                     let statusText = "⛔️ АВАРІЙНЕ";
                     badgeHtml = `<div class="badge-row"><div class="badge on" style="text-decoration: line-through; opacity: 0.5;">${iconLightningSVG} СВІТЛО Є</div><span class="badge-modifier emergency">${statusText}</span></div>`;
                     intervalTextStyle = `color: #888; text-decoration: line-through; text-decoration-color: #888;`;
-               } else {
-                let lightText = isActive ? "СВІТЛО Є" : "СВІТЛО";
+                              } else {
+                let lightText = isActive ?
+"СВІТЛО Є" : "СВІТЛО";
                 badgeHtml = `<div class="badge on">${iconLightningSVG} ${lightText}</div>`;
-            }
+}
+            } 
 
-
+            const intIcon = isVisuallyOn ? iconBulb : iconZapOff;
 
             const intIcon = isVisuallyOn ? iconBulb : iconZapOff;
             
@@ -360,14 +363,14 @@
             let currentState = null;
             let nextEventMins = null;
 
-            // Функція, яка визначає ФАКТИЧНИЙ стан (чи є напруга)
+            // Фактичний стан
             const getRealState = (int) => {
                 if (int.type === 'off' && !int.isModified) return 'off'; // Звичайне відключення
-                if (int.type === 'on' && int.isModified) return 'off';   // Аварія у світлий час
-                return 'on'; // Все інше - світло є (включно зі скасованими відключеннями)
+                if (int.type === 'on' && int.isModified) return 'off';  
+                return 'on'; 
             };
 
-            // Шукаємо поточний інтервал
+            // шукати поточний інтервал
             for (let i = 0; i < globalIntervals.length; i++) {
                 let int = globalIntervals[i];
                 if (currentMins >= int.startMin && currentMins < int.endMin) {
@@ -377,18 +380,18 @@
                 }
             }
 
-            // РОЗУМНИЙ ПОШУК НАСТУПНОЇ ПОДІЇ (ігноруємо фантомні межі)
+            // ПОШУК НАСТУПНОЇ ПОДІЇ 
             if (currentIntIndex !== -1) {
                 for (let i = currentIntIndex + 1; i < globalIntervals.length; i++) {
                     let nextInt = globalIntervals[i];
                     if (getRealState(nextInt) !== currentState) {
                         nextEventMins = nextInt.startMin;
-                        break; // Знайшли реальну зміну стану
+                        break; // реальна зміну стану
                     }
                 }
             }
 
-            // ПЕРЕКРИТТЯ ЛОГІКИ, ЯКЩО АКТИВНА ЕКСТРЕНА АВАРІЯ З АДМІНКИ
+            //так
             let isEmTimerActive = false;
             if (emergencyData && emergencyData.active) {
                 currentState = 'off';
@@ -402,7 +405,7 @@
                 } else { nextEventMins = null; }
             }
 
-            // Оновлюємо візуал тільки при зміні поточного блоку
+            
             if (currentIntIndex !== lastRenderedIntervalIndex) {
                 renderTimeline(currentMins);
                 lastRenderedIntervalIndex = currentIntIndex;
