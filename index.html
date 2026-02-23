@@ -222,7 +222,7 @@
         }
     }
 
-    function renderTimeline(currentMins) {
+        function renderTimeline(currentMins) {
         const container = document.getElementById('timelineContainer');
         let html = '';
 
@@ -231,8 +231,30 @@
             return;
         }
 
-        globalIntervals.forEach((int, i) => {
-            const isVisuallyOn = int.type === 'on';
+        
+        let displayIntervals = [...globalIntervals];
+        let emActive = emergencyData && emergencyData.active;
+        let emStart = emActive ? timeToMins(emergencyData.start) : null;
+        let emEnd = emActive ? timeToMins(emergencyData.end) : null;
+
+        if (emActive && emStart !== null) {
+
+            displayIntervals = globalIntervals.filter(int => int.endMin <= emStart);
+            
+            
+            displayIntervals.push({
+                startMin: emStart,
+                endMin: emEnd || 1440,
+                startStr: emergencyData.start,
+                displayEndStr: emergencyData.end || "??:??",
+                type: 'off',
+                isEmergencyBlock: true 
+            });
+        }
+
+        displayIntervals.forEach((int, i) => {
+            const isEmergency = int.isEmergencyBlock;
+            const isVisuallyOn = int.type === 'on' && !isEmergency;
             const stateClass = isVisuallyOn ? 'on' : 'off';
             
             const isActive = (currentMins >= int.startMin && currentMins < int.endMin);
@@ -245,46 +267,30 @@
             let badgeHtml = '';
             let intervalTextStyle = '';
 
-                           //  СТАТУСИ ЗАЛЕЖНО ВІД ЧАСУ
-            if (int.type === 'off') {
+            if (isEmergency) {
+                badgeHtml = `<div class="badge-row"><span class="badge-modifier emergency">⛔️ АВАРІЙНЕ ВІДКЛЮЧЕННЯ</span></div>`;
+            } else if (int.type === 'off') {
                 if (int.isModified) {
                     let statusText = isPast ? "💡 СВІТЛО БУЛО" : (isActive ? "💡 Є СВІТЛО" : "💡 СКАСОВАНО");
                     badgeHtml = `<div class="badge-row"><div class="badge off" style="text-decoration: line-through; opacity: 0.5;">${iconBan} ВІДКЛЮЧЕННЯ</div><span class="badge-modifier rescued">${statusText}</span></div>`;
-                    intervalTextStyle = `color: rgba(251, 191, 36, 0.7); text-decoration: line-through; text-decoration-color: rgba(251, 191, 36, 0.7);`;
+                    intervalTextStyle = `color: rgba(251, 191, 36, 0.7); text-decoration: line-through;`;
                 } else {
                     badgeHtml = `<div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div>`;
                 }
             } else {
-                if (int.isModified) {
-                    let statusText = "⛔️ АВАРІЙНЕ";
-                    badgeHtml = `<div class="badge-row"><div class="badge on" style="text-decoration: line-through; opacity: 0.5;">${iconLightningSVG} СВІТЛО Є</div><span class="badge-modifier emergency">${statusText}</span></div>`;
-                    intervalTextStyle = `color: #888; text-decoration: line-through; text-decoration-color: #888;`;
-                } else {
-                    let lightText = isActive ? "СВІТЛО Є" : "СВІТЛО";
-                    badgeHtml = `<div class="badge on">${iconLightningSVG} ${lightText}</div>`;
-                }
+                let lightText = isActive ? "СВІТЛО Є" : "СВІТЛО";
+                badgeHtml = `<div class="badge on">${iconLightningSVG} ${lightText}</div>`;
             }
 
             const intIcon = isVisuallyOn ? iconBulb : iconZapOff;
-
             
-            let durationMins = int.endMin - int.startMin;
-            if (durationMins < 0) durationMins += 1440; 
-            let hours = durationMins / 60;
-            let fullDots = Math.floor(hours);
-            let hasHalfDot = (hours - fullDots) >= 0.4; 
-
+            
             let dotsHtml = '';
-            if (i < globalIntervals.length - 1) { 
+            if (i < displayIntervals.length - 1 || isEmergency) {
+                let durationMins = int.endMin - int.startMin;
+                let hours = durationMins / 60;
+                let fullDots = Math.floor(hours);
                 for(let d = 0; d < fullDots; d++) dotsHtml += `<div class="tl-dot-micro ${stateClass}"></div>`;
-                if(hasHalfDot) {
-                    let halfColor = isVisuallyOn ? "var(--c-yellow)" : "#555";
-                    dotsHtml += `<div class="tl-dot-micro" style="background: linear-gradient(to bottom, ${halfColor} 50%, transparent 50%); border: 1px solid ${halfColor}; box-sizing: border-box;"></div>`;
-                }
-                if(fullDots === 0 && !hasHalfDot) dotsHtml += `<div class="tl-dot-micro ${stateClass}" style="transform: scale(0.6);"></div>`;
-            } else {
-                dotsHtml += `<div class="tl-dot-micro ${stateClass}" style="opacity: 0.6; transform: scale(0.8);"></div>`;
-                dotsHtml += `<div class="tl-dot-micro ${stateClass}" style="opacity: 0.3; transform: scale(0.6);"></div>`;
             }
 
             html += `
@@ -307,31 +313,11 @@
             </div>`;
         });
 
-                        if (globalIntervals.length > 0) {
-            html += `<div class="waiting-block" style="margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <svg width="20" height="20" viewBox="0 0 50 50" style="animation: spin 1s linear infinite;"><circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-dasharray="31.4 31.4"></circle></svg>
-                Очікуємо графік на завтра...
-            </div>`;
-        }
-
-
-
-        if (emergencyData && emergencyData.active) {
-            let emTimeText = "";
-            if (emergencyData.start && emergencyData.end) emTimeText = `з ${emergencyData.start} до ${emergencyData.end}`;
-            else if (emergencyData.start) emTimeText = `з ${emergencyData.start}`;
-
-            html += `
-            <div class="emergency-overlay" id="emOverlay" onclick="hideEmergencyTemp()">
-                <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="var(--c-red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 10px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                <div class="em-alert-title">АВАРІЙНЕ ВІДКЛЮЧЕННЯ</div>
-                ${emTimeText ? `<div class="em-alert-time">${emTimeText}</div>` : ''}
-                <div class="em-hint">Натисніть будь-де, щоб переглянути графік</div>
-            </div>`;
+        if (!emActive) {
+            html += `<div class="waiting-block">Очікуємо графік на завтра...</div>`;
         }
 
         container.innerHTML = html;
-
         if (!initialScrollDone) {
             setTimeout(() => {
                 const activeEl = document.querySelector('.active-now');
