@@ -354,14 +354,12 @@ const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocac
             const currentSecs = now.getSeconds();
 
             const dates = Object.keys(dbDays).sort();
-            const todayStr = dates[0];
-            
+            const dateDisplay = document.getElementById('dateDisplay');
             const timerDisplay = document.getElementById('timerDisplay');
             const timerLabel = document.getElementById('timerLabel');
             const timerStatus = document.getElementById('timerStatus');
-            const dateDisplay = document.getElementById('dateDisplay');
 
-            if (!todayStr) {
+            if (dates.length === 0) {
                 dateDisplay.textContent = "ОЧІКУЄМО";
                 timerDisplay.textContent = "--:--:--";
                 timerLabel.textContent = "Очікування";
@@ -370,58 +368,67 @@ const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocac
                 return;
             }
 
-            dateDisplay.textContent = todayStr;
-            const todayData = dbDays[todayStr];
-            const todayIntervals = todayData.intervals || [];
-            const emergencyData = todayData.emergency || { active: false };
+            dateDisplay.textContent = dates[0]; // Завжди показуємо поточний день
 
-            const emActive = emergencyData.active;
-            const emStart = emActive ? timeToMins(emergencyData.start) : null;
-            const emEnd = emActive && emergencyData.end ? timeToMins(emergencyData.end) : null;
+            // Зшиваємо всі дні в одну часову лінію (0 - 2880+ хвилин)
+            let combinedIntervals = [];
+            dates.forEach((dateStr, dayIndex) => {
+                const dayData = dbDays[dateStr];
+                const offset = dayIndex * 1440; 
+                const displayInts = buildDisplayIntervals(dayData.intervals || [], dayData.emergency || {active:false});
+                
+                displayInts.forEach(int => {
+                    let realState = 'on';
+                    if (int.isEmergencyBlock) realState = 'off';
+                    else if (int.type === 'off' && !int.isModified) realState = 'off';
+                    else if (int.type === 'on' && int.isModified) realState = 'off';
 
-            let currentIntIndex = -1;
-            let currentState = null;
-            let nextEventMins = null;
+                    combinedIntervals.push({
+                        startMinAbs: int.startMin + offset,
+                        endMinAbs: int.endMin + offset,
+                        realState: realState
+                    });
+                });
+            });
 
-            const getRealState = (int) => {
-                if (int.type === 'off' && !int.isModified) return 'off';
-                if (int.type === 'on' && int.isModified) return 'off';
-                return 'on';
-            };
+            // Шукаємо, де ми знаходимось зараз у цій 48-годинній лінії
+            let currentIntIndex = combinedIntervals.findIndex(int => currentMins >= int.startMinAbs && currentMins < int.endMinAbs);
+            let currentState = 'on';
+            let nextEventMinsAbs = null;
 
-            for (let i = 0; i < todayIntervals.length; i++) {
-                let int = todayIntervals[i];
-                if (currentMins >= int.startMin && currentMins < int.endMin) {
-                    currentIntIndex = i;
-                    currentState = getRealState(int);
-                    break;
-                }
-            }
-
-            if (emActive && emStart !== null && currentMins >= emStart && (emEnd === null || currentMins < emEnd)) {
-                currentState = 'off';
-                nextEventMins = emEnd;
-            } else if (emActive && emEnd !== null && currentMins >= emEnd) {
-                emergencyData.active = false;
-            } else if (!emActive && currentIntIndex !== -1) {
-                for (let i = currentIntIndex + 1; i < todayIntervals.length; i++) {
-                    let nextInt = todayIntervals[i];
-                    if (getRealState(nextInt) !== currentState) {
-                        nextEventMins = nextInt.startMin;
+            if (currentIntIndex !== -1) {
+                currentState = combinedIntervals[currentIntIndex].realState;
+                // Шукаємо найближчу зміну стану, навіть якщо вона завтра
+                for (let i = currentIntIndex + 1; i < combinedIntervals.length; i++) {
+                    if (combinedIntervals[i].realState !== currentState) {
+                        nextEventMinsAbs = combinedIntervals[i].startMinAbs;
                         break;
                     }
                 }
             }
 
+            // Перемальовуємо таймлайн, тільки якщо перейшли в інший блок
             if (currentIntIndex !== lastRenderedIntervalIndex || lastRenderedIntervalIndex === -1) {
                 renderAllDays(currentMins);
                 lastRenderedIntervalIndex = currentIntIndex;
             }
 
-            if (todayIntervals.length === 0) return;
+            // Оновлюємо UI статусу (тепер без "Оновлення даних")
+            if (currentState === 'off') {
+                timerStatus.innerHTML = `${statusIconOff} Світла немає`;
+                timerStatus.style.color = 'var(--c-red)';
+                timerDisplay.className = 'timer-time off';
+                timerLabel.textContent = 'До включення:';
+            } else {
+                timerStatus.innerHTML = `${statusIconOn} Світло є`;
+                timerStatus.style.color = 'var(--c-yellow)';
+                timerDisplay.className = 'timer-time on';
+                timerLabel.textContent = 'До відключення:';
+            }
 
-            if (nextEventMins !== null) {
-                let diffMins = nextEventMins - currentMins - 1;
+            // Математика таймера
+            if (nextEventMinsAbs !== null) {
+                let diffMins = nextEventMinsAbs - currentMins - 1;
                 let diffSecs = 60 - currentSecs;
                 if (diffSecs === 60) { diffSecs = 0; diffMins++; }
 
@@ -430,36 +437,19 @@ const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocac
                 let s = diffSecs.toString().padStart(2, '0');
 
                 timerDisplay.textContent = `${h}:${m}:${s}`;
-
-                if (currentState === 'off') {
-                    timerDisplay.className = 'timer-time off';
-                    timerLabel.textContent = 'До включення:';
-                    timerStatus.innerHTML = `${statusIconOff} Світла немає`;
-                    timerStatus.style.color = 'var(--c-red)';
-                } else {
-                    timerDisplay.className = 'timer-time on';
-                    timerLabel.textContent = 'До відключення:';
-                    timerStatus.innerHTML = `${statusIconOn} Світло є`;
-                    timerStatus.style.color = 'var(--c-yellow)';
-                }
-            } else if (emActive) {
-                timerDisplay.textContent = "--:--:--";
-                timerDisplay.className = 'timer-time off';
-                timerLabel.textContent = 'Аварійний режим';
-                timerStatus.innerHTML = `${statusIconOff} Світла немає`;
-                timerStatus.style.color = 'var(--c-red)';
             } else {
-                timerDisplay.textContent = "00:00:00";
-                timerDisplay.className = 'timer-time off';
-                timerDisplay.style.color = '#555';
-                timerDisplay.style.textShadow = 'none';
-                timerLabel.textContent = "ОЧІКУЄМО ГРАФІК";
-                timerStatus.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Оновлення даних`;
-                timerStatus.style.color = '#555';
+                // Якщо немає наступної події (напр. завтрашній графік ще не виклали)
+                timerDisplay.textContent = "--:--:--";
+                if (dates.length === 1) {
+                    timerLabel.textContent = "Очікуємо графік на завтра";
+                } else {
+                    timerLabel.textContent = "До кінця доби";
+                }
             }
 
         }, 1000);
     }
+
 
     fetchData();
 </script>
