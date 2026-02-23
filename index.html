@@ -28,7 +28,7 @@
         
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .branding { display: flex; align-items: center; gap: 8px; }
-            .logo-img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #ffffff; border: 1px solid #eee; padding: 2px; box-sizing: border-box; }
+        .logo-img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #ffffff; border: 1px solid #eee; padding: 2px; box-sizing: border-box; }
         .app-title { font-size: 20px; font-weight: 900; letter-spacing: 0.5px; margin: 0; display: flex; align-items: center; gap: 6px; }
         .app-title svg { fill: var(--c-yellow); width: 22px; height: 22px; margin-top: -2px; }
         .date-badge { background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 12px; font-weight: 800; color: var(--c-yellow); font-size: 13px; }
@@ -245,7 +245,7 @@
             let badgeHtml = '';
             let intervalTextStyle = '';
 
-               // СТАТУСИ ЗАЛЕЖНО ВІД ЧАСУ
+                           //  СТАТУСИ ЗАЛЕЖНО ВІД ЧАСУ
             if (int.type === 'off') {
                 if (int.isModified) {
                     let statusText = isPast ? "💡 СВІТЛО БУЛО" : (isActive ? "💡 Є СВІТЛО" : "💡 СКАСОВАНО");
@@ -259,16 +259,14 @@
                     let statusText = "⛔️ АВАРІЙНЕ";
                     badgeHtml = `<div class="badge-row"><div class="badge on" style="text-decoration: line-through; opacity: 0.5;">${iconLightningSVG} СВІТЛО Є</div><span class="badge-modifier emergency">${statusText}</span></div>`;
                     intervalTextStyle = `color: #888; text-decoration: line-through; text-decoration-color: #888;`;
-                              } else {
-                let lightText = isActive ?
-"СВІТЛО Є" : "СВІТЛО";
-                badgeHtml = `<div class="badge on">${iconLightningSVG} ${lightText}</div>`;
-}
-            } 
+                } else {
+                    let lightText = isActive ? "СВІТЛО Є" : "СВІТЛО";
+                    badgeHtml = `<div class="badge on">${iconLightningSVG} ${lightText}</div>`;
+                }
+            }
 
             const intIcon = isVisuallyOn ? iconBulb : iconZapOff;
 
-            const intIcon = isVisuallyOn ? iconBulb : iconZapOff;
             
             let durationMins = int.endMin - int.startMin;
             if (durationMins < 0) durationMins += 1440; 
