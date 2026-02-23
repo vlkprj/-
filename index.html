@@ -11,7 +11,7 @@
             --c-yellow: #fbbf24; --c-red: #d9463b; --c-dark: #060606;
         }
 
-
+```
     body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         background-color: var(--c-dark); color: #ffffff;
@@ -121,7 +121,7 @@
 
     .loader { text-align: center; color: #888; margin-top: 50px; font-weight: bold; }
 </style>
-
+```
 
 </head>
 <body ontouchstart="">
@@ -152,6 +152,7 @@
         </div>
     </div>
 
+```
 <div id="timelineContainer"></div>
 
 <div class="app-footer">
@@ -166,7 +167,7 @@
     </div>
     <div class="source-text"><b>Джерело:</b><br>Харківобленерго</div>
 </div>
-
+```
 
 </div>
 
@@ -389,7 +390,7 @@
                 }
             }
 
-            if (currentIntIndex !== lastRenderedIntervalIndex) {
+            if (currentIntIndex !== lastRenderedIntervalIndex || lastRenderedIntervalIndex === -1) {
                 renderTimeline(currentMins);
                 lastRenderedIntervalIndex = currentIntIndex;
             }
@@ -419,7 +420,7 @@
 
                 if (currentState === 'off') {
                     timerDisplay.className = 'timer-time off';
-                    timerLabel.textContent = emActive ? 'Орієнтовно до:' : 'До включення:';
+                    timerLabel.textContent = 'До включення:';
                     timerStatus.innerHTML = `${statusIconOff} Світла немає`;
                     timerStatus.style.color = 'var(--c-red)';
                 } else {
