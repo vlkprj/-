@@ -115,8 +115,9 @@
 
     .app-footer { margin-top: 10px; padding: 25px 20px 40px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center; }
     .footer-links { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }
-    .f-link { color: #888; text-decoration: none; font-size: 13px; font-weight: 700; background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 20px; transition: 0.2s; }
-    .f-link:active { background: rgba(255,255,255,0.1); color: #fff; }
+    .f-link { color: #aaa; text-decoration: none; font-size: 13px; font-weight: 700; background: rgba(255,255,255,0.06); padding: 11px 18px; border-radius: 14px; transition: 0.2s; display: flex; align-items: center; gap: 7px; border: 1px solid rgba(255,255,255,0.07); }
+.f-link:active { background: rgba(255,255,255,0.12); color: #fff; }
+.f-link svg { flex-shrink: 0; }
 
     .disclaimer-box { display: flex; align-items: flex-start; text-align: left; gap: 8px; font-size: 13px; color: #777; line-height: 1.4; font-weight: 500; background: rgba(255,255,255,0.03); padding: 12px 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
     .source-text { font-size: 12px; color: #666; font-weight: 500; }
@@ -159,9 +160,19 @@
 
 <div class="app-footer">
     <div class="footer-links">
-        <a href="https://t.me/share/url?url=t.me/valkyelectrifybot/electric&text=💡%20Актуальний%20графік%20відключень%20світла%20у%20Валках" class="f-link" target="_blank">↗️ Поділитися</a>
-        <a href="https://t.me/valkychat" class="f-link" target="_blank">💬 Чат</a>
-        <a href="https://t.me/valkybazar" class="f-link" target="_blank">📣 Базарчик</a>
+        <a href="https://t.me/share/url?url=t.me/valkyelectrifybot/electric&text=💡%20Актуальний%20графік%20відключень%20світла%20у%20Валках" class="f-link" target="_blank">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+    Поділитися
+</a>
+<a href="https://t.me/valkychat" class="f-link" target="_blank">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Чат
+</a>
+<a href="https://t.me/valkybazar" class="f-link" target="_blank">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+    Базарчик
+</a>
+
     </div>
     <div class="disclaimer-box">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
