@@ -8,10 +8,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ВАЛКИ • Графік</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root {
-            --c-yellow: #fbbf24; --c-red: #d9463b; --c-dark: #060606;
-        }
+  <style>
+    :root {
+        --c-yellow: #fbbf24; --c-red: #d9463b; --c-dark: #060606;
+    }
 
     body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -64,17 +64,10 @@
     @keyframes breath { 0% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.7; } }
     @keyframes nowDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
 
-.tl-item { display: flex; flex-direction: column; z-index: 2; position: relative; padding: 10px 0; transition: 0.3s ease; border-radius: 16px; margin-bottom: -5px; }
-.tl-item.active-now { animation: pulseGlow 2.5s infinite; padding: 15px 10px; margin: 5px -10px; border: 1px solid rgba(255,255,255,0.05); overflow: visible; }
-.tl-item.active-now.emergency-active { animation: pulseGlowRed 2.5s infinite; border-color: rgba(217,70,59,0.15); }
-.tl-item.active-now::after { content: 'ЗАРАЗ'; position: absolute; right: 15px; top: 13px; font-size: 10px; font-weight: 900; background: #fff; color: #000; padding: 4px 10px 4px 20px; border-radius: 8px; letter-spacing: 0.5px; z-index: 10; }
-.tl-item.active-now::before { content: ''; position: absolute; right: 44px; top: 18px; width: 6px; height: 6px; border-radius: 50%; background: #000; animation: nowDot 2.5s ease-in-out infinite; z-index: 11; }
-.tl-item.active-now.emergency-active::after { background: #fff; color: var(--c-red); }
-.tl-item.active-now.emergency-active::before { background: var(--c-red); }
-.tl-item.past-interval { opacity: 0.35; filter: grayscale(0.8); transition: all 0.2s ease; cursor: pointer; }
-.tl-item.past-interval:active { opacity: 1; filter: none; }
-
-
+    /* Оновлені стилі для блоків таймлайну */
+    .tl-item { display: flex; flex-direction: column; z-index: 2; position: relative; padding: 10px 0; transition: 0.3s ease; border-radius: 16px; margin-bottom: -5px; }
+    .tl-item.active-now { animation: pulseGlow 2.5s infinite; padding: 15px 10px; margin: 5px -10px; border: 1px solid rgba(255,255,255,0.05); overflow: visible; }
+    .tl-item.active-now.emergency-active { animation: pulseGlowRed 2.5s infinite; border-color: rgba(217,70,59,0.15); }
     .tl-item.past-interval { opacity: 0.35; filter: grayscale(0.8); transition: all 0.2s ease; cursor: pointer; }
     .tl-item.past-interval:active { opacity: 1; filter: none; }
 
@@ -91,7 +84,6 @@
     .on .icon-house { fill: var(--c-yellow); filter: drop-shadow(0 0 5px var(--c-yellow)); }
     .off .icon-house, .emergency .icon-house { fill: #555; }
 
-
     .badge-col { padding-left: 15px; flex-grow: 1; display: flex; align-items: center; }
     .badge { display: flex; align-items: center; justify-content: center; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; width: max-content; line-height: 1; text-transform: uppercase; gap: 6px; }
     .badge.off { background: #1a1a1c; border: 1px solid #333; color: #a1a1aa; }
@@ -101,6 +93,24 @@
     .badge-modifier { font-size: 12px; font-weight: 800; text-transform: uppercase; }
     .badge-modifier.rescued { color: var(--c-yellow); }
     .badge-modifier.emergency { color: var(--c-red); }
+
+    /* Новий органічний бейджик ЗАРАЗ */
+    .now-badge {
+        background: #fff; color: #000; padding: 4px 8px; border-radius: 6px;
+        font-size: 10px; font-weight: 900; letter-spacing: 0.5px;
+        margin-left: auto;
+        box-shadow: 0 0 10px rgba(255,255,255,0.4);
+        animation: pulseBadge 2s infinite;
+    }
+    .emergency-active .now-badge {
+        background: var(--c-red); color: #fff;
+        box-shadow: 0 0 10px rgba(217,70,59,0.5);
+    }
+    @keyframes pulseBadge {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
 
     .tl-body { display: flex; align-items: stretch; min-height: 50px; position: relative; z-index: 1; }
     .line-node { display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; width: 40px; flex-shrink: 0; padding: 10px 0; margin: 0; }
@@ -120,17 +130,32 @@
 
     .waiting-block { text-align: center; padding: 30px 20px; color: #888; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
 
+    /* Драматичні крапочки для очікування */
+    .spinner-dots::after {
+        content: ''; animation: dots 1.5s steps(4, end) infinite;
+    }
+    @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } 100% { content: ''; } }
+
+    .fade-dots {
+        display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 15px; opacity: 0.5;
+    }
+    .fade-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; }
+    .fade-dot:nth-child(1) { opacity: 0.8; }
+    .fade-dot:nth-child(2) { opacity: 0.5; }
+    .fade-dot:nth-child(3) { opacity: 0.2; }
+
     .app-footer { margin-top: 10px; padding: 25px 20px 40px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center; }
     .footer-links { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }
     .f-link { color: #aaa; text-decoration: none; font-size: 13px; font-weight: 700; background: rgba(255,255,255,0.06); padding: 11px 18px; border-radius: 14px; transition: 0.2s; display: flex; align-items: center; gap: 7px; border: 1px solid rgba(255,255,255,0.07); }
-.f-link:active { background: rgba(255,255,255,0.12); color: #fff; }
-.f-link svg { flex-shrink: 0; }
+    .f-link:active { background: rgba(255,255,255,0.12); color: #fff; }
+    .f-link svg { flex-shrink: 0; }
 
     .disclaimer-box { display: flex; align-items: flex-start; text-align: left; gap: 8px; font-size: 13px; color: #777; line-height: 1.4; font-weight: 500; background: rgba(255,255,255,0.03); padding: 12px 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
     .source-text { font-size: 12px; color: #666; font-weight: 500; }
 
     .loader { text-align: center; color: #888; margin-top: 50px; font-weight: bold; }
 </style>
+
 
 
 </head>
@@ -302,20 +327,23 @@
             let badgeHtml = '';
             let intervalTextStyle = '';
 
+                        let nowIndicator = isActive ? `<div class="now-badge">ЗАРАЗ</div>` : '';
+            
             if (isEmergency) {
-                badgeHtml = `<div class="badge emergency">${iconWarning} АВАРІЙНЕ</div>`;
+                badgeHtml = `<div class="badge-row"><div class="badge emergency">${iconWarning} АВАРІЙНЕ</div>${nowIndicator}</div>`;
             } else if (int.type === 'off') {
                 if (int.isModified) {
                     let statusText = isPast ? "💡 СВІТЛО БУЛО" : (isActive ? "💡 Є СВІТЛО" : "💡 СКАСОВАНО");
-                    badgeHtml = `<div class="badge-row"><div class="badge off" style="text-decoration: line-through; opacity: 0.5;">${iconBan} ВІДКЛЮЧЕННЯ</div><span class="badge-modifier rescued">${statusText}</span></div>`;
+                    badgeHtml = `<div class="badge-row"><div class="badge off" style="text-decoration: line-through; opacity: 0.5;">${iconBan} ВІДКЛЮЧЕННЯ</div><span class="badge-modifier rescued">${statusText}</span>${nowIndicator}</div>`;
                     intervalTextStyle = `color: rgba(251, 191, 36, 0.7); text-decoration: line-through;`;
                 } else {
-                    badgeHtml = `<div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div>`;
+                    badgeHtml = `<div class="badge-row"><div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div>${nowIndicator}</div>`;
                 }
             } else {
                 let lightText = isFuture ? "СВІТЛО" : "СВІТЛО Є";
-                badgeHtml = `<div class="badge on">${iconLightningSVG} ${lightText}</div>`;
+                badgeHtml = `<div class="badge-row"><div class="badge on">${iconLightningSVG} ${lightText}</div>${nowIndicator}</div>`;
             }
+
 
             const intIcon = isEmergency ? iconZapOff : (isVisuallyOn ? iconBulb : iconZapOff);
 
@@ -350,10 +378,17 @@
             </div>`;
         });
 
-        const lastInt = displayIntervals[displayIntervals.length - 1];
+                const lastInt = displayIntervals[displayIntervals.length - 1];
         if (lastInt && lastInt.endMin < 1440) {
-            html += `<div class="waiting-block">Очікуємо графік на завтра...</div>`;
+            html += `
+            <div class="fade-dots">
+                <div class="fade-dot"></div><div class="fade-dot"></div><div class="fade-dot"></div>
+            </div>
+            <div class="waiting-block">
+                ⚡ Очікуємо графік на завтра<span class="spinner-dots"></span>
+            </div>`;
         }
+
 
         container.innerHTML = html;
 
