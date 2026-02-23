@@ -71,7 +71,7 @@
     .tl-item.past-interval { opacity: 0.35; filter: grayscale(0.8); transition: all 0.2s ease; cursor: pointer; }
     .tl-item.past-interval:active { opacity: 1; filter: none; }
 
-    .tl-head { display: flex; align-items: center; min-height: 40px; position: relative; z-index: 2;  }
+    .tl-head { display: flex; align-items: center; min-height: 40px; position: relative; z-index: 2; padding-right: 65px;  }
 
     .time-col { width: 70px; text-align: right; padding-right: 15px; font-weight: 800; font-size: 20px; flex-shrink: 0; line-height: 1; margin: 0; letter-spacing: -0.5px; }
     .time-col.off { color: var(--c-red); }
@@ -95,13 +95,17 @@
     .badge-modifier.emergency { color: var(--c-red); }
 
    
-      .now-badge {
-        background: #fff; color: #000; padding: 4px 8px; border-radius: 6px;
+    .now-badge {
+        position: absolute;
+        top: -5px; /* Піднімаємо вище */
+        right: 0px; /* Притискаємо в самий край */
+        background: #fff; color: #000; padding: 4px 10px; border-radius: 8px;
         font-size: 10px; font-weight: 900; letter-spacing: 0.5px;
-        margin-left: auto; flex-shrink: 0;
-        box-shadow: 0 0 10px rgba(255,255,255,0.4);
+        box-shadow: 0 0 12px rgba(255,255,255,0.5);
         animation: pulseBadge 2s infinite;
+        z-index: 10;
     }
+
 
     .emergency-active .now-badge {
         background: var(--c-red); color: #fff;
