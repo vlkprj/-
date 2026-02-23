@@ -1,169 +1,93 @@
-
-
 <!DOCTYPE html>
-
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ВАЛКИ • Графік</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    :root {
-        --c-yellow: #fbbf24; --c-red: #d9463b; --c-dark: #060606;
-    }
-
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        background-color: var(--c-dark); color: #ffffff;
-        margin: 0; padding: 0; -webkit-font-smoothing: antialiased; overflow-x: hidden;
-    }
-
-    .sticky-header {
-        position: sticky; top: 0; left: 0; width: 100%;
-        background: rgba(6, 6, 6, 0.85);
-        backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-        z-index: 100; padding: 15px 20px; box-sizing: border-box;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    }
-
-    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    .branding { display: flex; align-items: center; gap: 8px; }
-    .logo-img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #ffffff; border: 1px solid #eee; padding: 2px; box-sizing: border-box; }
-    .app-title { font-size: 20px; font-weight: 900; letter-spacing: 0.5px; margin: 0; display: flex; align-items: center; gap: 6px; }
-    .app-title svg { fill: var(--c-yellow); width: 22px; height: 22px; margin-top: -2px; }
-    .date-badge { background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 12px; font-weight: 800; color: var(--c-yellow); font-size: 13px; }
-
-    .dashboard { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
-    .status-box { display: flex; flex-direction: column; gap: 8px; justify-content: flex-end; }
-    .status-label { font-size: 12px; color: #888; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; letter-spacing: 0.5px; margin-bottom: 2px; }
-    .status-value { display: flex; align-items: center; gap: 6px; font-size: 18px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
-
-    .live-dot { display: inline-block; width: 8px; height: 8px; background-color: var(--c-red); border-radius: 50%; margin-right: 6px; animation: blinkFast 1.5s infinite; }
-    @keyframes blinkFast { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
-
-    .timer-box { text-align: right; }
-    .timer-label { font-size: 12px; color: #888; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
-    .timer-time { font-size: 34px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
-    .timer-time.off { color: var(--c-red); text-shadow: 0 0 15px rgba(217, 70, 59, 0.4); }
-    .timer-time.on { color: var(--c-yellow); text-shadow: 0 0 15px rgba(251, 191, 36, 0.4); }
-
-    #timelineContainer { padding: 20px; display: flex; flex-direction: column; gap: 0; min-height: 60vh; position: relative; }
-
-    @keyframes pulseGlow {
-        0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); }
-        50% { box-shadow: 0 0 20px 0 rgba(255,255,255,0.08); background: rgba(255,255,255,0.06); }
-        100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); background: rgba(255,255,255,0.02); }
-    }
-    @keyframes pulseGlowRed {
-        0% { box-shadow: 0 0 0 0 rgba(217,70,59,0.1); background: rgba(217,70,59,0.04); }
-        50% { box-shadow: 0 0 20px 0 rgba(217,70,59,0.15); background: rgba(217,70,59,0.08); }
-        100% { box-shadow: 0 0 0 0 rgba(217,70,59,0); background: rgba(217,70,59,0.04); }
-    }
-    @keyframes breath { 0% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.7; } }
-    @keyframes nowDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.15; } }
-
- 
-    .tl-item { display: flex; flex-direction: column; z-index: 2; position: relative; padding: 10px 0; transition: 0.3s ease; border-radius: 16px; margin-bottom: -5px; }
-    .tl-item.active-now { animation: pulseGlow 2.5s infinite; padding: 15px 10px; margin: 5px -10px; border: 1px solid rgba(255,255,255,0.05); overflow: visible; }
-    .tl-item.active-now.emergency-active { animation: pulseGlowRed 2.5s infinite; border-color: rgba(217,70,59,0.15); }
-    .tl-item.past-interval { opacity: 0.35; filter: grayscale(0.8); transition: all 0.2s ease; cursor: pointer; }
-    .tl-item.past-interval:active { opacity: 1; filter: none; }
-
-    .tl-head { display: flex; align-items: center; min-height: 40px; position: relative; z-index: 2; padding-right: 65px;  }
-
-    .time-col { width: 70px; text-align: right; padding-right: 15px; font-weight: 800; font-size: 20px; flex-shrink: 0; line-height: 1; margin: 0; letter-spacing: -0.5px; }
-    .time-col.off { color: var(--c-red); }
-    .time-col.on { color: var(--c-yellow); text-shadow: 0 0 10px rgba(251, 191, 36, 0.4); }
-    .time-col.emergency { color: var(--c-red); }
-
-    .icon-node { display: flex; flex-direction: column; align-items: center; width: 40px; flex-shrink: 0; }
-    .icon-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #111; border: 1px solid #222; z-index: 3; position: relative; }
-    .icon-house { width: 22px; height: 22px; }
-    .on .icon-house { fill: var(--c-yellow); filter: drop-shadow(0 0 5px var(--c-yellow)); }
-    .off .icon-house, .emergency .icon-house { fill: #555; }
-
-    .badge-col { padding-left: 15px; flex-grow: 1; display: flex; align-items: center; }
-    .badge { display: flex; align-items: center; justify-content: center; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; width: max-content; line-height: 1; text-transform: uppercase; gap: 6px; }
-    .badge.off { background: #1a1a1c; border: 1px solid #333; color: #a1a1aa; }
-    .badge.on { background: rgba(251, 191, 36, 0.1); color: var(--c-yellow); border: 1px solid var(--c-yellow); }
-    .badge.emergency { background: rgba(217,70,59,0.15); color: var(--c-red); border: 1px solid var(--c-red); }
-    .badge-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-    .badge-modifier { font-size: 12px; font-weight: 800; text-transform: uppercase; }
-    .badge-modifier.rescued { color: var(--c-yellow); }
-    .badge-modifier.emergency { color: var(--c-red); }
-
-   
-      .now-badge {
-        position: absolute;
-        top: -4px; 
-        right: 0px; 
-        background: #fff; color: #000; padding: 2px 6px; border-radius: 5px;
-        font-size: 8px; font-weight: 900; letter-spacing: 0.5px;
-        box-shadow: 0 0 10px rgba(255,255,255,0.4);
-        animation: pulseBadge 2s infinite;
-        z-index: 10;
-    }
-
-
-
-    .emergency-active .now-badge {
-        background: var(--c-red); color: #fff;
-        box-shadow: 0 0 10px rgba(217,70,59,0.5);
-    }
-    @keyframes pulseBadge {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-    }
-
-    .tl-body { display: flex; align-items: stretch; min-height: 50px; position: relative; z-index: 1; }
-    .line-node { display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; width: 40px; flex-shrink: 0; padding: 10px 0; margin: 0; }
-    .tl-dot-micro { width: 6px; height: 6px; border-radius: 50%; opacity: 0.9; flex-shrink: 0; margin: 3px 0; }
-    .tl-dot-micro.on { background: var(--c-yellow); box-shadow: 0 0 4px rgba(251, 191, 36, 0.5); }
-    .tl-dot-micro.off { background: #555; }
-    .tl-dot-micro.emergency { background: var(--c-red); box-shadow: 0 0 4px rgba(217,70,59,0.5); }
-    .active-now .tl-dot-micro { animation: breath 2s infinite ease-in-out; }
-
-    .interval-col { padding-left: 15px; flex-grow: 1; display: flex; align-items: center; }
-    .interval { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; line-height: 1; }
-    .interval-icon { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; }
-    .interval-icon svg { width: 100%; height: 100%; display: block; }
-    .interval.off { color: var(--c-red); }
-    .interval.on { color: var(--c-yellow); }
-    .interval.emergency { color: var(--c-red); }
-
-    .waiting-block { text-align: center; padding: 30px 20px; color: #888; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-
-    /* Драматичні крапочки для очікування */
-    .spinner-dots::after {
-        content: ''; animation: dots 1.5s steps(4, end) infinite;
-    }
-    @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } 100% { content: ''; } }
-
-    .fade-dots {
-        display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 15px; opacity: 0.5;
-    }
-    .fade-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; }
-    .fade-dot:nth-child(1) { opacity: 0.8; }
-    .fade-dot:nth-child(2) { opacity: 0.5; }
-    .fade-dot:nth-child(3) { opacity: 0.2; }
-
-    .app-footer { margin-top: 10px; padding: 25px 20px 40px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center; }
-    .footer-links { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }
-    .f-link { color: #aaa; text-decoration: none; font-size: 13px; font-weight: 700; background: rgba(255,255,255,0.06); padding: 11px 18px; border-radius: 14px; transition: 0.2s; display: flex; align-items: center; gap: 7px; border: 1px solid rgba(255,255,255,0.07); }
-    .f-link:active { background: rgba(255,255,255,0.12); color: #fff; }
-    .f-link svg { flex-shrink: 0; }
-
-    .disclaimer-box { display: flex; align-items: flex-start; text-align: left; gap: 8px; font-size: 13px; color: #777; line-height: 1.4; font-weight: 500; background: rgba(255,255,255,0.03); padding: 12px 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
-    .source-text { font-size: 12px; color: #666; font-weight: 500; }
-
-    .loader { text-align: center; color: #888; margin-top: 50px; font-weight: bold; }
-</style>
-
-
-
+    <style>
+        :root { --c-yellow: #fbbf24; --c-red: #d9463b; --c-dark: #060606; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--c-dark); color: #ffffff; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        .sticky-header { position: sticky; top: 0; left: 0; width: 100%; background: rgba(6, 6, 6, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 100; padding: 15px 20px; box-sizing: border-box; border-bottom: 1px solid rgba(255,255,255,0.08); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .branding { display: flex; align-items: center; gap: 8px; }
+        .logo-img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #ffffff; border: 1px solid #eee; padding: 2px; box-sizing: border-box; }
+        .app-title { font-size: 20px; font-weight: 900; letter-spacing: 0.5px; margin: 0; display: flex; align-items: center; gap: 6px; }
+        .app-title svg { fill: var(--c-yellow); width: 22px; height: 22px; margin-top: -2px; }
+        .date-badge { background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 12px; font-weight: 800; color: var(--c-yellow); font-size: 13px; text-transform: uppercase; }
+        .dashboard { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
+        .status-box { display: flex; flex-direction: column; gap: 8px; justify-content: flex-end; }
+        .status-label { font-size: 12px; color: #888; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; letter-spacing: 0.5px; margin-bottom: 2px; }
+        .status-value { display: flex; align-items: center; gap: 6px; font-size: 18px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+        .live-dot { display: inline-block; width: 8px; height: 8px; background-color: var(--c-red); border-radius: 50%; margin-right: 6px; animation: blinkFast 1.5s infinite; }
+        @keyframes blinkFast { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+        .timer-box { text-align: right; }
+        .timer-label { font-size: 12px; color: #888; font-weight: 700; text-transform: uppercase; margin-bottom: 2px; }
+        .timer-time { font-size: 34px; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -1px; }
+        .timer-time.off { color: var(--c-red); text-shadow: 0 0 15px rgba(217, 70, 59, 0.4); }
+        .timer-time.on { color: var(--c-yellow); text-shadow: 0 0 15px rgba(251, 191, 36, 0.4); }
+        #timelineContainer { padding: 20px; display: flex; flex-direction: column; gap: 0; min-height: 60vh; position: relative; }
+        @keyframes pulseGlow { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.05); background: rgba(255,255,255,0.02); } 50% { box-shadow: 0 0 20px 0 rgba(255,255,255,0.08); background: rgba(255,255,255,0.06); } 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); background: rgba(255,255,255,0.02); } }
+        @keyframes pulseGlowRed { 0% { box-shadow: 0 0 0 0 rgba(217,70,59,0.1); background: rgba(217,70,59,0.04); } 50% { box-shadow: 0 0 20px 0 rgba(217,70,59,0.15); background: rgba(217,70,59,0.08); } 100% { box-shadow: 0 0 0 0 rgba(217,70,59,0); background: rgba(217,70,59,0.04); } }
+        @keyframes breath { 0% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0.7; } }
+        .tl-item { display: flex; flex-direction: column; z-index: 2; position: relative; padding: 10px 0; transition: 0.3s ease; border-radius: 16px; margin-bottom: -5px; }
+        .tl-item.active-now { animation: pulseGlow 2.5s infinite; padding: 15px 10px; margin: 5px -10px; border: 1px solid rgba(255,255,255,0.05); overflow: visible; }
+        .tl-item.active-now.emergency-active { animation: pulseGlowRed 2.5s infinite; border-color: rgba(217,70,59,0.15); }
+        .tl-item.past-interval { opacity: 0.35; filter: grayscale(0.8); transition: all 0.2s ease; cursor: pointer; }
+        .tl-item.past-interval:active { opacity: 1; filter: none; }
+        .tl-head { display: flex; align-items: center; min-height: 40px; position: relative; z-index: 2; padding-right: 65px; }
+        .time-col { width: 70px; text-align: right; padding-right: 15px; font-weight: 800; font-size: 20px; flex-shrink: 0; line-height: 1; margin: 0; letter-spacing: -0.5px; }
+        .time-col.off { color: var(--c-red); }
+        .time-col.on { color: var(--c-yellow); text-shadow: 0 0 10px rgba(251, 191, 36, 0.4); }
+        .time-col.emergency { color: var(--c-red); }
+        .icon-node { display: flex; flex-direction: column; align-items: center; width: 40px; flex-shrink: 0; }
+        .icon-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #111; border: 1px solid #222; z-index: 3; position: relative; }
+        .icon-house { width: 22px; height: 22px; }
+        .on .icon-house { fill: var(--c-yellow); filter: drop-shadow(0 0 5px var(--c-yellow)); }
+        .off .icon-house, .emergency .icon-house { fill: #555; }
+        .badge-col { padding-left: 15px; flex-grow: 1; display: flex; align-items: center; }
+        .badge { display: flex; align-items: center; justify-content: center; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; width: max-content; line-height: 1; text-transform: uppercase; gap: 6px; }
+        .badge.off { background: #1a1a1c; border: 1px solid #333; color: #a1a1aa; }
+        .badge.on { background: rgba(251, 191, 36, 0.1); color: var(--c-yellow); border: 1px solid var(--c-yellow); }
+        .badge.emergency { background: rgba(217,70,59,0.15); color: var(--c-red); border: 1px solid var(--c-red); }
+        .badge-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .badge-modifier { font-size: 12px; font-weight: 800; text-transform: uppercase; }
+        .badge-modifier.rescued { color: var(--c-yellow); }
+        .badge-modifier.emergency { color: var(--c-red); }
+        .now-badge { position: absolute; top: -4px; right: 0px; background: #fff; color: #000; padding: 2px 6px; border-radius: 5px; font-size: 8px; font-weight: 900; letter-spacing: 0.5px; box-shadow: 0 0 10px rgba(255,255,255,0.4); animation: pulseBadge 2s infinite; z-index: 10; }
+        .emergency-active .now-badge { background: var(--c-red); color: #fff; box-shadow: 0 0 10px rgba(217,70,59,0.5); }
+        @keyframes pulseBadge { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .tl-body { display: flex; align-items: stretch; min-height: 50px; position: relative; z-index: 1; }
+        .line-node { display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; width: 40px; flex-shrink: 0; padding: 10px 0; margin: 0; }
+        .tl-dot-micro { width: 6px; height: 6px; border-radius: 50%; opacity: 0.9; flex-shrink: 0; margin: 3px 0; }
+        .tl-dot-micro.on { background: var(--c-yellow); box-shadow: 0 0 4px rgba(251, 191, 36, 0.5); }
+        .tl-dot-micro.off { background: #555; }
+        .tl-dot-micro.emergency { background: var(--c-red); box-shadow: 0 0 4px rgba(217,70,59,0.5); }
+        .active-now .tl-dot-micro { animation: breath 2s infinite ease-in-out; }
+        .interval-col { padding-left: 15px; flex-grow: 1; display: flex; align-items: center; }
+        .interval { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 700; line-height: 1; }
+        .interval-icon { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; }
+        .interval-icon svg { width: 100%; height: 100%; display: block; }
+        .interval.off { color: var(--c-red); }
+        .interval.on { color: var(--c-yellow); }
+        .interval.emergency { color: var(--c-red); }
+        .waiting-block { text-align: center; padding: 30px 20px; color: #888; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .spinner-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
+        @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } 100% { content: ''; } }
+        .fade-dots { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 15px; opacity: 0.5; }
+        .fade-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; }
+        .fade-dot:nth-child(1) { opacity: 0.8; }
+        .fade-dot:nth-child(2) { opacity: 0.5; }
+        .fade-dot:nth-child(3) { opacity: 0.2; }
+        .app-footer { margin-top: 10px; padding: 25px 20px 40px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center; }
+        .footer-links { display: flex; justify-content: center; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }
+        .f-link { color: #aaa; text-decoration: none; font-size: 13px; font-weight: 700; background: rgba(255,255,255,0.06); padding: 11px 18px; border-radius: 14px; transition: 0.2s; display: flex; align-items: center; gap: 7px; border: 1px solid rgba(255,255,255,0.07); }
+        .f-link:active { background: rgba(255,255,255,0.12); color: #fff; }
+        .f-link svg { flex-shrink: 0; }
+        .disclaimer-box { display: flex; align-items: flex-start; text-align: left; gap: 8px; font-size: 13px; color: #777; line-height: 1.4; font-weight: 500; background: rgba(255,255,255,0.03); padding: 12px 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .source-text { font-size: 12px; color: #666; font-weight: 500; }
+        .loader { text-align: center; color: #888; margin-top: 50px; font-weight: bold; }
+    </style>
 </head>
 <body ontouchstart="">
 
@@ -179,7 +103,7 @@
                     ВАЛКИ
                 </h1>
             </div>
-            <div class="date-badge" id="dateDisplay">СЬОГОДНІ</div>
+            <div class="date-badge" id="dateDisplay">ОЧІКУЄМО</div>
         </div>
         <div class="dashboard">
             <div class="status-box">
@@ -193,33 +117,29 @@
         </div>
     </div>
 
+    <div id="timelineContainer"></div>
 
-<div id="timelineContainer"></div>
-
-<div class="app-footer">
-    <div class="footer-links">
-        <a href="https://t.me/share/url?url=t.me/valkyelectrifybot/electric&text=💡%20Актуальний%20графік%20відключень%20світла%20у%20Валках" class="f-link" target="_blank">
-    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-    Поділитися
-</a>
-<a href="https://t.me/valkychat" class="f-link" target="_blank">
-    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    Чат
-</a>
-<a href="https://t.me/valkybazar" class="f-link" target="_blank">
-    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-    Базарчик
-</a>
-
+    <div class="app-footer">
+        <div class="footer-links">
+            <a href="https://t.me/share/url?url=t.me/valkyelectrifybot/electric&text=💡%20Актуальний%20графік%20відключень%20світла%20у%20Валках" class="f-link" target="_blank">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                Поділитися
+            </a>
+            <a href="https://t.me/valkychat" class="f-link" target="_blank">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Чат
+            </a>
+            <a href="https://t.me/valkybazar" class="f-link" target="_blank">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                Базарчик
+            </a>
+        </div>
+        <div class="disclaimer-box">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <div>Фактичний час і тривалість відключень можуть змінюватися залежно від стану енергосистеми.</div>
+        </div>
+        <div class="source-text"><b>Джерело:</b><br>Харківобленерго</div>
     </div>
-    <div class="disclaimer-box">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-        <div>Фактичний час і тривалість відключень можуть змінюватися залежно від стану енергосистеми.</div>
-    </div>
-    <div class="source-text"><b>Джерело:</b><br>Харківобленерго</div>
-</div>
-
-
 </div>
 
 <script>
@@ -238,8 +158,7 @@
     const statusIconOn = `<svg viewBox="0 0 24 24" width="16" height="16" fill="var(--c-yellow)"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
     const statusIconOff = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--c-red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"></line><path d="M8.5 8.5L3 14h9l-1 8 5.5-5.5"></path><path d="M16 10h5l-1.5 1.5"></path><path d="M12.4 6.6L13 2l-2.6 2.6"></path></svg>`;
 
-    let globalIntervals = [];
-    let emergencyData = null;
+    let dbDays = {};
     let initialScrollDone = false;
 
     function timeToMins(t) {
@@ -254,9 +173,14 @@
             const result = await response.json();
             const data = result.record;
 
-            document.getElementById('dateDisplay').textContent = data.date;
-            globalIntervals = data.intervals || [];
-            emergencyData = data.emergency || { active: false };
+            if (data.days && Object.keys(data.days).length > 0) {
+                dbDays = data.days;
+            } else if (data.intervals) { // Fallback для старого формату (якщо ще не оновили)
+                const fallbackDate = data.date || "СЬОГОДНІ";
+                dbDays = { [fallbackDate]: { intervals: data.intervals, emergency: data.emergency } };
+            } else {
+                dbDays = {};
+            }
 
             document.getElementById('loader').style.display = 'none';
             document.getElementById('app').style.display = 'block';
@@ -267,17 +191,14 @@
         }
     }
 
-    function buildDisplayIntervals() {
-        if (!emergencyData || !emergencyData.active) {
-            return globalIntervals;
-        }
+    function buildDisplayIntervals(intervals, emergencyData) {
+        if (!emergencyData || !emergencyData.active) return intervals;
 
         const emStart = timeToMins(emergencyData.start);
         const emEnd = emergencyData.end ? timeToMins(emergencyData.end) : 1440;
-
         let result = [];
 
-        globalIntervals.forEach(int => {
+        intervals.forEach(int => {
             if (int.endMin <= emStart || int.startMin >= emEnd) {
                 result.push(int);
                 return;
@@ -290,28 +211,61 @@
             }
         });
 
-        result.push({
-            startMin: emStart,
-            endMin: emEnd,
-            startStr: emergencyData.start,
-            displayEndStr: emergencyData.end || "??:??",
-            type: 'off',
-            isEmergencyBlock: true
-        });
-
+        result.push({ startMin: emStart, endMin: emEnd, startStr: emergencyData.start, displayEndStr: emergencyData.end || "??:??", type: 'off', isEmergencyBlock: true });
         result.sort((a, b) => a.startMin - b.startMin);
         return result;
     }
 
-    function renderTimeline(currentMins) {
+    function renderAllDays(currentMins) {
         const container = document.getElementById('timelineContainer');
+        const dates = Object.keys(dbDays).sort();
 
-        if (globalIntervals.length === 0) {
+        if (dates.length === 0) {
             container.innerHTML = `<div class="waiting-block">⏳ Очікуємо на графік від Обленерго</div>`;
             return;
         }
 
-        const displayIntervals = buildDisplayIntervals();
+        let fullHtml = '';
+
+        dates.forEach((dateStr, index) => {
+            const dayData = dbDays[dateStr];
+            const isToday = (index === 0);
+
+            if (!isToday) {
+                fullHtml += `
+                    <div class="section-divider" style="margin: 40px 0 20px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
+                        <div style="font-size: 11px; font-weight: 900; color: #888; text-transform: uppercase; letter-spacing: 1px;">ГРАФІК НА ${dateStr}</div>
+                        <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
+                    </div>`;
+            }
+
+            fullHtml += generateDayHtml(dayData.intervals, dayData.emergency, currentMins, isToday);
+        });
+
+        if (dates.length === 1) {
+            fullHtml += `
+                <div class="fade-dots" style="margin-top:20px;">
+                    <div class="fade-dot"></div><div class="fade-dot"></div><div class="fade-dot"></div>
+                </div>
+                <div class="waiting-block" style="padding-top:10px;">
+                    ⚡ Очікуємо графік на завтра<span class="spinner-dots"></span>
+                </div>`;
+        }
+
+        container.innerHTML = fullHtml;
+
+        if (!initialScrollDone) {
+            setTimeout(() => {
+                const activeEl = document.querySelector('.active-now');
+                if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                initialScrollDone = true;
+            }, 300);
+        }
+    }
+
+    function generateDayHtml(rawIntervals, emergency, currentMins, isToday) {
+        const displayIntervals = buildDisplayIntervals(rawIntervals, emergency);
         let html = '';
 
         displayIntervals.forEach((int, i) => {
@@ -319,21 +273,18 @@
             const isVisuallyOn = int.type === 'on' && !isEmergency;
             const stateClass = isEmergency ? 'emergency' : (isVisuallyOn ? 'on' : 'off');
 
-            const isActive = (currentMins >= int.startMin && currentMins < int.endMin);
-            const isPast = (currentMins >= int.endMin);
-            const isFuture = (currentMins < int.startMin);
+            const isActive = isToday && (currentMins >= int.startMin && currentMins < int.endMin);
+            const isPast = isToday && (currentMins >= int.endMin);
+            const isFuture = !isToday || (currentMins < int.startMin);
 
             let classes = `tl-item ${stateClass}`;
-            if (isActive) {
-                classes += ' active-now';
-                if (isEmergency) classes += ' emergency-active';
-            }
+            if (isActive) { classes += ' active-now'; if (isEmergency) classes += ' emergency-active'; }
             if (isPast) classes += ' past-interval';
 
             let badgeHtml = '';
             let intervalTextStyle = '';
 
-                       if (isEmergency) {
+            if (isEmergency) {
                 badgeHtml = `<div class="badge-row"><div class="badge emergency">${iconWarning} АВАРІЙНЕ</div></div>`;
             } else if (int.type === 'off') {
                 if (int.isModified) {
@@ -343,7 +294,6 @@
                 } else {
                     badgeHtml = `<div class="badge-row"><div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div></div>`;
                 }
-
             } else if (int.type === 'on') {
                 if (int.isModified) {
                     let statusText = isPast ? "ВІДКЛЮЧАЛИ" : (isActive ? "НЕМА СВІТЛА" : "СКАСОВАНО");
@@ -360,14 +310,11 @@
             let dotsHtml = '';
             if (i < displayIntervals.length - 1) {
                 let durationMins = int.endMin - int.startMin;
-                let fullDots = Math.floor(durationMins / 60);
-                for (let d = 0; d < fullDots; d++) {
-                    dotsHtml += `<div class="tl-dot-micro ${stateClass}"></div>`;
-                }
+                let numDots = Math.max(1, Math.floor(durationMins / 60));
+                for (let d = 0; d < numDots; d++) dotsHtml += `<div class="tl-dot-micro ${stateClass}"></div>`;
             }
 
             const timeColClass = isEmergency ? 'emergency' : stateClass;
-            
             let nowIndicator = isActive ? `<div class="now-badge">ЗАРАЗ</div>` : '';
 
             html += `
@@ -389,30 +336,8 @@
                     </div>
                 </div>
             </div>`;
-
         });
-
-                const lastInt = displayIntervals[displayIntervals.length - 1];
-        if (lastInt && lastInt.endMin < 1440) {
-            html += `
-            <div class="fade-dots">
-                <div class="fade-dot"></div><div class="fade-dot"></div><div class="fade-dot"></div>
-            </div>
-            <div class="waiting-block">
-                ⚡ Очікуємо графік на завтра<span class="spinner-dots"></span>
-            </div>`;
-        }
-
-
-        container.innerHTML = html;
-
-        if (!initialScrollDone) {
-            setTimeout(() => {
-                const activeEl = document.querySelector('.active-now');
-                if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                initialScrollDone = true;
-            }, 300);
-        }
+        return html;
     }
 
     function startTimerAndRender() {
@@ -423,7 +348,29 @@
             const currentMins = now.getHours() * 60 + now.getMinutes();
             const currentSecs = now.getSeconds();
 
-            const emActive = emergencyData && emergencyData.active;
+            const dates = Object.keys(dbDays).sort();
+            const todayStr = dates[0];
+            
+            const timerDisplay = document.getElementById('timerDisplay');
+            const timerLabel = document.getElementById('timerLabel');
+            const timerStatus = document.getElementById('timerStatus');
+            const dateDisplay = document.getElementById('dateDisplay');
+
+            if (!todayStr) {
+                dateDisplay.textContent = "ОЧІКУЄМО";
+                timerDisplay.textContent = "--:--:--";
+                timerLabel.textContent = "Очікування";
+                timerStatus.innerHTML = `${iconBulb} Немає даних`;
+                timerStatus.style.color = '#888';
+                return;
+            }
+
+            dateDisplay.textContent = todayStr;
+            const todayData = dbDays[todayStr];
+            const todayIntervals = todayData.intervals || [];
+            const emergencyData = todayData.emergency || { active: false };
+
+            const emActive = emergencyData.active;
             const emStart = emActive ? timeToMins(emergencyData.start) : null;
             const emEnd = emActive && emergencyData.end ? timeToMins(emergencyData.end) : null;
 
@@ -437,8 +384,8 @@
                 return 'on';
             };
 
-            for (let i = 0; i < globalIntervals.length; i++) {
-                let int = globalIntervals[i];
+            for (let i = 0; i < todayIntervals.length; i++) {
+                let int = todayIntervals[i];
                 if (currentMins >= int.startMin && currentMins < int.endMin) {
                     currentIntIndex = i;
                     currentState = getRealState(int);
@@ -446,38 +393,27 @@
                 }
             }
 
-if (emActive && emStart !== null && currentMins >= emStart && (emEnd === null || currentMins < emEnd)) {
-    currentState = 'off';
-    nextEventMins = emEnd;
-} else if (emActive && emEnd !== null && currentMins >= emEnd) {
-    emergencyData = { active: false };
-} else if (!emActive && currentIntIndex !== -1) {
-    for (let i = currentIntIndex + 1; i < globalIntervals.length; i++) {
-        let nextInt = globalIntervals[i];
-        if (getRealState(nextInt) !== currentState) {
-            nextEventMins = nextInt.startMin;
-            break;
-        }
-    }
-}
-
+            if (emActive && emStart !== null && currentMins >= emStart && (emEnd === null || currentMins < emEnd)) {
+                currentState = 'off';
+                nextEventMins = emEnd;
+            } else if (emActive && emEnd !== null && currentMins >= emEnd) {
+                emergencyData.active = false;
+            } else if (!emActive && currentIntIndex !== -1) {
+                for (let i = currentIntIndex + 1; i < todayIntervals.length; i++) {
+                    let nextInt = todayIntervals[i];
+                    if (getRealState(nextInt) !== currentState) {
+                        nextEventMins = nextInt.startMin;
+                        break;
+                    }
+                }
+            }
 
             if (currentIntIndex !== lastRenderedIntervalIndex || lastRenderedIntervalIndex === -1) {
-                renderTimeline(currentMins);
+                renderAllDays(currentMins);
                 lastRenderedIntervalIndex = currentIntIndex;
             }
 
-            const timerDisplay = document.getElementById('timerDisplay');
-            const timerLabel = document.getElementById('timerLabel');
-            const timerStatus = document.getElementById('timerStatus');
-
-            if (globalIntervals.length === 0) {
-                timerDisplay.textContent = "--:--:--";
-                timerLabel.textContent = "Очікування";
-                timerStatus.innerHTML = `${iconBulb} Немає даних`;
-                timerStatus.style.color = '#888';
-                return;
-            }
+            if (todayIntervals.length === 0) return;
 
             if (nextEventMins !== null) {
                 let diffMins = nextEventMins - currentMins - 1;
@@ -522,6 +458,5 @@ if (emActive && emStart !== null && currentMins >= emStart && (emEnd === null ||
 
     fetchData();
 </script>
-
 </body>
 </html>
