@@ -327,22 +327,23 @@
             let badgeHtml = '';
             let intervalTextStyle = '';
 
-                        let nowIndicator = isActive ? `<div class="now-badge">ЗАРАЗ</div>` : '';
+                                    let nowIndicator = isActive ? `<div class="now-badge">ЗАРАЗ</div>` : '';
             
             if (isEmergency) {
-                badgeHtml = `<div class="badge-row"><div class="badge emergency">${iconWarning} АВАРІЙНЕ</div>${nowIndicator}</div>`;
+                badgeHtml = `<div class="badge-row"><div class="badge emergency">${iconWarning} АВАРІЙНЕ</div></div>${nowIndicator}`;
             } else if (int.type === 'off') {
                 if (int.isModified) {
                     let statusText = isPast ? "💡 СВІТЛО БУЛО" : (isActive ? "💡 Є СВІТЛО" : "💡 СКАСОВАНО");
-                    badgeHtml = `<div class="badge-row"><div class="badge off" style="text-decoration: line-through; opacity: 0.5;">${iconBan} ВІДКЛЮЧЕННЯ</div><span class="badge-modifier rescued">${statusText}</span>${nowIndicator}</div>`;
+                    badgeHtml = `<div class="badge-row"><div class="badge off" style="text-decoration: line-through; opacity: 0.5;">${iconBan} ВІДКЛЮЧЕННЯ</div><span class="badge-modifier rescued">${statusText}</span></div>${nowIndicator}`;
                     intervalTextStyle = `color: rgba(251, 191, 36, 0.7); text-decoration: line-through;`;
                 } else {
-                    badgeHtml = `<div class="badge-row"><div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div>${nowIndicator}</div>`;
+                    badgeHtml = `<div class="badge-row"><div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div></div>${nowIndicator}`;
                 }
             } else {
                 let lightText = isFuture ? "СВІТЛО" : "СВІТЛО Є";
-                badgeHtml = `<div class="badge-row"><div class="badge on">${iconLightningSVG} ${lightText}</div>${nowIndicator}</div>`;
+                badgeHtml = `<div class="badge-row"><div class="badge on">${iconLightningSVG} ${lightText}</div></div>${nowIndicator}`;
             }
+
 
 
             const intIcon = isEmergency ? iconZapOff : (isVisuallyOn ? iconBulb : iconZapOff);
