@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 
 <html lang="uk">
@@ -396,21 +397,21 @@
                 }
             }
 
-            if (emActive && emStart !== null && currentMins >= emStart && (emEnd === null || currentMins < emEnd)) {
+if (emActive && emStart !== null && currentMins >= emStart && (emEnd === null || currentMins < emEnd)) {
     currentState = 'off';
     nextEventMins = emEnd;
 } else if (emActive && emEnd !== null && currentMins >= emEnd) {
     emergencyData = { active: false };
+} else if (!emActive && currentIntIndex !== -1) {
+    for (let i = currentIntIndex + 1; i < globalIntervals.length; i++) {
+        let nextInt = globalIntervals[i];
+        if (getRealState(nextInt) !== currentState) {
+            nextEventMins = nextInt.startMin;
+            break;
+        }
+    }
 }
-            } else if (!emActive && currentIntIndex !== -1) {
-                for (let i = currentIntIndex + 1; i < globalIntervals.length; i++) {
-                    let nextInt = globalIntervals[i];
-                    if (getRealState(nextInt) !== currentState) {
-                        nextEventMins = nextInt.startMin;
-                        break;
-                    }
-                }
-            }
+
 
             if (currentIntIndex !== lastRenderedIntervalIndex || lastRenderedIntervalIndex === -1) {
                 renderTimeline(currentMins);
