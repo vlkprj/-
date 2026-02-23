@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 
 <html lang="uk">
@@ -65,7 +66,8 @@
     .tl-item.active-now { animation: pulseGlow 2.5s infinite; padding: 15px 10px; margin: 5px -10px; border: 1px solid rgba(255,255,255,0.05); }
     .tl-item.active-now.emergency-active { animation: pulseGlowRed 2.5s infinite; border-color: rgba(217,70,59,0.15); }
     .tl-item.active-now::before { content: 'ЗАРАЗ'; position: absolute; right: 15px; top: 15px; font-size: 10px; font-weight: 900; background: #fff; color: #000; padding: 3px 8px; border-radius: 8px; letter-spacing: 0.5px; }
-    .tl-item.active-now.emergency-active::before { background: var(--c-red); color: #fff; content: '⛔️ ЗАРАЗ'; }
+
+.tl-item.active-now.emergency-active::before { background: #fff; color: var(--c-red); content: '⛔️ ЗАРАЗ'; }
     .tl-item.past-interval { opacity: 0.35; filter: grayscale(0.8); transition: all 0.2s ease; cursor: pointer; }
     .tl-item.past-interval:active { opacity: 1; filter: none; }
 
@@ -80,7 +82,8 @@
     .icon-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #111; border: 1px solid #222; z-index: 3; position: relative; }
     .icon-house { width: 22px; height: 22px; }
     .on .icon-house { fill: var(--c-yellow); filter: drop-shadow(0 0 5px var(--c-yellow)); }
-    .off .icon-house, .emergency-item .icon-house { fill: #555; }
+.off .icon-house, .emergency .icon-house { fill: #555; }
+
 
     .badge-col { padding-left: 15px; flex-grow: 1; display: flex; align-items: center; }
     .badge { display: flex; align-items: center; justify-content: center; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; letter-spacing: 0.5px; width: max-content; line-height: 1; text-transform: uppercase; gap: 6px; }
@@ -282,7 +285,7 @@
             let intervalTextStyle = '';
 
             if (isEmergency) {
-                badgeHtml = `<div class="badge emergency">${iconWarning} ⛔️ АВАРІЙНЕ</div>`;
+                badgeHtml = `<div class="badge emergency">${iconWarning} АВАРІЙНЕ</div>`;
             } else if (int.type === 'off') {
                 if (int.isModified) {
                     let statusText = isPast ? "💡 СВІТЛО БУЛО" : (isActive ? "💡 Є СВІТЛО" : "💡 СКАСОВАНО");
