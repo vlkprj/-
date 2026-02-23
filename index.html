@@ -159,6 +159,7 @@
     const statusIconOff = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--c-red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"></line><path d="M8.5 8.5L3 14h9l-1 8 5.5-5.5"></path><path d="M16 10h5l-1.5 1.5"></path><path d="M12.4 6.6L13 2l-2.6 2.6"></path></svg>`;
 
     let dbDays = {};
+    let activeDates = []; // Залізобетонний порядок днів
     let initialScrollDone = false;
 
     function timeToMins(t) {
@@ -169,22 +170,37 @@
 
     async function fetchData() {
         try {
-          
-const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocache=${new Date().getTime()}`, { 
-    cache: 'no-store',
-    headers: { 'Pragma': 'no-cache' } 
-});
-
+            const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocache=${new Date().getTime()}`, { 
+                cache: 'no-store', headers: { 'Pragma': 'no-cache' } 
+            });
             const result = await response.json();
             const data = result.record;
 
-            if (data.days && Object.keys(data.days).length > 0) {
-                dbDays = data.days;
-            } else if (data.intervals) { // Fallback для старого формату (якщо ще не оновили)
+            // Генеруємо правильні дати на сьогодні і завтра (захист від багу 1 березня)
+            const months = ["СІЧНЯ", "ЛЮТОГО", "БЕРЕЗНЯ", "КВІТНЯ", "ТРАВНЯ", "ЧЕРВНЯ", "ЛИПНЯ", "СЕРПНЯ", "ВЕРЕСНЯ", "ЖОВТНЯ", "ЛИСТОПАДА", "ГРУДНЯ"];
+            const today = new Date();
+            const todayStr = `${today.getDate()} ${months[today.getMonth()]}`;
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowStr = `${tomorrow.getDate()} ${months[tomorrow.getMonth()]}`;
+
+            dbDays = {};
+            activeDates = [];
+
+            if (data.days) {
+                // Беремо тільки актуальні дні
+                if (data.days[todayStr]) {
+                    dbDays[todayStr] = data.days[todayStr];
+                    activeDates.push(todayStr);
+                }
+                if (data.days[tomorrowStr]) {
+                    dbDays[tomorrowStr] = data.days[tomorrowStr];
+                    activeDates.push(tomorrowStr);
+                }
+            } else if (data.intervals) { 
                 const fallbackDate = data.date || "СЬОГОДНІ";
                 dbDays = { [fallbackDate]: { intervals: data.intervals, emergency: data.emergency } };
-            } else {
-                dbDays = {};
+                activeDates.push(fallbackDate);
             }
 
             document.getElementById('loader').style.display = 'none';
@@ -198,24 +214,14 @@ const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocac
 
     function buildDisplayIntervals(intervals, emergencyData) {
         if (!emergencyData || !emergencyData.active) return intervals;
-
         const emStart = timeToMins(emergencyData.start);
         const emEnd = emergencyData.end ? timeToMins(emergencyData.end) : 1440;
         let result = [];
-
         intervals.forEach(int => {
-            if (int.endMin <= emStart || int.startMin >= emEnd) {
-                result.push(int);
-                return;
-            }
-            if (int.startMin < emStart) {
-                result.push({ ...int, endMin: emStart, displayEndStr: emergencyData.start });
-            }
-            if (int.endMin > emEnd) {
-                result.push({ ...int, startMin: emEnd, startStr: emergencyData.end });
-            }
+            if (int.endMin <= emStart || int.startMin >= emEnd) { result.push(int); return; }
+            if (int.startMin < emStart) result.push({ ...int, endMin: emStart, displayEndStr: emergencyData.start });
+            if (int.endMin > emEnd) result.push({ ...int, startMin: emEnd, startStr: emergencyData.end });
         });
-
         result.push({ startMin: emStart, endMin: emEnd, startStr: emergencyData.start, displayEndStr: emergencyData.end || "??:??", type: 'off', isEmergencyBlock: true });
         result.sort((a, b) => a.startMin - b.startMin);
         return result;
@@ -223,16 +229,15 @@ const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocac
 
     function renderAllDays(currentMins) {
         const container = document.getElementById('timelineContainer');
-        const dates = Object.keys(dbDays).sort();
 
-        if (dates.length === 0) {
+        if (activeDates.length === 0) {
             container.innerHTML = `<div class="waiting-block">⏳ Очікуємо на графік від Обленерго</div>`;
             return;
         }
 
         let fullHtml = '';
 
-        dates.forEach((dateStr, index) => {
+        activeDates.forEach((dateStr, index) => {
             const dayData = dbDays[dateStr];
             const isToday = (index === 0);
 
@@ -244,11 +249,10 @@ const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocac
                         <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
                     </div>`;
             }
-
             fullHtml += generateDayHtml(dayData.intervals, dayData.emergency, currentMins, isToday);
         });
 
-        if (dates.length === 1) {
+        if (activeDates.length === 1) {
             fullHtml += `
                 <div class="fade-dots" style="margin-top:20px;">
                     <div class="fade-dot"></div><div class="fade-dot"></div><div class="fade-dot"></div>
@@ -270,7 +274,7 @@ const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocac
     }
 
     function generateDayHtml(rawIntervals, emergency, currentMins, isToday) {
-        const displayIntervals = buildDisplayIntervals(rawIntervals, emergency);
+        const displayIntervals = buildDisplayIntervals(rawIntervals || [], emergency);
         let html = '';
 
         displayIntervals.forEach((int, i) => {
@@ -353,13 +357,12 @@ const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocac
             const currentMins = now.getHours() * 60 + now.getMinutes();
             const currentSecs = now.getSeconds();
 
-            const dates = Object.keys(dbDays).sort();
             const dateDisplay = document.getElementById('dateDisplay');
             const timerDisplay = document.getElementById('timerDisplay');
             const timerLabel = document.getElementById('timerLabel');
             const timerStatus = document.getElementById('timerStatus');
 
-            if (dates.length === 0) {
+            if (activeDates.length === 0) {
                 dateDisplay.textContent = "ОЧІКУЄМО";
                 timerDisplay.textContent = "--:--:--";
                 timerLabel.textContent = "Очікування";
@@ -368,11 +371,10 @@ const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocac
                 return;
             }
 
-            dateDisplay.textContent = dates[0]; // Завжди показуємо поточний день
+            dateDisplay.textContent = activeDates[0];
 
-            // Зшиваємо всі дні в одну часову лінію (0 - 2880+ хвилин)
             let combinedIntervals = [];
-            dates.forEach((dateStr, dayIndex) => {
+            activeDates.forEach((dateStr, dayIndex) => {
                 const dayData = dbDays[dateStr];
                 const offset = dayIndex * 1440; 
                 const displayInts = buildDisplayIntervals(dayData.intervals || [], dayData.emergency || {active:false});
@@ -391,14 +393,12 @@ const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocac
                 });
             });
 
-            // Шукаємо, де ми знаходимось зараз у цій 48-годинній лінії
             let currentIntIndex = combinedIntervals.findIndex(int => currentMins >= int.startMinAbs && currentMins < int.endMinAbs);
             let currentState = 'on';
             let nextEventMinsAbs = null;
 
             if (currentIntIndex !== -1) {
                 currentState = combinedIntervals[currentIntIndex].realState;
-                // Шукаємо найближчу зміну стану, навіть якщо вона завтра
                 for (let i = currentIntIndex + 1; i < combinedIntervals.length; i++) {
                     if (combinedIntervals[i].realState !== currentState) {
                         nextEventMinsAbs = combinedIntervals[i].startMinAbs;
@@ -407,13 +407,11 @@ const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocac
                 }
             }
 
-            // Перемальовуємо таймлайн, тільки якщо перейшли в інший блок
             if (currentIntIndex !== lastRenderedIntervalIndex || lastRenderedIntervalIndex === -1) {
                 renderAllDays(currentMins);
                 lastRenderedIntervalIndex = currentIntIndex;
             }
 
-            // Оновлюємо UI статусу (тепер без "Оновлення даних")
             if (currentState === 'off') {
                 timerStatus.innerHTML = `${statusIconOff} Світла немає`;
                 timerStatus.style.color = 'var(--c-red)';
@@ -426,7 +424,6 @@ const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocac
                 timerLabel.textContent = 'До відключення:';
             }
 
-            // Математика таймера
             if (nextEventMinsAbs !== null) {
                 let diffMins = nextEventMinsAbs - currentMins - 1;
                 let diffSecs = 60 - currentSecs;
@@ -435,23 +432,17 @@ const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocac
                 let h = Math.floor(diffMins / 60).toString().padStart(2, '0');
                 let m = (diffMins % 60).toString().padStart(2, '0');
                 let s = diffSecs.toString().padStart(2, '0');
-
                 timerDisplay.textContent = `${h}:${m}:${s}`;
             } else {
-                // Якщо немає наступної події (напр. завтрашній графік ще не виклали)
                 timerDisplay.textContent = "--:--:--";
-                if (dates.length === 1) {
-                    timerLabel.textContent = "Очікуємо графік на завтра";
-                } else {
-                    timerLabel.textContent = "До кінця доби";
-                }
+                if (activeDates.length === 1) timerLabel.textContent = "Очікуємо графік на завтра";
+                else timerLabel.textContent = "До кінця доби";
             }
-
         }, 1000);
     }
 
-
     fetchData();
 </script>
+
 </body>
 </html>
