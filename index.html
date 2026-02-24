@@ -409,7 +409,7 @@
                         <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
                     </div>`;
             }
-            fullHtml += generateDayHtml(dayData.intervals, dayData.emergency, currentMins, isToday);
+                        fullHtml += generateDayHtml(dayData.intervals, dayData.overrides, currentMins, isToday); // <--- ТУТ ТЕПЕР OVERRIDES
         });
 
         if (activeDates.length === 1) {
@@ -443,8 +443,8 @@
     }
 
 
-    function generateDayHtml(rawIntervals, emergency, currentMins, isToday) {
-        const displayIntervals = buildDisplayIntervals(rawIntervals || [], emergency);
+    function generateDayHtml(rawIntervals, overrides, currentMins, isToday) { // <--- ТУТ ТЕЖ OVERRIDES
+        const displayIntervals = buildDisplayIntervals(rawIntervals || [], overrides);
         let html = '';
 
         displayIntervals.forEach((int, i) => {
@@ -496,9 +496,7 @@
             const timeColClass = isEmergency ? 'emergency' : stateClass;
             let nowIndicator = isActive ? `<div class="now-badge">ЗАРАЗ</div>` : '';
 
-           
-                      
-                        let adminControls = '';
+            let adminControls = '';
             if (typeof isAdmin !== 'undefined' && isAdmin) {
                 adminControls = `
                 <div style="margin-top: 12px; display: flex; gap: 8px; z-index: 10; position: relative;">
@@ -509,7 +507,8 @@
                 </div>`;
             }
 
-
+            // --- ОСЬ ТУТ МИ ВИПРАВИЛИ ЛАПКИ ДЛЯ ІКОНКИ ---
+            let infoIconHtml = int.info ? `<span onclick="alert('${int.info}')" style="margin-left:8px; cursor:pointer; opacity:0.9; font-size:16px;">ℹ️</span>` : '';
 
             html += `
             <div class="${classes}">
@@ -526,13 +525,13 @@
                         <div class="interval ${stateClass}">
                             <div class="interval-icon">${intIcon}</div>
                             <span class="interval-text" style="${intervalTextStyle}">${int.startStr} – ${int.displayEndStr}</span>
-                            ${int.info ? <span onclick="alert('${int.info}')" style="margin-left:8px; cursor:pointer; opacity:0.9; font-size:16px;">ℹ️</span> : ''}
-
+                            ${infoIconHtml}
                         </div>
                         ${adminControls}
                     </div>
                 </div>
             </div>`;
+
         });
         return html;
     }
