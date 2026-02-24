@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -220,6 +221,35 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WA
         }
     }
 
+    async function sendCleanOld() {
+        if (!confirm('Точно видалити всі застарілі дні з бази?')) return;
+        
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('loader').textContent = 'Прибираємо сміття... 🧹';
+
+        const payload = {
+            source: 'miniapp',
+            secret: tg.initDataUnsafe?.start_param || '',
+            userId: tg.initDataUnsafe?.user?.id || 0,
+            action: 'clean_old',
+            activeDates: activeDates 
+        };
+
+        try {
+            await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' }, 
+                body: JSON.stringify(payload)
+            });
+            setTimeout(fetchData, 1500);
+        } catch (e) {
+            alert('❌ Помилка: ' + e.message);
+            fetchData();
+        }
+    }
+
+
     async function fetchData() {
         try {
             const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocache=${new Date().getTime()}`, { 
@@ -314,6 +344,15 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WA
                 </div>`;
         }
 
+        if (typeof isAdmin !== 'undefined' && isAdmin) {
+            fullHtml += `
+            <div style="text-align: center; margin-top: 30px; margin-bottom: 10px;">
+                <button onclick="sendCleanOld()" style="background: rgba(217, 70, 59, 0.15); color: var(--c-red); border: 1px solid rgba(217, 70, 59, 0.3); padding: 12px 20px; border-radius: 12px; font-weight: 800; font-size: 13px; text-transform: uppercase; cursor: pointer;">
+                    🧹 Очистити старі дні
+                </button>
+            </div>`;
+        }
+
         container.innerHTML = fullHtml;
 
         if (!initialScrollDone) {
@@ -324,6 +363,7 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WA
             }, 300);
         }
     }
+
 
     function generateDayHtml(rawIntervals, emergency, currentMins, isToday) {
         const displayIntervals = buildDisplayIntervals(rawIntervals || [], emergency);
@@ -535,39 +575,3 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WA
 
 </body>
 </html>
-
-
-
-
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WAqSQUZQG84aXOYR33Xv-lDGGfIFvN4s6dfYbDpj1zxmuiE05Jltqgag/exec';
-
-    async function sendEdit(action) {
-        if (!currentEditInterval) return;
-        
-        document.getElementById('editModal').style.display = 'none';
-        document.getElementById('app').style.display = 'none';
-        document.getElementById('loader').style.display = 'block';
-        document.getElementById('loader').textContent = 'Записуємо зміни... ⚡';
-
-        const payload = {
-            source: 'miniapp',
-            secret: tg.initDataUnsafe?.start_param || '',
-            userId: tg.initDataUnsafe?.user?.id || 0,
-            date: activeDates[0],
-            action: action,
-            interval: currentEditInterval
-        };
-
-        try {
-            await fetch(GAS_WEB_APP_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain' }, 
-                body: JSON.stringify(payload)
-            });
-            
-            setTimeout(fetchData, 1500);
-        } catch (e) {
-            alert('❌ Помилка: ' + e.message);
-            fetchData();
-        }
-    }
