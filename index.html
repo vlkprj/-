@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -146,6 +147,14 @@
     const tg = window.Telegram.WebApp;
     tg.expand(); tg.setHeaderColor('#060606'); tg.setBackgroundColor('#060606');
 
+   
+
+    const startParam = tg.initDataUnsafe?.start_param || '';
+    
+    const isAdmin = startParam === 'godmode_valky';
+
+
+
     const BIN_ID = '699b325fd0ea881f40cf7aaf';
 
     const houseSvg = `<svg class="icon-house" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`;
@@ -159,7 +168,7 @@
     const statusIconOff = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--c-red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"></line><path d="M8.5 8.5L3 14h9l-1 8 5.5-5.5"></path><path d="M16 10h5l-1.5 1.5"></path><path d="M12.4 6.6L13 2l-2.6 2.6"></path></svg>`;
 
     let dbDays = {};
-    let activeDates = []; // Залізобетонний порядок днів
+    let activeDates = []; 
     let initialScrollDone = false;
 
     function timeToMins(t) {
@@ -176,7 +185,7 @@
             const result = await response.json();
             const data = result.record;
 
-            // Генеруємо правильні дати на сьогодні і завтра (захист від багу 1 березня)
+           
             const months = ["СІЧНЯ", "ЛЮТОГО", "БЕРЕЗНЯ", "КВІТНЯ", "ТРАВНЯ", "ЧЕРВНЯ", "ЛИПНЯ", "СЕРПНЯ", "ВЕРЕСНЯ", "ЖОВТНЯ", "ЛИСТОПАДА", "ГРУДНЯ"];
             const today = new Date();
             const todayStr = `${today.getDate()} ${months[today.getMonth()]}`;
@@ -326,6 +335,18 @@
             const timeColClass = isEmergency ? 'emergency' : stateClass;
             let nowIndicator = isActive ? `<div class="now-badge">ЗАРАЗ</div>` : '';
 
+           
+            let adminControls = '';
+            if (typeof isAdmin !== 'undefined' && isAdmin) {
+                adminControls = `
+                <div style="margin-top: 12px; display: flex; gap: 8px; z-index: 10; position: relative;">
+                    <button onclick="alert('Тут буде виклик попапу для редагування')" 
+                            style="background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase;">
+                        ✏️ Редагувати
+                    </button>
+                </div>`;
+            }
+
             html += `
             <div class="${classes}">
                 <div class="tl-head">
@@ -337,11 +358,12 @@
                 <div class="tl-body">
                     <div class="time-col"></div>
                     <div class="line-node">${dotsHtml}</div>
-                    <div class="interval-col">
+                    <div class="interval-col" style="flex-direction: column; align-items: flex-start; justify-content: center;">
                         <div class="interval ${stateClass}">
                             <div class="interval-icon">${intIcon}</div>
                             <span class="interval-text" style="${intervalTextStyle}">${int.startStr} – ${int.displayEndStr}</span>
                         </div>
+                        ${adminControls}
                     </div>
                 </div>
             </div>`;
