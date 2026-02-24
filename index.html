@@ -311,23 +311,35 @@
             });
         }
 
-        let merged = [];
+                let merged = [];
         let current = null;
+
         for (let i = 0; i <= 1440; i++) {
             let m = minuteMap[i];
-            let isDifferent = current && (!m || m.state !== current.state || m.isOverride !== current.isOverride || m.info !== current.info);
             
+            // Захист від пустих хвилин (якщо інфа відсутня, вважаємо, що світло є)
+            if (i < 1440 && !m) {
+                m = { state: 'on', isOverride: false, info: null };
+            }
+
+            if (i === 0) {
+                current = { startMin: i, startStr: minsToStr(i), state: m.state, isOverride: m.isOverride, info: m.info };
+                continue;
+            }
+
+            let isDifferent = i < 1440 && m && (m.state !== current.state || m.isOverride !== current.isOverride || m.info !== current.info);
+
             if (i === 1440 || isDifferent) {
-                if (current) {
-                    current.endMin = i;
-                    current.displayEndStr = minsToStr(i);
-                    merged.push(current);
-                }
+                current.endMin = i;
+                current.displayEndStr = minsToStr(i);
+                merged.push(current);
+
                 if (i < 1440) {
                     current = { startMin: i, startStr: minsToStr(i), state: m.state, isOverride: m.isOverride, info: m.info };
                 }
             }
         }
+
 
         return merged.map(m => {
             return {
