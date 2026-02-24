@@ -177,21 +177,18 @@
         return h * 60 + m;
     }
 
-    let currentEditInterval = null;
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WAqSQUZQG84aXOYR33Xv-lDGGfIFvN4s6dfYbDpj1zxmuiE05Jltqgag/exec';
 
-    function openEditModal(startStr, endStr, type) {
-        currentEditInterval = { start: startStr, end: endStr, type: type };
-
-        document.getElementById('modalTime').textContent = `${startStr} – ${endStr}`;
+    function openEditModal(startStr, endStr) {
+        document.getElementById('editStart').value = startStr;
+        document.getElementById('editEnd').value = (endStr === '00:00' || endStr === '24:00') ? '23:59' : endStr;
         document.getElementById('editModal').style.display = 'flex';
-        document.getElementById('btnCancelOutage').style.display = (type === 'off') ? 'flex' : 'none';
-        document.getElementById('btnSetEmergency').style.display = (type === 'on') ? 'flex' : 'none';
     }
 
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WAqSQUZQG84aXOYR33Xv-lDGGfIFvN4s6dfYbDpj1zxmuiE05Jltqgag/exec';
-
-    async function sendEdit(action) {
-        if (!currentEditInterval) return;
+    async function sendCustomEdit(type) {
+        let s = document.getElementById('editStart').value;
+        let e = document.getElementById('editEnd').value;
+        if (!s || !e) return alert('Вкажи обидва значення часу');
         
         document.getElementById('editModal').style.display = 'none';
         document.getElementById('app').style.display = 'none';
@@ -199,26 +196,53 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WA
         document.getElementById('loader').textContent = 'Записуємо зміни... ⚡';
 
         const payload = {
-            source: 'miniapp',
-            secret: tg.initDataUnsafe?.start_param || '',
+            source: 'miniapp', 
+            secret: tg.initDataUnsafe?.start_param || '', 
             userId: tg.initDataUnsafe?.user?.id || 0,
-            date: activeDates[0],
-            action: action,
-            interval: currentEditInterval
+            date: activeDates[0], 
+            action: 'add_override', 
+            type: type, 
+            interval: { start: s, end: e }
         };
-
         try {
-            await fetch(GAS_WEB_APP_URL, {
-                method: 'POST',
-                mode: 'no-cors', // <--- ОСЬ ЦЯ МАГІЯ
+            await fetch(GAS_WEB_APP_URL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
                 headers: { 'Content-Type': 'text/plain' }, 
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload) 
             });
-            
             setTimeout(fetchData, 1500);
-        } catch (e) {
-            alert('❌ Помилка: ' + e.message);
-            fetchData();
+        } catch (err) { 
+            alert('❌ Помилка: ' + err.message); 
+            fetchData(); 
+        }
+    }
+
+    async function sendResetDay() {
+        if(!confirm('Стерти всі ручні зміни і повернути базовий графік на сьогодні?')) return;
+        document.getElementById('editModal').style.display = 'none';
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('loader').textContent = 'Скидаємо графік... 🔄';
+        
+        const payload = { 
+            source: 'miniapp', 
+            secret: tg.initDataUnsafe?.start_param || '', 
+            userId: tg.initDataUnsafe?.user?.id || 0, 
+            date: activeDates[0], 
+            action: 'reset_day' 
+        };
+        try {
+            await fetch(GAS_WEB_APP_URL, { 
+                method: 'POST', 
+                mode: 'no-cors', 
+                headers: { 'Content-Type': 'text/plain' }, 
+                body: JSON.stringify(payload) 
+            });
+            setTimeout(fetchData, 1500);
+        } catch (err) { 
+            alert('❌ Помилка: ' + err.message); 
+            fetchData(); 
         }
     }
 
@@ -240,7 +264,7 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WA
         try {
             await fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
-                mode: 'no-cors', // <--- І ОСЬ ТУТ
+                mode: 'no-cors', 
                 headers: { 'Content-Type': 'text/plain' }, 
                 body: JSON.stringify(payload)
             });
@@ -250,7 +274,6 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WA
             fetchData();
         }
     }
-
 
 
     async function fetchData() {
@@ -304,62 +327,64 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WA
         return `${h}:${m}`;
     }
 
-    function buildDisplayIntervals(rawIntervals, emergency) {
+        function buildDisplayIntervals(rawIntervals, overrides) {
         if (!rawIntervals || rawIntervals.length === 0) return [];
         
-        let processed = rawIntervals.map(int => {
-            let type = int.planType || int.type;
-            let isMod = !!int.isModified;
-            let actualState = type; 
-            let isEmerg = false;
-
-            if (type === 'off' && isMod) actualState = 'on'; 
-            if (type === 'on' && isMod) { actualState = 'off'; isEmerg = true; } 
-
-            return {
-                startMin: int.startMin,
-                endMin: int.endMin,
-                actualState: actualState,
-                isEmerg: isEmerg,
-                originalType: type,
-                isModified: isMod
-            };
+        // Матриця доби (кожна хвилина)
+        let minuteMap = new Array(1440).fill(null);
+        
+        // 1. Заповнюємо базовий план
+        rawIntervals.forEach(int => {
+            for (let i = int.startMin; i < int.endMin; i++) {
+                minuteMap[i] = { state: int.type, isOverride: false, info: null };
+            }
         });
 
-        let merged = [];
-        for (let p of processed) {
-            if (merged.length === 0) {
-                merged.push(p);
-                continue;
-            }
-            let last = merged[merged.length - 1];
-            
-            let isSameState = (last.actualState === p.actualState && last.isEmerg === p.isEmerg);
-            
-            if (isSameState && last.endMin === p.startMin) {
-                last.endMin = p.endMin; 
-                
-                if (last.actualState === 'on') {
-                    last.originalType = 'on';
-                    last.isModified = false;
+        // 2. Накладаємо ручні зміни (вирізаємо шматки)
+        if (overrides && overrides.length > 0) {
+            overrides.forEach(ov => {
+                for (let i = ov.startMin; i < ov.endMin; i++) {
+                    let st = (ov.type === 'emergency') ? 'emergency' : 'on';
+                    let infoText = (ov.type === 'emergency') 
+                        ? `⚠️ Аварійне відключення з ${ov.startStr} до ${ov.endStr}` 
+                        : `💡 Відключення скасовано з ${ov.startStr} до ${ov.endStr}`;
+                    minuteMap[i] = { state: st, isOverride: true, info: infoText };
                 }
-            } else {
-                merged.push(p);
+            });
+        }
+
+        // 3. Зшиваємо однакові хвилини в кайфові суцільні блоки
+        let merged = [];
+        let current = null;
+        for (let i = 0; i <= 1440; i++) {
+            let m = minuteMap[i];
+            let isDifferent = current && (!m || m.state !== current.state || m.isOverride !== current.isOverride || m.info !== current.info);
+            
+            if (i === 1440 || isDifferent) {
+                if (current) {
+                    current.endMin = i;
+                    current.displayEndStr = minsToStr(i);
+                    merged.push(current);
+                }
+                if (i < 1440) {
+                    current = { startMin: i, startStr: minsToStr(i), state: m.state, isOverride: m.isOverride, info: m.info };
+                }
             }
         }
 
+        // Форматуємо для відображення
         return merged.map(m => {
             return {
-                startMin: m.startMin,
-                endMin: m.endMin,
-                startStr: minsToStr(m.startMin),
-                displayEndStr: minsToStr(m.endMin),
-                type: m.originalType,
-                isModified: m.isModified,
-                isEmergencyBlock: m.isEmerg
+                startMin: m.startMin, endMin: m.endMin,
+                startStr: m.startStr, displayEndStr: m.displayEndStr,
+                type: (m.state === 'emergency' ? 'on' : m.state), // технічний хак для CSS
+                isEmergencyBlock: (m.state === 'emergency'),
+                isModified: m.isOverride,
+                info: m.info
             };
         });
     }
+
 
 
     function renderAllDays(currentMins) {
@@ -473,16 +498,17 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WA
 
            
                       
-            let adminControls = '';
+                        let adminControls = '';
             if (typeof isAdmin !== 'undefined' && isAdmin) {
                 adminControls = `
                 <div style="margin-top: 12px; display: flex; gap: 8px; z-index: 10; position: relative;">
-                    <button onclick="openEditModal('${int.startStr}', '${int.displayEndStr}', '${int.type}')" 
+                    <button onclick="openEditModal('${int.startStr}', '${int.displayEndStr}')" 
                             style="background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; cursor: pointer;">
                         ✏️ Редагувати
                     </button>
                 </div>`;
             }
+
 
 
             html += `
@@ -500,6 +526,8 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WA
                         <div class="interval ${stateClass}">
                             <div class="interval-icon">${intIcon}</div>
                             <span class="interval-text" style="${intervalTextStyle}">${int.startStr} – ${int.displayEndStr}</span>
+                            ${int.info ? <span onclick="alert('${int.info}')" style="margin-left:8px; cursor:pointer; opacity:0.9; font-size:16px;">ℹ️</span> : ''}
+
                         </div>
                         ${adminControls}
                     </div>
@@ -604,27 +632,32 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WA
     fetchData();
 </script>
 
-<div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+<div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
     <div style="background: #111; border: 1px solid #333; border-radius: 20px; padding: 25px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
-        <h3 style="margin: 0 0 10px 0; font-weight: 900; font-size: 20px; letter-spacing: 0.5px;">Управління інтервалом</h3>
-        <p id="modalTime" style="color: #aaa; font-size: 16px; font-weight: 700; margin: 0 0 20px 0;">--:-- – --:--</p>
+        <h3 style="margin: 0 0 15px 0; font-weight: 900; font-size: 18px; letter-spacing: 0.5px;">Вкажи час (Години:Хвилини)</h3>
         
-               <button id="btnCancelOutage" class="f-link" onclick="sendEdit('cancel')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(251, 191, 36, 0.1); color: var(--c-yellow); border-color: var(--c-yellow); font-size: 14px;">
-            💡 Світло є (Скасувати відключення)
+        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
+            <input type="time" id="editStart" style="background: #222; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 8px; font-size: 16px; font-weight: bold; width: 100px; text-align: center;">
+            <span style="color: #666; align-self: center; font-weight: bold;">—</span>
+            <input type="time" id="editEnd" style="background: #222; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 8px; font-size: 16px; font-weight: bold; width: 100px; text-align: center;">
+        </div>
+        
+        <button class="f-link" onclick="sendCustomEdit('cancel')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(251, 191, 36, 0.1); color: var(--c-yellow); border-color: var(--c-yellow); font-size: 14px;">
+            💡 Світло є (Скасувати)
         </button>
-        <button id="btnSetEmergency" class="f-link" onclick="sendEdit('emergency')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(217, 70, 59, 0.1); color: var(--c-red); border-color: var(--c-red); font-size: 14px;">
-            ⚠️ Нема світла (Аварія / Поза графіком)
+        <button class="f-link" onclick="sendCustomEdit('emergency')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(217, 70, 59, 0.1); color: var(--c-red); border-color: var(--c-red); font-size: 14px;">
+            ⚠️ Аварійне (Нема світла)
         </button>
-        <button id="btnReset" class="f-link" onclick="sendEdit('reset')" style="width: 100%; justify-content: center; margin-bottom: 20px; background: #222; color: #fff; font-size: 14px;">
-            🔄 Повернути за графіком
+        <button class="f-link" onclick="sendResetDay()" style="width: 100%; justify-content: center; margin-bottom: 20px; background: rgba(255, 255, 255, 0.05); color: #aaa; border: 1px dashed #555; font-size: 14px;">
+            🔄 Скинути всі зміни за добу
         </button>
-
         
         <div style="color: #666; font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; letter-spacing: 1px;" onclick="document.getElementById('editModal').style.display='none'">
             Закрити
         </div>
     </div>
 </div>
+
 
 </body>
 </html>
