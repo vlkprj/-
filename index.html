@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -296,63 +297,6 @@
                 minuteMap[i] = { state: type, isOverride: false, info: null };
             }
         });
-
-        if (overrides && overrides.length > 0) {
-            overrides.forEach(ov => {
-                for (let i = ov.startMin; i < ov.endMin; i++) {
-                    let st = (ov.type === 'emergency') ? 'emergency' : 'on';
-                    let infoText = (ov.type === 'emergency') 
-                        ? `⚠️ Аварійне відключення з ${ov.startStr} до ${ov.endStr}` 
-                        : `💡 Відключення скасовано з ${ov.startStr} до ${ov.endStr}`;
-                    minuteMap[i] = { state: st, isOverride: true, info: infoText };
-                }
-            });
-        }
-
-        let merged = [];
-        let current = null;
-        for (let i = 0; i <= 1440; i++) {
-            let m = minuteMap[i];
-            
-            // Якщо дійшли до кінця доби — закриваємо останній блок
-            if (i === 1440) {
-                if (current) {
-                    current.endMin = i;
-                    current.displayEndStr = minsToStr(i);
-                    merged.push(current);
-                }
-                break;
-            }
-
-            if (!m) continue;
-
-            if (!current) {
-                // Стартуємо перший блок
-                current = { startMin: i, startStr: minsToStr(i), state: m.state, isOverride: m.isOverride, info: m.info };
-            } else {
-                // Якщо статус змінився — зберігаємо старий блок і починаємо новий
-                let isDifferent = (m.state !== current.state || m.isOverride !== current.isOverride || m.info !== current.info);
-                if (isDifferent) {
-                    current.endMin = i;
-                    current.displayEndStr = minsToStr(i);
-                    merged.push(current);
-                    
-                    current = { startMin: i, startStr: minsToStr(i), state: m.state, isOverride: m.isOverride, info: m.info };
-                }
-            }
-        }
-
-        return merged.map(m => {
-            return {
-                startMin: m.startMin, endMin: m.endMin,
-                startStr: m.startStr, displayEndStr: m.displayEndStr,
-                type: (m.state === 'emergency' ? 'on' : m.state),
-                isEmergencyBlock: (m.state === 'emergency'),
-                isModified: m.isOverride,
-                info: m.info
-            };
-        });
-    }
 
 
         if (overrides && overrides.length > 0) {
