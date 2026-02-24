@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -168,6 +169,7 @@
     const statusIconOff = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--c-red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="2" x2="22" y2="22"></line><path d="M8.5 8.5L3 14h9l-1 8 5.5-5.5"></path><path d="M16 10h5l-1.5 1.5"></path><path d="M12.4 6.6L13 2l-2.6 2.6"></path></svg>`;
 
     let dbDays = {};
+    let globalAnnouncement = null;
     let activeDates = []; 
     let initialScrollDone = false;
 
@@ -275,6 +277,24 @@
         }
     }
 
+    async function sendPublishDraft() {
+        if (!confirm('Опублікувати новий графік для всіх?')) return;
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('loader').textContent = 'Публікуємо... 🚀';
+        const payload = { source: 'miniapp', secret: tg.initDataUnsafe?.start_param || '', userId: tg.initDataUnsafe?.user?.id || 0, action: 'publish_draft' };
+        try { await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); setTimeout(fetchData, 1500); } catch (err) { alert('Помилка: ' + err.message); fetchData(); }
+    }
+
+    async function sendAnnouncement() {
+        let text = prompt('Введи текст інсайду (або залиш пустим, щоб видалити):');
+        if (text === null) return;
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('loader').textContent = 'Оновлюємо інсайд... 🤫';
+        const payload = { source: 'miniapp', secret: tg.initDataUnsafe?.start_param || '', userId: tg.initDataUnsafe?.user?.id || 0, action: text ? 'set_announcement' : 'clear_announcement', text: text };
+        try { await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); setTimeout(fetchData, 1500); } catch (err) { alert('Помилка: ' + err.message); fetchData(); }
+    }
 
     async function fetchData() {
         try {
@@ -294,6 +314,8 @@
 
             dbDays = {};
             activeDates = [];
+            globalAnnouncement = data.announcement || null;
+
 
             if (data.days) {
                 // Беремо тільки актуальні дні
@@ -387,16 +409,40 @@
 
 
 
-    function renderAllDays(currentMins) {
+        function renderAllDays(currentMins) {
         const container = document.getElementById('timelineContainer');
+        let fullHtml = '';
 
+        // --- 1. АДМІН-ПАНЕЛЬ (Кнопки публікації та інсайдів) ---
+        if (typeof isAdmin !== 'undefined' && isAdmin) {
+            fullHtml += `
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: center;">
+                <button onclick="sendPublishDraft()" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); padding: 10px 15px; border-radius: 10px; font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer;">
+                    🚀 Опублікувати
+                </button>
+                <button onclick="sendAnnouncement()" style="background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); padding: 10px 15px; border-radius: 10px; font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer;">
+                    🤫 Інсайд
+                </button>
+            </div>`;
+        }
+
+        // --- 2. НЕОНОВА ПЛАШКА ІНСАЙДУ (Бачать всі) ---
+        if (typeof globalAnnouncement !== 'undefined' && globalAnnouncement) {
+            fullHtml += `
+            <div style="background: linear-gradient(45deg, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.15)); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 12px; padding: 15px; margin-bottom: 25px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                <div style="font-size: 20px; margin-bottom: 5px;">🤫</div>
+                <div style="color: #f3e8ff; font-size: 14px; font-weight: 700; line-height: 1.4;">${globalAnnouncement}</div>
+            </div>`;
+        }
+
+        // --- 3. ПЕРЕВІРКА НА ПОРОЖНІЙ ГРАФІК ---
         if (activeDates.length === 0) {
-            container.innerHTML = `<div class="waiting-block">⏳ Очікуємо на графік від Обленерго</div>`;
+            fullHtml += `<div class="waiting-block">⏳ Очікуємо на графік від Обленерго</div>`;
+            container.innerHTML = fullHtml;
             return;
         }
 
-        let fullHtml = '';
-
+        // --- 4. МАЛЮЄМО ДНІ ---
         activeDates.forEach((dateStr, index) => {
             const dayData = dbDays[dateStr];
             const isToday = (index === 0);
@@ -409,9 +455,10 @@
                         <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
                     </div>`;
             }
-                        fullHtml += generateDayHtml(dayData.intervals, dayData.overrides, currentMins, isToday); // <--- ТУТ ТЕПЕР OVERRIDES
+            fullHtml += generateDayHtml(dayData.intervals, dayData.overrides, currentMins, isToday);
         });
 
+        // --- 5. ОЧІКУВАННЯ НА ЗАВТРА ---
         if (activeDates.length === 1) {
             fullHtml += `
                 <div class="fade-dots" style="margin-top:20px;">
@@ -422,6 +469,7 @@
                 </div>`;
         }
 
+        // --- 6. КНОПКА ОЧИСТКИ (Адмін) ---
         if (typeof isAdmin !== 'undefined' && isAdmin) {
             fullHtml += `
             <div style="text-align: center; margin-top: 30px; margin-bottom: 10px;">
@@ -442,8 +490,7 @@
         }
     }
 
-
-    function generateDayHtml(rawIntervals, overrides, currentMins, isToday) { // <--- ТУТ ТЕЖ OVERRIDES
+    function generateDayHtml(rawIntervals, overrides, currentMins, isToday) { 
         const displayIntervals = buildDisplayIntervals(rawIntervals || [], overrides);
         let html = '';
 
