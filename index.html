@@ -297,20 +297,70 @@ const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WA
         }
     }
 
-    function buildDisplayIntervals(intervals, emergencyData) {
-        if (!emergencyData || !emergencyData.active) return intervals;
-        const emStart = timeToMins(emergencyData.start);
-        const emEnd = emergencyData.end ? timeToMins(emergencyData.end) : 1440;
-        let result = [];
-        intervals.forEach(int => {
-            if (int.endMin <= emStart || int.startMin >= emEnd) { result.push(int); return; }
-            if (int.startMin < emStart) result.push({ ...int, endMin: emStart, displayEndStr: emergencyData.start });
-            if (int.endMin > emEnd) result.push({ ...int, startMin: emEnd, startStr: emergencyData.end });
-        });
-        result.push({ startMin: emStart, endMin: emEnd, startStr: emergencyData.start, displayEndStr: emergencyData.end || "??:??", type: 'off', isEmergencyBlock: true });
-        result.sort((a, b) => a.startMin - b.startMin);
-        return result;
+        function minsToStr(mins) {
+        if (mins === 1440) return "00:00";
+        let h = Math.floor(mins / 60).toString().padStart(2, '0');
+        let m = (mins % 60).toString().padStart(2, '0');
+        return `${h}:${m}`;
     }
+
+    function buildDisplayIntervals(rawIntervals, emergency) {
+        if (!rawIntervals || rawIntervals.length === 0) return [];
+        
+        let processed = rawIntervals.map(int => {
+            let type = int.planType || int.type;
+            let isMod = !!int.isModified;
+            let actualState = type; 
+            let isEmerg = false;
+
+            if (type === 'off' && isMod) actualState = 'on'; 
+            if (type === 'on' && isMod) { actualState = 'off'; isEmerg = true; } 
+
+            return {
+                startMin: int.startMin,
+                endMin: int.endMin,
+                actualState: actualState,
+                isEmerg: isEmerg,
+                originalType: type,
+                isModified: isMod
+            };
+        });
+
+        let merged = [];
+        for (let p of processed) {
+            if (merged.length === 0) {
+                merged.push(p);
+                continue;
+            }
+            let last = merged[merged.length - 1];
+            
+            let isSameState = (last.actualState === p.actualState && last.isEmerg === p.isEmerg);
+            
+            if (isSameState && last.endMin === p.startMin) {
+                last.endMin = p.endMin; 
+                
+                if (last.actualState === 'on') {
+                    last.originalType = 'on';
+                    last.isModified = false;
+                }
+            } else {
+                merged.push(p);
+            }
+        }
+
+        return merged.map(m => {
+            return {
+                startMin: m.startMin,
+                endMin: m.endMin,
+                startStr: minsToStr(m.startMin),
+                displayEndStr: minsToStr(m.endMin),
+                type: m.originalType,
+                isModified: m.isModified,
+                isEmergencyBlock: m.isEmerg
+            };
+        });
+    }
+
 
     function renderAllDays(currentMins) {
         const container = document.getElementById('timelineContainer');
