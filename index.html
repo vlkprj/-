@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -177,6 +176,50 @@
         return h * 60 + m;
     }
 
+    let currentEditInterval = null;
+
+    function openEditModal(startStr, endStr, type) {
+        currentEditInterval = { start: startStr, end: endStr, type: type };
+
+        document.getElementById('modalTime').textContent = `${startStr} – ${endStr}`;
+        document.getElementById('editModal').style.display = 'flex';
+        document.getElementById('btnCancelOutage').style.display = (type === 'off') ? 'flex' : 'none';
+        document.getElementById('btnSetEmergency').style.display = (type === 'on') ? 'flex' : 'none';
+    }
+
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WAqSQUZQG84aXOYR33Xv-lDGGfIFvN4s6dfYbDpj1zxmuiE05Jltqgag/exec';
+
+    async function sendEdit(action) {
+        if (!currentEditInterval) return;
+        
+        document.getElementById('editModal').style.display = 'none';
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('loader').textContent = 'Записуємо зміни... ⚡';
+
+        const payload = {
+            source: 'miniapp',
+            secret: tg.initDataUnsafe?.start_param || '',
+            userId: tg.initDataUnsafe?.user?.id || 0,
+            date: activeDates[0],
+            action: action,
+            interval: currentEditInterval
+        };
+
+        try {
+            await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' }, 
+                body: JSON.stringify(payload)
+            });
+            
+            setTimeout(fetchData, 1500);
+        } catch (e) {
+            alert('❌ Помилка: ' + e.message);
+            fetchData();
+        }
+    }
+
     async function fetchData() {
         try {
             const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocache=${new Date().getTime()}`, { 
@@ -336,16 +379,18 @@
             let nowIndicator = isActive ? `<div class="now-badge">ЗАРАЗ</div>` : '';
 
            
+                      
             let adminControls = '';
             if (typeof isAdmin !== 'undefined' && isAdmin) {
                 adminControls = `
                 <div style="margin-top: 12px; display: flex; gap: 8px; z-index: 10; position: relative;">
-                    <button onclick="alert('Тут буде виклик попапу для редагування')" 
-                            style="background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase;">
+                    <button onclick="openEditModal('${int.startStr}', '${int.displayEndStr}', '${int.type}')" 
+                            style="background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; cursor: pointer;">
                         ✏️ Редагувати
                     </button>
                 </div>`;
             }
+
 
             html += `
             <div class="${classes}">
@@ -466,5 +511,63 @@
     fetchData();
 </script>
 
+<div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+    <div style="background: #111; border: 1px solid #333; border-radius: 20px; padding: 25px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+        <h3 style="margin: 0 0 10px 0; font-weight: 900; font-size: 20px; letter-spacing: 0.5px;">Управління інтервалом</h3>
+        <p id="modalTime" style="color: #aaa; font-size: 16px; font-weight: 700; margin: 0 0 20px 0;">--:-- – --:--</p>
+        
+               <button id="btnCancelOutage" class="f-link" onclick="sendEdit('cancel')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(251, 191, 36, 0.1); color: var(--c-yellow); border-color: var(--c-yellow); font-size: 14px;">
+            💡 Світло є (Скасувати відключення)
+        </button>
+        <button id="btnSetEmergency" class="f-link" onclick="sendEdit('emergency')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(217, 70, 59, 0.1); color: var(--c-red); border-color: var(--c-red); font-size: 14px;">
+            ⚠️ Нема світла (Аварія / Поза графіком)
+        </button>
+        <button id="btnReset" class="f-link" onclick="sendEdit('reset')" style="width: 100%; justify-content: center; margin-bottom: 20px; background: #222; color: #fff; font-size: 14px;">
+            🔄 Повернути за графіком
+        </button>
+
+        
+        <div style="color: #666; font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; letter-spacing: 1px;" onclick="document.getElementById('editModal').style.display='none'">
+            Закрити
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
+
+
+
+
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwBt7Fi0bp113WAqSQUZQG84aXOYR33Xv-lDGGfIFvN4s6dfYbDpj1zxmuiE05Jltqgag/exec';
+
+    async function sendEdit(action) {
+        if (!currentEditInterval) return;
+        
+        document.getElementById('editModal').style.display = 'none';
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('loader').textContent = 'Записуємо зміни... ⚡';
+
+        const payload = {
+            source: 'miniapp',
+            secret: tg.initDataUnsafe?.start_param || '',
+            userId: tg.initDataUnsafe?.user?.id || 0,
+            date: activeDates[0],
+            action: action,
+            interval: currentEditInterval
+        };
+
+        try {
+            await fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' }, 
+                body: JSON.stringify(payload)
+            });
+            
+            setTimeout(fetchData, 1500);
+        } catch (e) {
+            alert('❌ Помилка: ' + e.message);
+            fetchData();
+        }
+    }
