@@ -559,10 +559,11 @@
                 const displayInts = buildDisplayIntervals(dayData.intervals || [], dayData.overrides || []);
                 
                 displayInts.forEach(int => {
-                    let realState = 'on';
-                    if (int.isEmergencyBlock) realState = 'off';
-                    else if (int.type === 'off' && !int.isModified) realState = 'off';
-                    else if (int.type === 'on' && int.isModified) realState = 'off';
+                                    let realState = 'on';
+                if (int.isEmergencyBlock || int.type === 'off') {
+                    realState = 'off';
+                }
+
 
                     combinedIntervals.push({
                         startMinAbs: int.startMin + offset,
