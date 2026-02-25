@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -373,26 +374,27 @@
             let badgeHtml = '';
             let intervalTextStyle = '';
 
-            if (isEmergency) {
+                        if (isEmergency) {
                 badgeHtml = `<div class="badge-row"><div class="badge emergency">${iconWarning} АВАРІЙНЕ</div></div>`;
             } else if (int.type === 'off') {
-                if (int.isModified) {
-                    let statusText = isPast ? `${iconLightningSVG} СВІТЛО БУЛО` : (isActive ? `${iconLightningSVG} Є СВІТЛО` : "СКАСОВАНО");
-                    badgeHtml = `<div class="badge-row"><div class="badge off" style="text-decoration: line-through; opacity: 0.5;">${iconBan} ВІДКЛЮЧЕННЯ</div><span class="badge-modifier rescued" style="display: flex; align-items: center; gap: 4px;">${statusText}</span></div>`;
-                    intervalTextStyle = `color: rgba(251, 191, 36, 0.7); text-decoration: line-through;`;
-                } else {
-                    badgeHtml = `<div class="badge-row"><div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div></div>`;
-                }
-            } else if (int.type === 'on') {
                 if (int.isModified) {
                     let statusText = isPast ? "ВІДКЛЮЧАЛИ" : (isActive ? "НЕМА СВІТЛА" : "СКАСОВАНО");
                     badgeHtml = `<div class="badge-row"><div class="badge on" style="text-decoration: line-through; opacity: 0.5;">${iconLightningSVG} СВІТЛО</div><span class="badge-modifier emergency">${statusText}</span></div>`;
                     intervalTextStyle = `color: rgba(217, 70, 59, 0.7); text-decoration: line-through;`;
                 } else {
+                    badgeHtml = `<div class="badge-row"><div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div></div>`;
+                }
+            } else if (int.type === 'on') {
+                if (int.isModified) {
+                    let statusText = isPast ? `${iconLightningSVG} СВІТЛО БУЛО` : (isActive ? `${iconLightningSVG} Є СВІТЛО` : "СКАСОВАНО");
+                    badgeHtml = `<div class="badge-row"><div class="badge off" style="text-decoration: line-through; opacity: 0.5;">${iconBan} ВІДКЛЮЧЕННЯ</div><span class="badge-modifier rescued" style="display: flex; align-items: center; gap: 4px;">${statusText}</span></div>`;
+                    intervalTextStyle = `color: rgba(251, 191, 36, 0.7); text-decoration: line-through;`;
+                } else {
                     let lightText = isFuture ? "СВІТЛО" : "СВІТЛО Є";
                     badgeHtml = `<div class="badge-row"><div class="badge on">${iconLightningSVG} ${lightText}</div></div>`;
                 }
             }
+
 
             const intIcon = isEmergency ? iconZapOff : (isVisuallyOn ? iconBulb : iconZapOff);
 
