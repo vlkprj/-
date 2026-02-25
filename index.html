@@ -216,7 +216,8 @@
         let s = document.getElementById('editStart').value;
         let e = document.getElementById('editEnd').value;
         if (!s || !e) return alert('Вкажи обидва значення часу');
-        
+                if (e === '23:59') e = '24:00';
+
         document.getElementById('editModal').style.display = 'none';
         document.getElementById('app').style.display = 'none';
         document.getElementById('loader').style.display = 'block';
