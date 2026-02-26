@@ -535,22 +535,26 @@
             const isToday = (index === 0);
 
             // Рахуємо сумарний час без світла
+         
             const displayIntsCount = buildDisplayIntervals(dayData.intervals || [], dayData.overrides || []);
             let offMins = 0;
  
             displayIntsCount.forEach(int => {
                 let realState = 'on';
-                if (int.isEmergencyBlock) realState = 'off';
-                else if (int.type === 'off' && !int.isModified) realState = 'off';
-                else if (int.type === 'on' && int.isModified) 
-                    realState = 'off'; 
+                
+               
+                if (int.isEmergencyBlock || int.type === 'off') {
+                    realState = 'off';
+                }
                 
                 if (realState === 'off') offMins += (int.endMin - int.startMin);
             });
+            
             let hOff = Math.floor(offMins / 60);
             let mOff = offMins % 60;
-    
             let totalOffText = `${hOff} год ${mOff > 0 ? mOff + ' хв' : ''}`;
+
+           
 
             let globalEditBtn = '';
             if (typeof isAdmin !== 'undefined' && isAdmin) {
