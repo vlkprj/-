@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -551,23 +553,22 @@
 
 
             if (!isToday) {
-                fullHtml += `
-                    <div class="section-divider" style="margin: 40px 0 20px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-                        <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
-                                   
-                        <div style="font-size: 11px; font-weight: 900; color: #888; text-transform: uppercase; letter-spacing: 1px;">ГРАФІК НА ${dateStr}</div>
-                        <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
-                    </div>`;
-            }
-            
-            // Виводимо лічильник і кнопку перед таймлайном конкретного дня
-            fullHtml += `
-                <div style="text-align: center; margin-bottom: 20px;">
-                    <span style="background: rgba(217, 70, 59, 0.1); border: 1px solid rgba(217, 70, 59, 0.2); color: var(--c-red); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 800;">
-                        Всього без світла: ${totalOffText}
-                    </span>
-                    ${globalEditBtn}
-                </div>`;
+    fullHtml += `
+        <div class="section-divider" style="margin: 40px 0 20px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
+            <div style="font-size: 11px; font-weight: 900; color: #888; text-transform: uppercase; letter-spacing: 1px;">ГРАФІК НА ${dateStr}</div>
+            <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
+        </div>`;
+}
+
+fullHtml += `
+    <div style="text-align: center; margin-bottom: 20px;">
+        <span style="background: rgba(217, 70, 59, 0.1); border: 1px solid rgba(217, 70, 59, 0.2); color: var(--c-red); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 800;">
+            Всього без світла: ${totalOffText}
+        </span>
+        ${globalEditBtn}
+    </div>`;
+
 
                         <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
                     </div>`;
