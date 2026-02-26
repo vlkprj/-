@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -113,6 +115,13 @@
 <body ontouchstart="">
 
 <div id="loader" class="loader">Синхронізація...⚡</div>
+
+<div id="toastInside" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: linear-gradient(45deg, rgba(168, 85, 247, 0.95), rgba(236, 72, 153, 0.95)); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 16px; padding: 15px 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); align-items: flex-start; gap: 10px;">
+    <div style="font-size: 24px; line-height: 1;">🤫</div>
+    <div id="toastText" style="color: #fff; font-size: 14px; font-weight: 700; flex-grow: 1; line-height: 1.4;"></div>
+    <div onclick="document.getElementById('toastInside').style.display='none'" style="color: rgba(255,255,255,0.6); font-size: 24px; cursor: pointer; line-height: 0.8;">&times;</div>
+</div>
+
 
 <div id="app" style="display: none;">
     <div class="sticky-header">
@@ -308,6 +317,13 @@
             document.getElementById('loader').style.display = 'none';
             document.getElementById('app').style.display = 'block';
 
+            if (globalAnnouncement) {
+                document.getElementById('toastText').textContent = globalAnnouncement;
+                document.getElementById('toastInside').style.display = 'flex';
+                setTimeout(() => { document.getElementById('toastInside').style.display = 'none'; }, 6000);
+            }
+
+
             startTimerAndRender();
         } catch (error) {
             document.getElementById('loader').textContent = "Помилка завантаження. Спробуй пізніше.";
@@ -496,13 +512,7 @@
             </div>`;
         }
 
-        if (typeof globalAnnouncement !== 'undefined' && globalAnnouncement) {
-            fullHtml += `
-            <div style="background: linear-gradient(45deg, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.15)); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 12px; padding: 15px; margin-bottom: 25px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                <div style="font-size: 20px; margin-bottom: 5px;">🤫</div>
-                <div style="color: #f3e8ff; font-size: 14px; font-weight: 700; line-height: 1.4;">${globalAnnouncement}</div>
-            </div>`;
-        }
+       
 
         if (activeDates.length === 0) {
             fullHtml += `<div class="waiting-block">⏳ Очікуємо на графік від Обленерго</div>`;
@@ -514,11 +524,56 @@
             const dayData = dbDays[dateStr];
             const isToday = (index === 0);
 
+
+            // Рахуємо сумарний час без світла
+            const displayIntsCount = buildDisplayIntervals(dayData.intervals || [], dayData.overrides || []);
+            let offMins = 0;
+            displayIntsCount.forEach(int => {
+                let realState = 'on';
+                if (int.isEmergencyBlock) realState = 'off';
+                else if (int.type === 'off' && !int.isModified) realState = 'off';
+                else if (int.type === 'on' && int.isModified) realState = 'off'; // Якщо світло було, але скасували в аварію
+                
+                if (realState === 'off') offMins += (int.endMin - int.startMin);
+            });
+            let hOff = Math.floor(offMins / 60);
+            let mOff = offMins % 60;
+            let totalOffText = `${hOff} год ${mOff > 0 ? mOff + ' хв' : ''}`;
+
+            // Глобальна кнопка редагування (тільки для адмінів)
+            let globalEditBtn = '';
+            if (typeof isAdmin !== 'undefined' && isAdmin) {
+                globalEditBtn = `
+                <div style="margin-top: 10px; display: flex; justify-content: center;">
+                    <button onclick="openEditModal('00:00', '00:00')" style="background: rgba(255,255,255,0.05); color: #fff; border: 1px dashed rgba(255,255,255,0.3); padding: 8px 15px; border-radius: 10px; font-size: 12px; font-weight: 800; text-transform: uppercase; cursor: pointer;">
+                        ✏️ Додати зміну вручну
+                    </button>
+                </div>`;
+            }
+
+
             if (!isToday) {
                 fullHtml += `
                     <div class="section-divider" style="margin: 40px 0 20px; display: flex; align-items: center; justify-content: center; gap: 10px;">
                         <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
+                                    if (!isToday) {
+                fullHtml += `
+                    <div class="section-divider" style="margin: 40px 0 20px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
                         <div style="font-size: 11px; font-weight: 900; color: #888; text-transform: uppercase; letter-spacing: 1px;">ГРАФІК НА ${dateStr}</div>
+                        <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
+                    </div>`;
+            }
+            
+            // Виводимо лічильник і кнопку перед таймлайном конкретного дня
+            fullHtml += `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <span style="background: rgba(217, 70, 59, 0.1); border: 1px solid rgba(217, 70, 59, 0.2); color: var(--c-red); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 800;">
+                        Всього без світла: ${totalOffText}
+                    </span>
+                    ${globalEditBtn}
+                </div>`;
+
                         <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
                     </div>`;
             }
@@ -648,7 +703,7 @@
                 timerDisplay.textContent = `${h}:${m}:${s}`;
             } else {
                 timerDisplay.textContent = "--:--:--";
-                if (activeDates.length === 1) timerLabel.textContent = "Очікуємо графік на завтра";
+                if (activeDates.length === 1) timerLabel.textContent = "Оновлюємо";
                 else timerLabel.textContent = "До кінця доби";
             }
         }, 1000);
