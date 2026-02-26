@@ -116,11 +116,12 @@
 
 <div id="loader" class="loader">Синхронізація...⚡</div>
 
-<div id="toastInside" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: linear-gradient(45deg, rgba(168, 85, 247, 0.95), rgba(236, 72, 153, 0.95)); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); border-radius: 16px; padding: 15px 20px; width: 90%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); align-items: flex-start; gap: 10px;">
-    <div style="font-size: 24px; line-height: 1;">🤫</div>
-    <div id="toastText" style="color: #fff; font-size: 14px; font-weight: 700; flex-grow: 1; line-height: 1.4;"></div>
-    <div onclick="document.getElementById('toastInside').style.display='none'" style="color: rgba(255,255,255,0.6); font-size: 24px; cursor: pointer; line-height: 0.8;">&times;</div>
+<div id="toastInside" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(10, 10, 12, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); border-left: 3px solid var(--c-yellow); border-radius: 14px; padding: 16px 20px; width: 90%; max-width: 400px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); align-items: center; gap: 12px;">
+    <div style="font-size: 22px; line-height: 1; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));">🤫</div>
+    <div id="toastText" style="color: #f4f4f5; font-size: 14px; font-weight: 700; flex-grow: 1; line-height: 1.4; letter-spacing: 0.3px;"></div>
+    <div onclick="document.getElementById('toastInside').style.display='none'" style="color: #666; font-size: 26px; cursor: pointer; line-height: 1; padding-bottom: 2px; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">&times;</div>
 </div>
+
 
 
 <div id="app" style="display: none;">
