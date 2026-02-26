@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -8,7 +6,7 @@
     <title>ВАЛКИ • Графік</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --c-yellow: #fbbf24; --c-red: #d9463b; --c-dark: #060606; }
+        :root { --c-yellow: #fbbf24; --c-red: #d9463b; --c-dark: #060606; --c-orange: #f97316;}
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--c-dark); color: #ffffff; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
         .sticky-header { position: sticky; top: 0; left: 0; width: 100%; background: rgba(6, 6, 6, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 100; padding: 15px 20px; box-sizing: border-box; border-bottom: 1px solid rgba(255,255,255,0.08); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
@@ -57,6 +55,19 @@
         .badge-modifier.rescued { color: var(--c-yellow); }
         .badge-modifier.emergency { color: var(--c-red); }
         .now-badge { position: absolute; top: -4px; right: 0px; background: #fff; color: #000; padding: 2px 6px; border-radius: 5px; font-size: 8px; font-weight: 900; letter-spacing: 0.5px; box-shadow: 0 0 10px rgba(255,255,255,0.4); animation: pulseBadge 2s infinite; z-index: 10; }
+.badge.partial { background: rgba(249, 115, 22, 0.1); color: var(--c-orange); border: 1px solid var(--c-orange); }
+.time-col.partial { color: var(--c-orange); }
+.interval.partial { color: var(--c-orange); }
+.tl-dot-micro.partial { background: var(--c-orange); box-shadow: 0 0 4px rgba(249, 115, 22, 0.5); }
+.tl-item.active-now.partial { animation: pulseGlowOrange 2.5s infinite; border-color: rgba(249, 115, 22, 0.15); }
+
+@keyframes pulseGlowOrange { 
+  0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.1); background: rgba(249, 115, 22, 0.04); } 
+  50% { box-shadow: 0 0 20px 0 rgba(249, 115, 22, 0.15); background: rgba(249, 115, 22, 0.08); } 
+  100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); background: rgba(249, 115, 22, 0.04); } 
+}
+
+
         .emergency-active .now-badge { background: var(--c-red); color: #fff; box-shadow: 0 0 10px rgba(217,70,59,0.5); }
         @keyframes pulseBadge { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         .tl-body { display: flex; align-items: stretch; min-height: 50px; position: relative; z-index: 1; }
@@ -139,6 +150,27 @@
 }
 
 
+.tl-dot-micro { transition: all 0.3s ease; }
+.tl-dot-micro.emergency, .tl-dot-micro.off { animation: dropFlow 1.5s infinite ease-in-out; animation-delay: calc(var(--i) * 0.2s); }
+.tl-dot-micro.on { animation: pulseFlow 2s infinite ease-in-out; animation-delay: calc(var(--i) * 0.15s); }
+
+@keyframes dropFlow { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.3); } }
+@keyframes pulseFlow { 0%, 100% { opacity: 0.4; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); box-shadow: 0 0 6px var(--c-yellow); } }
+
+.tl-dot-micro.happy-end {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--c-yellow);
+    box-shadow: 0 0 20px 8px rgba(251, 191, 36, 0.4);
+    animation: happyGlow 4s infinite alternate ease-in-out;
+    margin: 15px 0;
+    filter: blur(1px);
+}
+@keyframes happyGlow { 
+    0% { transform: scale(1); opacity: 0.6; filter: blur(2px); } 
+    100% { transform: scale(1.5); opacity: 1; filter: blur(4px); box-shadow: 0 0 30px 12px rgba(251, 191, 36, 0.6); } 
+}
+
+
     </style>
 </head>
 <body ontouchstart="">
@@ -146,7 +178,7 @@
 <div id="loader" class="loader">Синхронізація...⚡</div>
 
 <div id="toastInside" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(10, 10, 12, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); border-left: 3px solid var(--c-yellow); border-radius: 14px; padding: 16px 20px; width: 90%; max-width: 400px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); align-items: center; gap: 12px;">
-    <div style="font-size: 22px; line-height: 1; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));">🤫</div>
+    <div style="font-size: 22px; line-height: 1; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));">💬</div>
     <div id="toastText" style="color: #f4f4f5; font-size: 14px; font-weight: 700; flex-grow: 1; line-height: 1.4; letter-spacing: 0.3px;"></div>
     <div onclick="document.getElementById('toastInside').style.display='none'" style="color: #666; font-size: 26px; cursor: pointer; line-height: 1; padding-bottom: 2px; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">&times;</div>
 </div>
@@ -156,13 +188,14 @@
 <div id="app" style="display: none;">
     <div class="sticky-header">
         <div class="header-top">
-            <div class="branding">
-                <img src="./logo.png" alt="" class="logo-img" onerror="this.style.display='none'">
-                <h1 class="app-title">
-                    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                    ВАЛКИ
-                </h1>
-            </div>
+            <a href="https://t.me/valkyoperatyvno" target="_blank" class="branding" style="text-decoration: none; color: inherit;">
+    <img src="./logo.png" alt="" class="logo-img" onerror="this.style.display='none'">
+    <h1 class="app-title">
+        <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        ВАЛКИ
+    </h1>
+</a>
+
             <div class="date-badge" id="dateDisplay">ОЧІКУЄМО</div>
         </div>
               <div class="dashboard" style="position: relative;">
@@ -187,7 +220,6 @@
 
     
     <div id="timelineContainer"></div>
-
     <div class="app-footer">
         <div class="footer-links">
             <a href="https://t.me/share/url?url=t.me/valkyelectrifybot/electric&text=💡%20Актуальний%20графік%20відключень%20світла%20у%20Валках" class="f-link" target="_blank">
@@ -202,16 +234,23 @@
                 <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                 Базарчик
             </a>
+            <a href="https://t.me/valkysho_bot" class="f-link" target="_blank">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
+                Бот
+            </a>
+            <div class="f-link" onclick="alert('Щоб додати на головний екран: натисни на три крапки ⋯ у правому верхньому куті (або в меню браузера) і обери «Додати на головний екран» 📱')" style="cursor: pointer;">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                На екран
+            </div>
         </div>
         
-                <div class="source-text">
+        <div class="source-text" style="font-size: 13px; line-height: 1.5; margin-top: 5px;">
             <b>Джерело:</b><br>
             Харківобленерго <br>
-            <span style="font-size: 10px; opacity: 0.75;">(а також Сергій Д. та інші інсайдери Валківського чатіку)</span>
+            <span style="font-size: 12px; opacity: 0.85;">(а також Сергій Д. та інші інсайдери Валківського чатіку)</span>
         </div>
-
     </div>
-</div>
+
 
 <script>
     const tg = window.Telegram.WebApp;
@@ -355,7 +394,7 @@
             if (globalAnnouncement) {
                 document.getElementById('toastText').textContent = globalAnnouncement;
                 document.getElementById('toastInside').style.display = 'flex';
-                setTimeout(() => { document.getElementById('toastInside').style.display = 'none'; }, 6000);
+                setTimeout(() => { document.getElementById('toastInside').style.display = 'none'; }, 9000);
             }
 
 
@@ -380,12 +419,15 @@
         if (overrides && overrides.length > 0) {
             overrides.forEach(ov => {
                 for (let i = ov.startMin; i < ov.endMin; i++) {
-                    let st = (ov.type === 'emergency') ? 'emergency' : 'on';
-                                        let infoText = (ov.type === 'emergency') 
-                        ? `⚠️ Позапланове відключення з ${ov.startStr} до ${ov.endStr}` 
-                        : `💡 Відключення скасовано з ${ov.startStr} до ${ov.endStr}`;
+                    let st = ov.type === 'emergency' ? 'emergency' : (ov.type === 'partial' ? 'partial' : 'on');
+      
+let infoText = '';
+if (ov.type === 'emergency') infoText = `⚠️ Позапланове відключення з ${ov.startStr} до ${ov.endStr}`;
+else if (ov.type === 'partial') infoText = `🌓 Світло частково з ${ov.startStr} до ${ov.endStr}`;
+else infoText = `💡 Відключення скасовано з ${ov.startStr} до ${ov.endStr}`;
 
-                    minuteMap[i] = { state: st, isOverride: true, info: infoText };
+minuteMap[i] = { state: st, isOverride: true, info: infoText };
+
                 }
             });
         }
@@ -421,15 +463,17 @@
 
 
         return merged.map(m => {
-            return {
-                startMin: m.startMin, endMin: m.endMin,
-                startStr: m.startStr, displayEndStr: m.displayEndStr,
-                type: (m.state === 'emergency' ? 'on' : m.state),
-                isEmergencyBlock: (m.state === 'emergency'),
-                isModified: m.isOverride,
-                info: m.info
-            };
-        });
+    return {
+        startMin: m.startMin, endMin: m.endMin,
+        startStr: m.startStr, displayEndStr: m.displayEndStr,
+        type: (m.state === 'emergency' || m.state === 'partial' ? 'on' : m.state),
+        isEmergencyBlock: (m.state === 'emergency'),
+        isPartialBlock: (m.state === 'partial'), // <--- ДОДАНО ЦЕ
+        isModified: m.isOverride,
+        info: m.info
+    };
+});
+
     }
 
     function generateDayHtml(rawIntervals, overrides, currentMins, isToday) { 
@@ -437,23 +481,32 @@
         let html = '';
 
         displayIntervals.forEach((int, i) => {
+            
             const isEmergency = int.isEmergencyBlock;
-            const isVisuallyOn = int.type === 'on' && !isEmergency;
-            const stateClass = isEmergency ? 'emergency' : (isVisuallyOn ? 'on' : 'off');
+            const isPartial = int.isPartialBlock; 
+            const isVisuallyOn = int.type === 'on' && !isEmergency && !isPartial;
+            const stateClass = isEmergency ? 'emergency' : (isPartial ? 'partial' : (isVisuallyOn ? 'on' : 'off'));
 
             const isActive = isToday && (currentMins >= int.startMin && currentMins < int.endMin);
             const isPast = isToday && (currentMins >= int.endMin);
             const isFuture = !isToday || (currentMins < int.startMin);
 
             let classes = `tl-item ${stateClass}`;
-            if (isActive) { classes += ' active-now'; if (isEmergency) classes += ' emergency-active'; }
+            if (isActive) { 
+                classes += ' active-now'; 
+                if (isEmergency) classes += ' emergency-active'; 
+                if (isPartial) classes += ' partial'; 
+            }
             if (isPast) classes += ' past-interval';
 
             let badgeHtml = '';
             let intervalTextStyle = '';
 
-                                    if (isEmergency) {
+            
+            if (isEmergency) {
                 badgeHtml = `<div class="badge-row"><div class="badge emergency">${iconWarning} ПОЗАПЛАНОВЕ</div></div>`;
+            } else if (isPartial) { 
+                badgeHtml = `<div class="badge-row"><div class="badge partial">🌓 ЧАСТКОВО</div></div>`;
             } else if (int.type === 'off') {
 
                 if (int.isModified) {
@@ -475,14 +528,19 @@
             }
 
 
-            const intIcon = isEmergency ? iconZapOff : (isVisuallyOn ? iconBulb : iconZapOff);
+            const intIcon = isEmergency ? iconZapOff : (isPartial ? iconWarning : (isVisuallyOn ? iconBulb : iconZapOff));
 
             let dotsHtml = '';
             if (i < displayIntervals.length - 1) {
-                let durationMins = int.endMin - int.startMin;
-                let numDots = Math.max(1, Math.floor(durationMins / 60));
-                for (let d = 0; d < numDots; d++) dotsHtml += `<div class="tl-dot-micro ${stateClass}"></div>`;
-            }
+    let durationMins = int.endMin - int.startMin;
+    let numDots = Math.max(1, Math.floor(durationMins / 60));
+    for (let d = 0; d < numDots; d++) {
+        dotsHtml += `<div class="tl-dot-micro ${stateClass}" style="--i: ${d}"></div>`;
+    }
+} else if (isVisuallyOn) {
+   
+    dotsHtml += `<div class="tl-dot-micro happy-end"></div>`;
+}
 
             const timeColClass = isEmergency ? 'emergency' : stateClass;
             let nowIndicator = isActive ? `<div class="now-badge">ЗАРАЗ</div>` : '';
@@ -763,6 +821,11 @@
                 <button class="f-link" onclick="sendCustomEdit('emergency')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(217, 70, 59, 0.1); color: var(--c-red); border-color: var(--c-red); font-size: 14px;">
             ⚠️ Позапланове (Нема світла)
         </button>
+
+<button class="f-link" onclick="sendCustomEdit('partial')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(249, 115, 22, 0.1); color: var(--c-orange); border-color: var(--c-orange); font-size: 14px;">
+    🌓 Частково (Є не у всіх)
+</button>
+
 
         <button class="f-link" onclick="sendResetDay()" style="width: 100%; justify-content: center; margin-bottom: 20px; background: rgba(255, 255, 255, 0.05); color: #aaa; border: 1px dashed #555; font-size: 14px;">
             🔄 Скинути всі зміни за добу
