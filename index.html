@@ -16,6 +16,7 @@
         .app-title svg { fill: var(--c-yellow); width: 22px; height: 22px; margin-top: -2px; }
         .date-badge { background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 12px; font-weight: 800; color: var(--c-yellow); font-size: 13px; text-transform: uppercase; }
         .dashboard { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
+        .status-box, .timer-box { position: relative; z-index: 5; }
         .status-box { display: flex; flex-direction: column; gap: 8px; justify-content: flex-end; }
         .status-label { font-size: 12px; color: #888; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; letter-spacing: 0.5px; margin-bottom: 2px; }
         .status-value { display: flex; align-items: center; gap: 6px; font-size: 18px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
@@ -126,10 +127,14 @@
 }
 
 .mascot-on {
-    bottom: -22px;
-    height: 95px;
+    bottom: -25px; 
+    height: 115px; 
+    left: 65%; 
+    transform: translateX(-50%); 
+    z-index: 1; 
     filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.35));
 }
+
 
 
         @keyframes miniSpin { 100% { transform: rotate(360deg); } }
