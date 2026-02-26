@@ -358,9 +358,10 @@
             overrides.forEach(ov => {
                 for (let i = ov.startMin; i < ov.endMin; i++) {
                     let st = (ov.type === 'emergency') ? 'emergency' : 'on';
-                    let infoText = (ov.type === 'emergency') 
-                        ? `⚠️ Аварійне відключення з ${ov.startStr} до ${ov.endStr}` 
+                                        let infoText = (ov.type === 'emergency') 
+                        ? `⚠️ Позапланове відключення з ${ov.startStr} до ${ov.endStr}` 
                         : `💡 Відключення скасовано з ${ov.startStr} до ${ov.endStr}`;
+
                     minuteMap[i] = { state: st, isOverride: true, info: infoText };
                 }
             });
@@ -428,9 +429,10 @@
             let badgeHtml = '';
             let intervalTextStyle = '';
 
-                        if (isEmergency) {
-                badgeHtml = `<div class="badge-row"><div class="badge emergency">${iconWarning} АВАРІЙНЕ</div></div>`;
+                                    if (isEmergency) {
+                badgeHtml = `<div class="badge-row"><div class="badge emergency">${iconWarning} ПОЗАПЛАНОВЕ</div></div>`;
             } else if (int.type === 'off') {
+
                 if (int.isModified) {
                     let statusText = isPast ? "ВІДКЛЮЧАЛИ" : (isActive ? "НЕМА СВІТЛА" : "СКАСОВАНО");
                     badgeHtml = `<div class="badge-row"><div class="badge on" style="text-decoration: line-through; opacity: 0.5;">${iconLightningSVG} СВІТЛО</div><span class="badge-modifier emergency">${statusText}</span></div>`;
@@ -735,9 +737,10 @@
         <button class="f-link" onclick="sendCustomEdit('cancel')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(251, 191, 36, 0.1); color: var(--c-yellow); border-color: var(--c-yellow); font-size: 14px;">
             💡 Світло є (Скасувати)
         </button>
-        <button class="f-link" onclick="sendCustomEdit('emergency')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(217, 70, 59, 0.1); color: var(--c-red); border-color: var(--c-red); font-size: 14px;">
-            ⚠️ Аварійне (Нема світла)
+                <button class="f-link" onclick="sendCustomEdit('emergency')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(217, 70, 59, 0.1); color: var(--c-red); border-color: var(--c-red); font-size: 14px;">
+            ⚠️ Позапланове (Нема світла)
         </button>
+
         <button class="f-link" onclick="sendResetDay()" style="width: 100%; justify-content: center; margin-bottom: 20px; background: rgba(255, 255, 255, 0.05); color: #aaa; border: 1px dashed #555; font-size: 14px;">
             🔄 Скинути всі зміни за добу
         </button>
