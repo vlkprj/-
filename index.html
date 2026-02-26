@@ -101,23 +101,36 @@
         .source-text { font-size: 12px; color: #666; font-weight: 500; }
         .loader { text-align: center; color: #888; margin-top: 50px; font-weight: bold; }
                  @keyframes sonyaBreath {
-            0% { transform: translateX(-50%) scale(1); opacity: 0.95; }
-            50% { transform: translateX(-50%) scale(1.05); opacity: 1; }
-            100% { transform: translateX(-50%) scale(1); opacity: 0.95; }
-        }
-        .mascot-header {
-            position: absolute;
-            left: 50%;
-            bottom: -15px;
-            height: 85px;
-            width: auto;
-            object-fit: contain;
-            transform-origin: bottom center;
-            animation: sonyaBreath 3s infinite ease-in-out;
-            filter: drop-shadow(0 0 15px rgba(217, 70, 59, 0.3));
-            pointer-events: none;
-            z-index: 10;
-        }
+    0% { transform: translateX(-50%) scale(1); opacity: 0.95; }
+    50% { transform: translateX(-50%) scale(1.05); opacity: 1; }
+    100% { transform: translateX(-50%) scale(1); opacity: 0.95; }
+}
+
+        
+.mascot-header {
+    position: absolute;
+    left: 50%;
+    width: auto;
+    object-fit: contain;
+    transform-origin: bottom center;
+    pointer-events: none;
+    z-index: 10;
+    transform: translateX(-50%);
+}
+
+.mascot-off {
+    bottom: -15px;
+    height: 85px;
+    animation: sonyaBreath 3s infinite ease-in-out;
+    filter: drop-shadow(0 0 15px rgba(217, 70, 59, 0.3));
+}
+
+.mascot-on {
+    bottom: -22px;
+    height: 95px;
+    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.35));
+}
+
 
         @keyframes miniSpin { 100% { transform: rotate(360deg); } }
         .mini-spinner { 
@@ -199,7 +212,9 @@
             <div class="date-badge" id="dateDisplay">ОЧІКУЄМО</div>
         </div>
               <div class="dashboard" style="position: relative;">
-            <img id="sonyaMascot" src="./sonya-off.PNG?v=1" alt="Соня" class="mascot-header" style="display: none;">
+            <img id="sonyaOff" src="./sonya-off.PNG?v=1" alt="Соня без світла" class="mascot-header mascot-off" style="display: none;">
+<img id="sonyaOn" src="./SonjaOn.webp" alt="Соня зі світлом" class="mascot-header mascot-on" style="display: none;">
+
 
 
             <div class="status-box">
@@ -438,7 +453,7 @@ minuteMap[i] = { state: st, isOverride: true, info: infoText };
         for (let i = 0; i <= 1440; i++) {
             let m = minuteMap[i];
             
-            // Захист від пустих хвилин (якщо інфа відсутня, вважаємо, що світло є)
+            // Захист від пустих хвилин (якщо інфа відсутня, вважаємо, шо світло є)
             if (i < 1440 && !m) {
                 m = { state: 'on', isOverride: false, info: null };
             }
@@ -759,7 +774,7 @@ minuteMap[i] = { state: st, isOverride: true, info: infoText };
                 }
             }
 
-            if (currentIntIndex !== lastRenderedIntervalIndex || lastRenderedIntervalIndex === -1) {
+                        if (currentIntIndex !== lastRenderedIntervalIndex || lastRenderedIntervalIndex === -1) {
                 renderAllDays(currentMins);
                 lastRenderedIntervalIndex = currentIntIndex;
             }
@@ -769,19 +784,19 @@ minuteMap[i] = { state: st, isOverride: true, info: infoText };
                 timerStatus.style.color = 'var(--c-red)';
                 timerDisplay.className = 'timer-time off';
                 timerLabel.textContent = 'До включення:';
-                                
-                document.getElementById('sonyaMascot').style.display = 'block';
-
+                document.getElementById('sonyaOff').style.display = 'block';
+                document.getElementById('sonyaOn').style.display = 'none';
             } else {
                 timerStatus.innerHTML = `${statusIconOn} Світло є`;
                 timerStatus.style.color = 'var(--c-yellow)';
                 timerDisplay.className = 'timer-time on';
                 timerLabel.textContent = 'До відключення:';
-                                document.getElementById('sonyaMascot').style.display = 'none';
-
+                document.getElementById('sonyaOff').style.display = 'none';
+                document.getElementById('sonyaOn').style.display = 'block';
             }
 
             if (nextEventMinsAbs !== null) {
+
                 let diffMins = nextEventMinsAbs - currentMins - 1;
                 let diffSecs = 60 - currentSecs;
                 if (diffSecs === 60) { diffSecs = 0; diffMins++; }
