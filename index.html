@@ -496,7 +496,7 @@
         return html;
     }
 
-    function renderAllDays(currentMins) {
+        function renderAllDays(currentMins) {
         const container = document.getElementById('timelineContainer');
         let fullHtml = '';
 
@@ -512,8 +512,6 @@
             </div>`;
         }
 
-       
-
         if (activeDates.length === 0) {
             fullHtml += `<div class="waiting-block">⏳ Очікуємо на графік від Обленерго</div>`;
             container.innerHTML = fullHtml;
@@ -524,23 +522,24 @@
             const dayData = dbDays[dateStr];
             const isToday = (index === 0);
 
-
             // Рахуємо сумарний час без світла
             const displayIntsCount = buildDisplayIntervals(dayData.intervals || [], dayData.overrides || []);
             let offMins = 0;
+ 
             displayIntsCount.forEach(int => {
                 let realState = 'on';
                 if (int.isEmergencyBlock) realState = 'off';
                 else if (int.type === 'off' && !int.isModified) realState = 'off';
-                else if (int.type === 'on' && int.isModified) realState = 'off'; // Якщо світло було, але скасували в аварію
+                else if (int.type === 'on' && int.isModified) 
+                    realState = 'off'; 
                 
                 if (realState === 'off') offMins += (int.endMin - int.startMin);
             });
             let hOff = Math.floor(offMins / 60);
             let mOff = offMins % 60;
+    
             let totalOffText = `${hOff} год ${mOff > 0 ? mOff + ' хв' : ''}`;
 
-            // Глобальна кнопка редагування (тільки для адмінів)
             let globalEditBtn = '';
             if (typeof isAdmin !== 'undefined' && isAdmin) {
                 globalEditBtn = `
@@ -551,31 +550,23 @@
                 </div>`;
             }
 
-
             if (!isToday) {
-    fullHtml += `
-        <div class="section-divider" style="margin: 40px 0 20px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-            <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
-            <div style="font-size: 11px; font-weight: 900; color: #888; text-transform: uppercase; letter-spacing: 1px;">ГРАФІК НА ${dateStr}</div>
-            <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
-        </div>`;
-}
-
-        fullHtml += `
-            <div style="text-align: center; margin-bottom: 20px;">
-                <span style="background: rgba(217, 70, 59, 0.1); border: 1px solid rgba(217, 70, 59, 0.2); color: var(--c-red); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 800;">
-                    Всього без світла: ${totalOffText}
-                </span>
-                ${globalEditBtn}
-            </div>`;
-
-        fullHtml += generateDayHtml(dayData.intervals, dayData.overrides || [], currentMins, isToday);
-
-
-
+                fullHtml += `
+                    <div class="section-divider" style="margin: 40px 0 20px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
+                        <div style="font-size: 11px; font-weight: 900; color: #888; text-transform: uppercase; letter-spacing: 1px;">ГРАФІК НА ${dateStr}</div>
                         <div style="height:1px; background:rgba(255,255,255,0.1); flex:1;"></div>
                     </div>`;
             }
+
+            fullHtml += `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <span style="background: rgba(217, 70, 59, 0.1); border: 1px solid rgba(217, 70, 59, 0.2); color: var(--c-red); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 800;">
+                        Всього без світла: ${totalOffText}
+                    </span>
+                    ${globalEditBtn}
+                </div>`;
+
             fullHtml += generateDayHtml(dayData.intervals, dayData.overrides || [], currentMins, isToday);
         });
 
@@ -599,7 +590,6 @@
         }
 
         container.innerHTML = fullHtml;
-
         if (!initialScrollDone) {
             setTimeout(() => {
                 const activeEl = document.querySelector('.active-now');
@@ -608,6 +598,7 @@
             }, 300);
         }
     }
+
 
     function startTimerAndRender() {
         let lastRenderedIntervalIndex = -1;
