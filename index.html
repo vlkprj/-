@@ -448,76 +448,75 @@
     }
 
         function buildDisplayIntervals(rawIntervals, overrides) {
-        
-        let minuteMap = new Array(1440).fill(null);
+    let minuteMap = new Array(1440).fill(null);
+    let baseMap = new Array(1440).fill(null);
 
-        rawIntervals.forEach(int => {
-            let type = int.type || int.planType || 'off'; 
-            for (let i = int.startMin; i < int.endMin; i++) {
-                minuteMap[i] = { state: type, isOverride: false, info: null };
+    rawIntervals.forEach(int => {
+        let type = int.type || int.planType || 'off';
+        for (let i = int.startMin; i < int.endMin; i++) {
+            let obj = { state: type, isOverride: false, info: null };
+            minuteMap[i] = { ...obj };
+            baseMap[i] = { ...obj };
+        }
+    });
+
+    if (overrides && overrides.length > 0) {
+        overrides.forEach(ov => {
+            for (let i = ov.startMin; i < ov.endMin; i++) {
+                if (ov.type === 'restore') {
+                    minuteMap[i] = baseMap[i] ? { ...baseMap[i] } : { state: 'on', isOverride: false, info: null };
+                } else {
+                    let st = ov.type === 'emergency' ? 'emergency' : (ov.type === 'partial' ? 'partial' : 'on');
+                    let infoText = '';
+                    if (ov.type === 'emergency') infoText = `⚠️ Позапланове відключення з ${ov.startStr} до ${ov.endStr}`;
+                    else if (ov.type === 'partial') infoText = `🌓 Світло частково з ${ov.startStr} до ${ov.endStr}`;
+                    else infoText = `💡 Відключення скасовано з ${ov.startStr} до ${ov.endStr}`;
+                    minuteMap[i] = { state: st, isOverride: true, info: infoText };
+                }
             }
         });
-
-
-        if (overrides && overrides.length > 0) {
-            overrides.forEach(ov => {
-                for (let i = ov.startMin; i < ov.endMin; i++) {
-                    let st = ov.type === 'emergency' ? 'emergency' : (ov.type === 'partial' ? 'partial' : 'on');
-      
-let infoText = '';
-if (ov.type === 'emergency') infoText = `⚠️ Позапланове відключення з ${ov.startStr} до ${ov.endStr}`;
-else if (ov.type === 'partial') infoText = `🌓 Світло частково з ${ov.startStr} до ${ov.endStr}`;
-else infoText = `💡 Відключення скасовано з ${ov.startStr} до ${ov.endStr}`;
-
-minuteMap[i] = { state: st, isOverride: true, info: infoText };
-
-                }
-            });
-        }
-
-                let merged = [];
-        let current = null;
-
-        for (let i = 0; i <= 1440; i++) {
-            let m = minuteMap[i];
-            
-            // Захист від пустих хвилин (якщо інфа відсутня, вважаємо, шо світло є)
-            if (i < 1440 && !m) {
-                m = { state: 'on', isOverride: false, info: null };
-            }
-
-            if (i === 0) {
-                current = { startMin: i, startStr: minsToStr(i), state: m.state, isOverride: m.isOverride, info: m.info };
-                continue;
-            }
-
-            let isDifferent = i < 1440 && m && (m.state !== current.state || m.isOverride !== current.isOverride || m.info !== current.info);
-
-            if (i === 1440 || isDifferent) {
-                current.endMin = i;
-                current.displayEndStr = minsToStr(i);
-                merged.push(current);
-
-                if (i < 1440) {
-                    current = { startMin: i, startStr: minsToStr(i), state: m.state, isOverride: m.isOverride, info: m.info };
-                }
-            }
-        }
-
-
-        return merged.map(m => {
-    return {
-        startMin: m.startMin, endMin: m.endMin,
-        startStr: m.startStr, displayEndStr: m.displayEndStr,
-        type: (m.state === 'emergency' || m.state === 'partial' ? 'on' : m.state),
-        isEmergencyBlock: (m.state === 'emergency'),
-        isPartialBlock: (m.state === 'partial'),
-        isModified: m.isOverride,
-        info: m.info
-    };
-});
-
     }
+
+    let merged = [];
+    let current = null;
+
+    for (let i = 0; i <= 1440; i++) {
+        let m = minuteMap[i];
+        
+        if (i < 1440 && !m) {
+            m = { state: 'on', isOverride: false, info: null };
+        }
+
+        if (i === 0) {
+            current = { startMin: i, startStr: minsToStr(i), state: m.state, isOverride: m.isOverride, info: m.info };
+            continue;
+        }
+
+        let isDifferent = i < 1440 && m && (m.state !== current.state || m.isOverride !== current.isOverride || m.info !== current.info);
+        if (i === 1440 || isDifferent) {
+            current.endMin = i;
+            current.displayEndStr = minsToStr(i);
+            merged.push(current);
+
+            if (i < 1440) {
+                current = { startMin: i, startStr: minsToStr(i), state: m.state, isOverride: m.isOverride, info: m.info };
+            }
+        }
+    }
+
+    return merged.map(m => {
+        return {
+            startMin: m.startMin, endMin: m.endMin,
+            startStr: m.startStr, displayEndStr: m.displayEndStr,
+            type: (m.state === 'emergency' || m.state === 'partial' ? 'on' : m.state),
+            isEmergencyBlock: (m.state === 'emergency'),
+            isPartialBlock: (m.state === 'partial'),
+            isModified: m.isOverride,
+            info: m.info
+        };
+    });
+}
+
 
     function generateDayHtml(rawIntervals, overrides, currentMins, isToday) { 
         const displayIntervals = buildDisplayIntervals(rawIntervals || [], overrides);
