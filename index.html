@@ -101,41 +101,25 @@
         .disclaimer-box { display: flex; align-items: flex-start; text-align: left; gap: 8px; font-size: 13px; color: #777; line-height: 1.4; font-weight: 500; background: rgba(255,255,255,0.03); padding: 12px 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
         .source-text { font-size: 12px; color: #666; font-weight: 500; }
         .loader { text-align: center; color: #888; margin-top: 50px; font-weight: bold; }
-                 @keyframes sonyaBreath {
-    0% { transform: translateX(-50%) scale(1); opacity: 0.95; }
-    50% { transform: translateX(-50%) scale(1.05); opacity: 1; }
-    100% { transform: translateX(-50%) scale(1); opacity: 0.95; }
-}
-
-        
-.mascot-header {
+                 .mascot-header {
     position: absolute;
     left: 50%;
+    bottom: 5px;
+    transform: translateX(-50%);
     width: auto;
-    max-width: 100%;
-    object-fit: contain; 
+    max-width: 90%;
+    height: 95px;
+    object-fit: contain;
     transform-origin: bottom center;
     pointer-events: none;
-    z-index: 10;
-    transform: translateX(-50%);
+    z-index: 1;
 }
 
-.mascot-off {
-    bottom: 5px;
-    height: 85px;
-    animation: sonyaBreath 3s infinite ease-in-out;
-    filter: drop-shadow(0 0 15px rgba(217, 70, 59, 0.3));
-    z-index: 1; 
-}
-
-
-.mascot-on {
-    bottom: 5px;
-    height: 90px;
-    left: 50%;
-    transform: translateX(-50%); 
-    z-index: 1; 
-    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.35));
+@media (max-width: 380px) {
+    .mascot-header {
+        height: 75px;
+        bottom: 8px;
+    }
 }
 
 
@@ -228,8 +212,7 @@
             <div class="date-badge" id="dateDisplay">ОЧІКУЄМО</div>
         </div>
               <div class="dashboard" style="position: relative;">
-            <img id="sonyaOff" src="./sonya-off.PNG?v=1" alt="Соня без світла" class="mascot-header mascot-off" style="display: none;">
-<img id="sonyaOn" src="./SonjaOn.webp" alt="Соня зі світлом" class="mascot-header mascot-on" style="display: none;">
+            <img id="mascotImg" src="" alt="Cat" class="mascot-header" style="display: none;">
 
 
 
@@ -312,6 +295,18 @@
         let [h, m] = t.split(':').map(Number);
         return h * 60 + m;
     }
+
+let currentMascotState = null;
+const offMascots = ['./catOFFflashlight.webp', './catoffcandle.webp', './catOFFpbcndl.webp'];
+
+document.querySelector('.sticky-header').addEventListener('click', () => {
+    const img = document.getElementById('mascotImg');
+    if (img.style.display !== 'none' && img.src) {
+        const baseSrc = img.src.split('?')[0];
+        img.src = baseSrc + '?v=' + Date.now();
+    }
+});
+
 
     function minsToStr(mins) {
         if (mins === 1440) return "00:00";
@@ -811,7 +806,7 @@
                 }
             }
 
-            if (currentIntIndex !== lastRenderedIntervalIndex || lastRenderedIntervalIndex === -1) {
+                       if (currentIntIndex !== lastRenderedIntervalIndex || lastRenderedIntervalIndex === -1) {
                 renderAllDays(currentMins);
                 lastRenderedIntervalIndex = currentIntIndex;
             }
@@ -826,8 +821,9 @@
                 timerDisplay.style.textShadow = 'none';
                 timerDisplay.textContent = "--:--:--";
                 timerLabel.innerHTML = `Очікування...`;
-                document.getElementById('sonyaOff').style.display = 'none';
-                document.getElementById('sonyaOn').style.display = 'block';
+                
+                document.getElementById('mascotImg').style.display = 'none';
+                currentMascotState = 'placeholder';
             } else if (currentState === 'off') {
                 timerStatus.innerHTML = `${statusIconOff} Світла немає`;
                 timerStatus.style.color = 'var(--c-red)';
@@ -835,8 +831,15 @@
                 timerDisplay.style.color = ''; 
                 timerDisplay.style.textShadow = '';
                 timerLabel.textContent = 'До включення:';
-                document.getElementById('sonyaOff').style.display = 'block';
-                document.getElementById('sonyaOn').style.display = 'none';
+                
+                const mascotImg = document.getElementById('mascotImg');
+                if (currentMascotState !== 'off') {
+                    const randomSrc = offMascots[Math.floor(Math.random() * offMascots.length)];
+                    mascotImg.src = randomSrc + '?v=' + Date.now();
+                    mascotImg.style.display = 'block';
+                    mascotImg.style.filter = 'drop-shadow(0 0 15px rgba(217, 70, 59, 0.3))';
+                    currentMascotState = 'off';
+                }
             } else {
                 timerStatus.innerHTML = `${statusIconOn} Світло є`;
                 timerStatus.style.color = 'var(--c-yellow)';
@@ -844,8 +847,14 @@
                 timerDisplay.style.color = '';
                 timerDisplay.style.textShadow = '';
                 timerLabel.textContent = 'До відключення:';
-                document.getElementById('sonyaOff').style.display = 'none';
-                document.getElementById('sonyaOn').style.display = 'block';
+                
+                const mascotImg = document.getElementById('mascotImg');
+                if (currentMascotState !== 'on') {
+                    mascotImg.src = './catOnlight.webp?v=' + Date.now();
+                    mascotImg.style.display = 'block';
+                    mascotImg.style.filter = 'drop-shadow(0 0 20px rgba(251, 191, 36, 0.35))';
+                    currentMascotState = 'on';
+                }
             }
 
             if (nextEventMinsAbs !== null) {
@@ -872,6 +881,7 @@
 
     fetchData();
 </script>
+
 
 <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
 
