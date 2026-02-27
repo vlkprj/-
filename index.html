@@ -112,7 +112,8 @@
     position: absolute;
     left: 50%;
     width: auto;
-    object-fit: contain;
+    max-width: 100%;
+    object-fit: contain; 
     transform-origin: bottom center;
     pointer-events: none;
     z-index: 10;
@@ -120,20 +121,21 @@
 }
 
 .mascot-off {
-    bottom: -15px;
+    bottom: 5px;
     height: 85px;
     animation: sonyaBreath 3s infinite ease-in-out;
     filter: drop-shadow(0 0 15px rgba(217, 70, 59, 0.3));
 }
 
 .mascot-on {
-    bottom: -25px; 
-    height: 115px; 
-    left: 65%; 
+    bottom: 5px;
+    height: 90px;
+    left: 50%;
     transform: translateX(-50%); 
     z-index: 1; 
     filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.35));
 }
+
 
 
 
@@ -161,13 +163,20 @@
         margin-top: -7px;
     }
     
-   
     .tl-head { 
         padding-right: 25px; 
     }
+
+    .mascot-on {
+        height: 70px; 
+        bottom: 8px;
+    }
+
+    .mascot-off {
+        height: 65px;
+        bottom: 8px;
+    }
 }
-
-
 .tl-dot-micro { transition: all 0.3s ease; }
 .tl-dot-micro.emergency, .tl-dot-micro.off { animation: dropFlow 1.5s infinite ease-in-out; animation-delay: calc(var(--i) * 0.2s); }
 .tl-dot-micro.on { animation: pulseFlow 2s infinite ease-in-out; animation-delay: calc(var(--i) * 0.15s); }
