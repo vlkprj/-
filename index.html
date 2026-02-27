@@ -249,7 +249,12 @@
 
     
     <div id="timelineContainer"></div>
-    <div class="app-footer">
+     <div class="app-footer">
+        
+        <div class="source-text" style="font-size: 13px; color: #888; margin-bottom: 25px; line-height: 1.4; padding: 0 10px;">
+            <b style="color: #aaa;">Джерело:</b> Харківобленерго, Сергій Д. та інші інсайдери Валківського чатіку
+        </div>
+
         <div class="footer-links">
             <a href="https://t.me/share/url?url=t.me/valkyelectrifybot/electric&text=💡%20Актуальний%20графік%20відключень%20світла%20у%20Валках" class="f-link" target="_blank">
                 <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
@@ -272,13 +277,8 @@
                 На екран
             </div>
         </div>
-        
-        <div class="source-text" style="font-size: 13px; line-height: 1.5; margin-top: 5px;">
-            <b>Джерело:</b><br>
-            Харківобленерго <br>
-            <span style="font-size: 12px; opacity: 0.85;">(а також Сергій Д. та інші інсайдери Валківського чатіку)</span>
-        </div>
     </div>
+
 
 
 <script>
@@ -509,7 +509,7 @@ minuteMap[i] = { state: st, isOverride: true, info: infoText };
         startStr: m.startStr, displayEndStr: m.displayEndStr,
         type: (m.state === 'emergency' || m.state === 'partial' ? 'on' : m.state),
         isEmergencyBlock: (m.state === 'emergency'),
-        isPartialBlock: (m.state === 'partial'), // <--- ДОДАНО ЦЕ
+        isPartialBlock: (m.state === 'partial'),
         isModified: m.isOverride,
         info: m.info
     };
