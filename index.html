@@ -406,58 +406,91 @@ document.addEventListener('click', () => {
     }
 
     async function fetchData() {
-        try {
-            const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocache=${new Date().getTime()}`, { cache: 'no-store', headers: { 'Pragma': 'no-cache' } });
-            const result = await response.json();
-            const data = result.record;
+    try {
+        const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?nocache=${new Date().getTime()}`, { cache: 'no-store', headers: { 'Pragma': 'no-cache' } });
+        const result = await response.json();
+        const data = result.record;
 
-            const months = ["СІЧНЯ", "ЛЮТОГО", "БЕРЕЗНЯ", "КВІТНЯ", "ТРАВНЯ", "ЧЕРВНЯ", "ЛИПНЯ", "СЕРПНЯ", "ВЕРЕСНЯ", "ЖОВТНЯ", "ЛИСТОПАДА", "ГРУДНЯ"];
-            const today = new Date();
-            const todayStr = `${today.getDate()} ${months[today.getMonth()]}`;
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowStr = `${tomorrow.getDate()} ${months[tomorrow.getMonth()]}`;
+        const months = ["СІЧНЯ", "ЛЮТОГО", "БЕРЕЗНЯ", "КВІТНЯ", "ТРАВНЯ", "ЧЕРВНЯ", "ЛИПНЯ", "СЕРПНЯ", "ВЕРЕСНЯ", "ЖОВТНЯ", "ЛИСТОПАДА", "ГРУДНЯ"];
+        const today = new Date();
+        const todayStr = `${today.getDate()} ${months[today.getMonth()]}`;
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = `${tomorrow.getDate()} ${months[tomorrow.getMonth()]}`;
 
-            dbDays = {};
-            activeDates = [];
-            globalAnnouncement = data.announcement || null;
+        dbDays = {};
+        activeDates = [];
+        globalAnnouncement = data.announcement || null;
 
-                        if (data.days) {
-                if (data.days[todayStr]) { 
-                    dbDays[todayStr] = data.days[todayStr]; 
-                    activeDates.push(todayStr); 
-                } else {
-                    
-                    dbDays[todayStr] = { intervals: [], overrides: [] };
-                    activeDates.push(todayStr);
+        if (data.days) {
+            if (data.days[todayStr]) { 
+                dbDays[todayStr] = data.days[todayStr]; 
+                activeDates.push(todayStr); 
+            } else {
+                dbDays[todayStr] = { intervals: [], overrides: [] };
+                activeDates.push(todayStr);
+            }
+            
+            if (data.days[tomorrowStr]) { 
+                dbDays[tomorrowStr] = data.days[tomorrowStr]; 
+                activeDates.push(tomorrowStr); 
+            }
+        } else if (data.intervals) { 
+            const fallbackDate = data.date || "СЬОГОДНІ";
+            dbDays = { [fallbackDate]: { intervals: data.intervals, overrides: data.overrides || [] } };
+            activeDates.push(fallbackDate);
+        }
+
+       
+        let parsedAnnouncement = globalAnnouncement;
+        if (globalAnnouncement && activeDates.length > 0) {
+            const timeMatch = globalAnnouncement.match(/\[(\d{2}:\d{2})-(\d{2}:\d{2})\]/);
+            if (timeMatch) {
+                let sStr = timeMatch[1];
+                let eStr = timeMatch[2];
+                let endMins = timeToMins(eStr);
+                
+             
+                if (!dbDays[activeDates[0]].overrides) {
+                    dbDays[activeDates[0]].overrides = [];
                 }
                 
-                if (data.days[tomorrowStr]) { 
-                    dbDays[tomorrowStr] = data.days[tomorrowStr]; 
-                    activeDates.push(tomorrowStr); 
+                // Пушимо аварійне відключення локально
+                dbDays[activeDates[0]].overrides.push({
+                    type: 'emergency',
+                    startStr: sStr,
+                    endStr: eStr,
+                    startMin: timeToMins(sStr),
+                    endMin: endMins
+                });
+                
+              
+                parsedAnnouncement = globalAnnouncement.replace(timeMatch[0], '').trim();
+                
+               
+                let now = new Date();
+                let currentMins = now.getHours() * 60 + now.getMinutes();
+                if (currentMins >= endMins) {
+                    parsedAnnouncement = ""; 
                 }
-            } else if (data.intervals) { 
-
-                const fallbackDate = data.date || "СЬОГОДНІ";
-                dbDays = { [fallbackDate]: { intervals: data.intervals, overrides: data.overrides || [] } };
-                activeDates.push(fallbackDate);
             }
-
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('app').style.display = 'block';
-
-            if (globalAnnouncement) {
-                document.getElementById('toastText').textContent = globalAnnouncement;
-                document.getElementById('toastInside').style.display = 'flex';
-                setTimeout(() => { document.getElementById('toastInside').style.display = 'none'; }, 9000);
-            }
-
-
-            startTimerAndRender();
-        } catch (error) {
-            document.getElementById('loader').textContent = "Помилка завантаження. Спробуй пізніше.";
         }
+
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+
+       
+        if (parsedAnnouncement) {
+            document.getElementById('toastText').textContent = parsedAnnouncement;
+            document.getElementById('toastInside').style.display = 'flex';
+            setTimeout(() => { document.getElementById('toastInside').style.display = 'none'; }, 9000);
+        }
+
+        startTimerAndRender();
+    } catch (error) {
+        document.getElementById('loader').textContent = "Помилка завантаження. Спробуй пізніше.";
     }
+}
 
         function buildDisplayIntervals(rawIntervals, overrides) {
     let minuteMap = new Array(1440).fill(null);
