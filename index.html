@@ -225,14 +225,15 @@
     100% { left: 200%; }
 }
 
-.past-interval .tl-dot-micro,
-.past-interval .zen-particle,
-.past-interval .zen-flash {
+.past-interval:not(:active) .tl-dot-micro,
+.past-interval:not(:active) .zen-particle,
+.past-interval:not(:active) .zen-flash {
     animation: none !important;
     box-shadow: none !important;
     opacity: 0.3 !important;
     transform: scale(0.8) !important;
 }
+
 
 
     </style>
