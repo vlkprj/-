@@ -165,7 +165,10 @@
 }
 .tl-dot-micro { transition: all 0.3s ease; }
 .tl-dot-micro.emergency, .tl-dot-micro.off { animation: sparkFail 3s infinite; animation-delay: calc(var(--i) * 0.3s); }
-.tl-dot-micro.on { animation: pulseFlow 2s infinite ease-in-out; animation-delay: calc(var(--i) * 0.15s); }
+.tl-dot-micro.on { 
+    animation: electronFlow 1.2s infinite linear; 
+    animation-delay: calc(var(--i) * 0.12s); 
+}
 
 @keyframes sparkFail {
     0%, 100% { opacity: 0.2; transform: scale(0.8); }
@@ -175,9 +178,10 @@
     25%, 90% { opacity: 0.2; transform: scale(0.8); }
 }
 
-@keyframes pulseFlow { 
-    0%, 100% { opacity: 0.4; transform: translateY(0); } 
-    50% { opacity: 1; transform: translateY(-3px); box-shadow: 0 0 6px var(--c-yellow); } 
+@keyframes electronFlow {
+    0% { opacity: 0.3; transform: scale(0.85); background: var(--c-yellow); box-shadow: none; }
+    15% { opacity: 1; transform: scale(1.2); background: #fff; box-shadow: 0 0 8px var(--c-yellow), 0 0 15px var(--c-yellow); }
+    35%, 100% { opacity: 0.3; transform: scale(0.85); background: var(--c-yellow); box-shadow: none; }
 }
 
 .tl-dot-micro.happy-end {
@@ -189,9 +193,10 @@
     filter: blur(1px);
 }
 @keyframes happyGlow { 
-    0% { transform: scale(1); opacity: 0.6; filter: blur(2px); } 
-    100% { transform: scale(1.5); opacity: 1; filter: blur(4px); box-shadow: 0 0 30px 12px rgba(251, 191, 36, 0.6); } 
+    0% { transform: scale(1); opacity: 0.7; filter: blur(1px); box-shadow: 0 0 15px 5px rgba(251, 191, 36, 0.4); } 
+    100% { transform: scale(1.25); opacity: 1; filter: blur(2px); box-shadow: 0 0 25px 8px rgba(251, 191, 36, 0.6); } 
 }
+
 
 .f-link-shine { position: relative; overflow: hidden; }
 .f-link-shine::after {
