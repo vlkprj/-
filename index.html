@@ -235,6 +235,15 @@
     transform: scale(0.8) !important;
 }
 
+@keyframes footerPeek {
+    0% { transform: translateY(0); }
+    30% { transform: translateY(-12px); }
+    100% { transform: translateY(0); }
+}
+
+.footer-bounce {
+    animation: footerPeek 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
 
     </style>
@@ -842,6 +851,10 @@ document.addEventListener('click', () => {
                 const activeEl = document.querySelector('.active-now');
                 if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 initialScrollDone = true;
+                setTimeout(() => {
+                    const f = document.querySelector('.app-footer');
+                    if (f) f.classList.add('footer-bounce');
+                }, 1000);
             }, 300);
         }
     }
