@@ -983,53 +983,69 @@ document.addEventListener('click', () => {
 async function takeScreenshotSimple() {
     const btn = document.getElementById('screenshotBtn');
     const loader = document.getElementById('loader');
-    const footer = document.querySelector('.app-footer');
+    const target = document.getElementById('screenshotTarget');
     
     btn.style.display = 'none'; 
-    if (footer) footer.style.display = 'none'; 
-    
     loader.textContent = 'Секунду... 📸';
     loader.style.display = 'block';
-    document.getElementById('app').style.opacity = '0.5'; 
     
- 
-    await new Promise(r => setTimeout(r, 50));
     
+    target.innerHTML = '';
+    const headerClone = document.querySelector('.sticky-header').cloneNode(true);
+    
+    headerClone.style.position = 'relative';
+    headerClone.style.background = '#060606';
+    target.appendChild(headerClone);
+
+    
+    const activeItem = document.querySelector('.tl-item.active-now');
+    if (activeItem) {
+        const itemClone = activeItem.cloneNode(true);
+        itemClone.style.animation = 'none'; 
+        target.appendChild(itemClone);
+        
+        const nextItem = activeItem.nextElementSibling;
+        if (nextItem && nextItem.classList.contains('tl-item')) {
+            const nextClone = nextItem.cloneNode(true);
+            target.appendChild(nextClone);
+        }
+    }
+
+
+    const footerLabel = document.createElement('div');
+    footerLabel.style = "text-align:center; color:#555; font-size:12px; margin-top:15px; font-weight:bold; text-transform:uppercase;";
+    footerLabel.innerHTML = "t.me/valkyelectrifybot/electric";
+    target.appendChild(footerLabel);
+
     try {
-        const canvas = await html2canvas(document.getElementById('app'), {
+        const canvas = await html2canvas(target, {
             backgroundColor: '#060606',
-            scale: window.devicePixelRatio || 2, 
-            useCORS: true 
+            scale: 2,
+            useCORS: true
         });
         
-        if (footer) footer.style.display = 'block'; 
-        
-        const imgData = canvas.toDataURL('image/jpeg', 0.85);
+        const imgData = canvas.toDataURL('image/jpeg', 0.9);
         document.getElementById('screenPreviewSimple').src = imgData;
         
         const saveBtn = document.getElementById('saveImgBtn');
         saveBtn.onclick = () => {
             const a = document.createElement('a');
             a.href = imgData;
-            a.download = `Valky_Svitlo_${new Date().getTime()}.jpg`;
-            document.body.appendChild(a);
+            a.download = `Valky_Status.jpg`;
             a.click();
-            document.body.removeChild(a);
         };
         
         loader.style.display = 'none';
-        document.getElementById('app').style.opacity = '1';
         document.getElementById('screenModalSimple').style.display = 'flex';
         btn.style.display = 'flex';
         
     } catch (err) {
-        alert('Не вдалося зробити скрін: ' + err.message);
-        if (footer) footer.style.display = 'block'; 
+        alert('Помилка: ' + err.message);
         loader.style.display = 'none';
-        document.getElementById('app').style.opacity = '1';
         btn.style.display = 'flex';
     }
 }
+
 
 
     fetchData();
@@ -1065,6 +1081,8 @@ async function takeScreenshotSimple() {
 </div>
 
 
+<div id="screenshotTarget" style="position: absolute; left: -9999px; top: 0; width: 375px; background: #060606; padding: 20px; box-sizing: border-box; border: 1px solid #222;">
+    </div>
 
 <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
 
