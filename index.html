@@ -98,7 +98,13 @@
         .f-link { color: #aaa; text-decoration: none; font-size: 13px; font-weight: 700; background: rgba(255,255,255,0.06); padding: 11px 18px; border-radius: 14px; transition: 0.2s; display: flex; align-items: center; gap: 7px; border: 1px solid rgba(255,255,255,0.07); }
         .f-link:active { background: rgba(255,255,255,0.12); color: #fff; }
         .f-link svg { flex-shrink: 0; }
-        .disclaimer-box { display: flex; align-items: flex-start; text-align: left; gap: 8px; font-size: 13px; color: #777; line-height: 1.4; font-weight: 500; background: rgba(255,255,255,0.03); padding: 12px 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        .disclaimer-box { 
+            display: flex; align-items: flex-start; text-align: left; gap: 8px; font-size: 13px;
+            color: #777; line-height: 1.4; font-weight: 500; background: rgba(255,255,255,0.03); 
+            padding: 12px 15px; border-radius: 12px; margin: 0 auto 15px auto; 
+            border: 1px solid rgba(255,255,255,0.05); max-width: fit-content; 
+        }
+
         .source-text { font-size: 12px; color: #666; font-weight: 500; }
         .loader { text-align: center; color: #888; margin-top: 50px; font-weight: bold; }
                  .mascot-header {
@@ -252,11 +258,12 @@
 
 <div id="loader" class="loader">Синхронізація...⚡</div>
 
-<div id="toastInside" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(10, 10, 12, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.05); border-left: 3px solid var(--c-yellow); border-radius: 14px; padding: 16px 20px; width: 90%; max-width: 400px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); align-items: center; gap: 12px;">
-    <div style="font-size: 22px; line-height: 1; filter: drop-shadow(0 0 5px rgba(255,255,255,0.2));">💬</div>
+<div id="toastInside" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: #111; border: 1px solid #333; border-radius: 20px; padding: 15px 20px; width: max-content; max-width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.5); align-items: center; gap: 12px;">
+    <div style="font-size: 22px; line-height: 1;">💬</div>
     <div id="toastText" style="color: #f4f4f5; font-size: 14px; font-weight: 700; flex-grow: 1; line-height: 1.4; letter-spacing: 0.3px;"></div>
     <div onclick="document.getElementById('toastInside').style.display='none'" style="color: #666; font-size: 26px; cursor: pointer; line-height: 1; padding-bottom: 2px; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">&times;</div>
 </div>
+
 
 
 
@@ -658,20 +665,30 @@ document.addEventListener('click', () => {
                 badgeHtml = `<div class="badge-row"><div class="badge emergency">${iconWarning} ПОЗАПЛАНОВЕ</div></div>`;
             } else if (isPartial) { 
                 badgeHtml = `<div class="badge-row"><div class="badge partial">🌓 ЧАСТКОВО</div></div>`;
-            } else if (int.type === 'off') {
-
+            } else             if (int.type === 'off') {
                 if (int.isModified) {
-                    let statusText = isPast ? "ВІДКЛЮЧАЛИ" : (isActive ? "НЕМА СВІТЛА" : "СКАСОВАНО");
-                    badgeHtml = `<div class="badge-row"><div class="badge on" style="text-decoration: line-through; opacity: 0.5;">${iconLightningSVG} СВІТЛО</div><span class="badge-modifier emergency">${statusText}</span></div>`;
-                    intervalTextStyle = `color: rgba(217, 70, 59, 0.7); text-decoration: line-through;`;
+                    let statusText = isPast ? "ВІДКЛЮЧАЛИ ПОЗАПЛАНОВО" : "ПОЗАПЛАНОВЕ / АВАРІЙНЕ";
+                    badgeHtml = `<div class="badge-row"><div class="badge emergency" style="border: 1px solid var(--c-red); box-shadow: 0 0 10px rgba(217,70,59,0.2);">${iconWarning} ${statusText}</div></div>`;
+                    intervalTextStyle = `color: var(--c-red); font-weight: 900;`;
                 } else {
                     badgeHtml = `<div class="badge-row"><div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div></div>`;
                 }
             } else if (int.type === 'on') {
                 if (int.isModified) {
-                    let statusText = isPast ? `${iconLightningSVG} СВІТЛО БУЛО` : (isActive ? `${iconLightningSVG} Є СВІТЛО` : "СКАСОВАНО");
-                    badgeHtml = `<div class="badge-row"><div class="badge off" style="text-decoration: line-through; opacity: 0.5;">${iconBan} ВІДКЛЮЧЕННЯ</div><span class="badge-modifier rescued" style="display: flex; align-items: center; gap: 4px;">${statusText}</span></div>`;
-                    intervalTextStyle = `color: rgba(251, 191, 36, 0.7); text-decoration: line-through;`;
+                    let earlyMins = int.endMin - int.startMin;
+                    let hE = Math.floor(earlyMins / 60);
+                    let mE = earlyMins % 60;
+                    let earlyText = (hE > 0 ? hE + ' год ' : '') + (mE > 0 ? mE + ' хв' : '');
+                    let infoMsg = '💡 Увімкнули раніше на ' + earlyText.trim();
+                    
+                    let statusText = isPast ? "СВІТЛО БУЛО" : "УВІМКНУЛИ";
+                    badgeHtml = `<div class="badge-row">
+                        <div class="badge on" style="border: 1px solid #22c55e; color: #22c55e; background: rgba(34, 197, 94, 0.1); box-shadow: 0 0 10px rgba(34, 197, 94, 0.2); cursor: pointer; gap: 4px;" onclick="alert('${infoMsg}')">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            ${statusText}
+                        </div>
+                    </div>`;
+                    intervalTextStyle = `color: #22c55e; font-weight: 900;`;
                 } else {
                     let lightText = isFuture ? "СВІТЛО" : "СВІТЛО Є";
                     badgeHtml = `<div class="badge-row"><div class="badge on">${iconLightningSVG} ${lightText}</div></div>`;
@@ -1010,24 +1027,27 @@ document.addEventListener('click', () => {
             <input type="time" id="editEnd" style="background: #222; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 8px; font-size: 16px; font-weight: bold; width: 100px; text-align: center;">
         </div>
         
-        <button class="f-link" onclick="sendCustomEdit('cancel')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(251, 191, 36, 0.1); color: var(--c-yellow); border-color: var(--c-yellow); font-size: 14px;">
-            💡 Світло є (Скасувати)
+        <h4 style="color: #888; margin: 0 0 12px 0; font-size: 13px; font-weight: normal; text-transform: uppercase; letter-spacing: 0.5px;">На вказаний вище час:</h4>
+        
+        <button class="f-link" onclick="sendCustomEdit('cancel')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(34, 197, 94, 0.1); color: #22c55e; border-color: rgba(34, 197, 94, 0.3); font-size: 14px;">
+            🟢 Зафіксувати, що тут Є СВІТЛО
         </button>
-                <button class="f-link" onclick="sendCustomEdit('emergency')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(217, 70, 59, 0.1); color: var(--c-red); border-color: var(--c-red); font-size: 14px;">
-            ⚠️ Позапланове (Нема світла)
+        <button class="f-link" onclick="sendCustomEdit('emergency')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(217, 70, 59, 0.1); color: var(--c-red); border-color: rgba(217, 70, 59, 0.3); font-size: 14px;">
+            🔴 Зафіксувати, що тут НЕМА СВІТЛА
+        </button>
+        <button class="f-link" onclick="sendCustomEdit('partial')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(249, 115, 22, 0.1); color: var(--c-orange); border-color: rgba(249, 115, 22, 0.3); font-size: 14px;">
+            🌓 Світло є частково
+        </button>
+        
+        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0;"></div>
+
+        <button class="f-link" onclick="sendCustomEdit('restore')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px dashed #aaa; font-size: 14px;">
+            🧹 Прибрати ручні зміни (Повернути графік)
+        </button>
+        <button class="f-link" onclick="sendResetDay()" style="width: 100%; justify-content: center; margin-bottom: 20px; background: rgba(217, 70, 59, 0.05); color: #aaa; border: 1px dashed rgba(217, 70, 59, 0.4); font-size: 14px;">
+            🔄 Скинути взагалі всі зміни за добу
         </button>
 
-<button class="f-link" onclick="sendCustomEdit('partial')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(249, 115, 22, 0.1); color: var(--c-orange); border-color: var(--c-orange); font-size: 14px;">
-    🌓 Частково (Є не у всіх)
-</button>
-
-<button class="f-link" onclick="sendCustomEdit('restore')" style="width: 100%; justify-content: center; margin-bottom: 20px; background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px dashed #aaa; font-size: 14px;">
-    🧹 Видалити цей блок (Повернути як було)
-</button>
-
-        <button class="f-link" onclick="sendResetDay()" style="width: 100%; justify-content: center; margin-bottom: 20px; background: rgba(255, 255, 255, 0.05); color: #aaa; border: 1px dashed #555; font-size: 14px;">
-            🔄 Скинути всі зміни за добу
-        </button>
         
         <div style="color: #666; font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; letter-spacing: 1px;" onclick="document.getElementById('editModal').style.display='none'">
             Закрити
