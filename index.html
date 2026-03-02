@@ -668,18 +668,19 @@ document.addEventListener('click', () => {
             let badgeHtml = '';
             let intervalTextStyle = '';
 
-            if (isEmergency) {
+                        if (isEmergency) {
                 badgeHtml = `<div class="badge-row"><div class="badge emergency">${iconWarning} ПОЗАПЛАНОВЕ</div></div>`;
             } else if (isPartial) { 
                 badgeHtml = `<div class="badge-row"><div class="badge partial">🌓 ЧАСТКОВО</div></div>`;
             } else if (int.type === 'off') {
-                let dot = int.isModified ? `<div onclick="alert('⚠️ Позапланове відключення (не за графіком)')" style="width: 8px; height: 8px; border-radius: 50%; background: var(--c-red); box-shadow: 0 0 5px rgba(217, 70, 59, 0.5); cursor: pointer; margin-left: 6px;"></div>` : '';
-                badgeHtml = `<div class="badge-row"><div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div>${dot}</div>`;
+                let dot = int.isModified ? `<div onclick="alert('⚠️ Змінено вручну')" style="width: 6px; height: 6px; border-radius: 50%; background: var(--c-red); box-shadow: 0 0 5px rgba(217, 70, 59, 0.8); display: inline-block; margin-left: 6px; vertical-align: middle;"></div>` : '';
+                badgeHtml = `<div class="badge-row"><div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ ${dot}</div></div>`;
             } else if (int.type === 'on') {
                 let lightText = isFuture ? "СВІТЛО" : "СВІТЛО Є";
-                let dot = int.isModified ? `<div onclick="alert('💡 Світло є (хоча за графіком мало б бути відключення)')" style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 5px rgba(34, 197, 94, 0.5); cursor: pointer; margin-left: 6px;"></div>` : '';
-                badgeHtml = `<div class="badge-row"><div class="badge on">${iconLightningSVG} ${lightText}</div>${dot}</div>`;
+                let dot = int.isModified ? `<div onclick="alert('💡 Змінено вручну')" style="width: 6px; height: 6px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 5px rgba(34, 197, 94, 0.8); display: inline-block; margin-left: 6px; vertical-align: middle;"></div>` : '';
+                badgeHtml = `<div class="badge-row"><div class="badge on">${iconLightningSVG} ${lightText} ${dot}</div></div>`;
             }
+
 
             const intIcon = isEmergency ? iconZapOff : (isPartial ? iconWarning : (isVisuallyOn ? iconBulb : iconZapOff));
 
