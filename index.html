@@ -394,29 +394,51 @@ document.addEventListener('click', () => {
         return `${h}:${m}`;
     }
 
-    function openEditModal(startStr, endStr) {
+        let origModalS = '';
+    let origModalE = '';
+    let origModalState = '';
+
+    function openEditModal(startStr, endStr, state) {
+        origModalS = startStr;
+        origModalE = (endStr === '00:00' || endStr === '24:00') ? '23:59' : endStr;
+        origModalState = state;
         document.getElementById('editStart').value = startStr;
-        document.getElementById('editEnd').value = (endStr === '00:00' || endStr === '24:00') ? '23:59' : endStr;
+        document.getElementById('editEnd').value = origModalE;
         document.getElementById('editModal').style.display = 'flex';
     }
 
-    async function sendCustomEdit(type) {
-        let s = document.getElementById('editStart').value;
-        let e = document.getElementById('editEnd').value;
-        if (!s || !e) return alert('Вкажи обидва значення часу');
-                if (e === '23:59') e = '24:00';
+    async function sendSmartEdit() {
+        let newS = document.getElementById('editStart').value;
+        let newE = document.getElementById('editEnd').value;
+        if (!newS || !newE) return alert('Вкажи час');
+        if (newE === '23:59') newE = '24:00';
+        let oE = origModalE === '23:59' ? '24:00' : origModalE;
+
+        let patches = [];
+        let nMinsS = timeToMins(newS);
+        let nMinsE = timeToMins(newE);
+        let oMinsS = timeToMins(origModalS);
+        let oMinsE = timeToMins(oE);
+        let isOffBlock = (origModalState === 'off' || origModalState === 'emergency');
+
+        // Магія: вираховуємо де обрізали блок і створюємо автоматичні латки
+        if (nMinsE < oMinsE) patches.push({ type: isOffBlock ? 'cancel' : 'emergency', start: newE, end: oE });
+        if (nMinsE > oMinsE) patches.push({ type: isOffBlock ? 'emergency' : 'cancel', start: oE, end: newE });
+        if (nMinsS > oMinsS) patches.push({ type: isOffBlock ? 'cancel' : 'emergency', start: origModalS, end: newS });
+        if (nMinsS < oMinsS) patches.push({ type: isOffBlock ? 'emergency' : 'cancel', start: newS, end: origModalS });
+
+        if (patches.length === 0) return alert('Межі не змінилися');
 
         document.getElementById('editModal').style.display = 'none';
         document.getElementById('app').style.display = 'none';
         document.getElementById('loader').style.display = 'block';
-        document.getElementById('loader').textContent = 'Записуємо зміни... ⚡';
+        document.getElementById('loader').textContent = 'Склеюємо графік... ⚡';
 
-        const payload = {
-            source: 'miniapp', secret: tg.initDataUnsafe?.start_param || '', userId: tg.initDataUnsafe?.user?.id || 0,
-            date: activeDates[0], action: 'add_override', type: type, interval: { start: s, end: e }
-        };
         try {
-            await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+            for (let p of patches) {
+                const payload = { source: 'miniapp', secret: tg.initDataUnsafe?.start_param || '', userId: tg.initDataUnsafe?.user?.id || 0, date: activeDates[0], action: 'add_override', type: p.type, interval: { start: p.start, end: p.end } };
+                await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+            }
             setTimeout(fetchData, 1500);
         } catch (err) { alert('❌ Помилка: ' + err.message); fetchData(); }
     }
@@ -554,74 +576,63 @@ document.addEventListener('click', () => {
     }
 }
 
+
         function buildDisplayIntervals(rawIntervals, overrides) {
-    let minuteMap = new Array(1440).fill(null);
-    let baseMap = new Array(1440).fill(null);
+    let minuteMap = new Array(1440).fill('on');
+    let baseMap = new Array(1440).fill('on');
 
     rawIntervals.forEach(int => {
         let type = int.type || int.planType || 'off';
         for (let i = int.startMin; i < int.endMin; i++) {
-            let obj = { state: type, isOverride: false, info: null };
-            minuteMap[i] = { ...obj };
-            baseMap[i] = { ...obj };
+            minuteMap[i] = type;
+            baseMap[i] = type;
         }
     });
 
     if (overrides && overrides.length > 0) {
         overrides.forEach(ov => {
             for (let i = ov.startMin; i < ov.endMin; i++) {
-                if (ov.type === 'restore') {
-                    minuteMap[i] = baseMap[i] ? { ...baseMap[i] } : { state: 'on', isOverride: false, info: null };
-                } else {
-                    let st = ov.type === 'emergency' ? 'emergency' : (ov.type === 'partial' ? 'partial' : 'on');
-                    let infoText = '';
-                    if (ov.type === 'emergency') infoText = `⚠️ Позапланове відключення з ${ov.startStr} до ${ov.endStr}`;
-                    else if (ov.type === 'partial') infoText = `🌓 Світло частково з ${ov.startStr} до ${ov.endStr}`;
-                    else infoText = `💡 Відключення скасовано з ${ov.startStr} до ${ov.endStr}`;
-                    minuteMap[i] = { state: st, isOverride: true, info: infoText };
-                }
+                if (ov.type === 'restore') minuteMap[i] = baseMap[i];
+                else if (ov.type === 'emergency') minuteMap[i] = 'emergency';
+                else if (ov.type === 'partial') minuteMap[i] = 'partial';
+                else minuteMap[i] = 'on'; 
             }
         });
     }
 
     let merged = [];
     let current = null;
-
     for (let i = 0; i <= 1440; i++) {
-        let m = minuteMap[i];
-        
-        if (i < 1440 && !m) {
-            m = { state: 'on', isOverride: false, info: null };
-        }
+        let state = i < 1440 ? minuteMap[i] : null;
 
         if (i === 0) {
-            current = { startMin: i, startStr: minsToStr(i), state: m.state, isOverride: m.isOverride, info: m.info };
+            current = { startMin: i, state: state };
             continue;
         }
 
-        let isDifferent = i < 1440 && m && (m.state !== current.state || m.isOverride !== current.isOverride || m.info !== current.info);
-        if (i === 1440 || isDifferent) {
+        if (i === 1440 || state !== current.state) {
             current.endMin = i;
-            current.displayEndStr = minsToStr(i);
-            merged.push(current);
-
-            if (i < 1440) {
-                current = { startMin: i, startStr: minsToStr(i), state: m.state, isOverride: m.isOverride, info: m.info };
+            
+          
+            let isMod = false;
+            if (current.state === 'off' || current.state === 'emergency' || current.state === 'partial') {
+                if (current.startMin > 0 && baseMap[current.startMin - 1] === 'off' && minuteMap[current.startMin - 1] === 'on') isMod = true;
+                if (current.endMin < 1440 && baseMap[current.endMin] === 'off' && minuteMap[current.endMin] === 'on') isMod = true;
             }
+
+            merged.push({
+                startMin: current.startMin, endMin: current.endMin,
+                startStr: minsToStr(current.startMin), displayEndStr: minsToStr(current.endMin),
+                type: (current.state === 'emergency' || current.state === 'partial') ? 'on' : current.state,
+                isEmergencyBlock: current.state === 'emergency',
+                isPartialBlock: current.state === 'partial',
+                isModified: isMod
+            });
+
+            if (i < 1440) current = { startMin: i, state: state };
         }
     }
-
-    return merged.map(m => {
-        return {
-            startMin: m.startMin, endMin: m.endMin,
-            startStr: m.startStr, displayEndStr: m.displayEndStr,
-            type: (m.state === 'emergency' || m.state === 'partial' ? 'on' : m.state),
-            isEmergencyBlock: (m.state === 'emergency'),
-            isPartialBlock: (m.state === 'partial'),
-            isModified: m.isOverride,
-            info: m.info
-        };
-    });
+    return merged;
 }
 
 
@@ -661,39 +672,19 @@ document.addEventListener('click', () => {
             let intervalTextStyle = '';
 
             
-            if (isEmergency) {
+                        if (isEmergency) {
                 badgeHtml = `<div class="badge-row"><div class="badge emergency">${iconWarning} ПОЗАПЛАНОВЕ</div></div>`;
             } else if (isPartial) { 
                 badgeHtml = `<div class="badge-row"><div class="badge partial">🌓 ЧАСТКОВО</div></div>`;
-            } else             if (int.type === 'off') {
-                if (int.isModified) {
-                    let statusText = isPast ? "ВІДКЛЮЧАЛИ ПОЗАПЛАНОВО" : "ПОЗАПЛАНОВЕ / АВАРІЙНЕ";
-                    badgeHtml = `<div class="badge-row"><div class="badge emergency" style="border: 1px solid var(--c-red); box-shadow: 0 0 10px rgba(217,70,59,0.2);">${iconWarning} ${statusText}</div></div>`;
-                    intervalTextStyle = `color: var(--c-red); font-weight: 900;`;
-                } else {
-                    badgeHtml = `<div class="badge-row"><div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div></div>`;
-                }
+            } else if (int.type === 'off') {
+                let dot = int.isModified ? `<div onclick="alert('⚠️ Позапланове відключення (не за графіком)')" style="width: 8px; height: 8px; border-radius: 50%; background: var(--c-red); box-shadow: 0 0 5px rgba(217, 70, 59, 0.5); cursor: pointer; margin-left: 6px;"></div>` : '';
+                badgeHtml = `<div class="badge-row"><div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div>${dot}</div>`;
             } else if (int.type === 'on') {
-                if (int.isModified) {
-                    let earlyMins = int.endMin - int.startMin;
-                    let hE = Math.floor(earlyMins / 60);
-                    let mE = earlyMins % 60;
-                    let earlyText = (hE > 0 ? hE + ' год ' : '') + (mE > 0 ? mE + ' хв' : '');
-                    let infoMsg = '💡 Увімкнули раніше на ' + earlyText.trim();
-                    
-                    let statusText = isPast ? "СВІТЛО БУЛО" : "УВІМКНУЛИ";
-                    badgeHtml = `<div class="badge-row">
-                        <div class="badge on" style="border: 1px solid #22c55e; color: #22c55e; background: rgba(34, 197, 94, 0.1); box-shadow: 0 0 10px rgba(34, 197, 94, 0.2); cursor: pointer; gap: 4px;" onclick="alert('${infoMsg}')">
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                            ${statusText}
-                        </div>
-                    </div>`;
-                    intervalTextStyle = `color: #22c55e; font-weight: 900;`;
-                } else {
-                    let lightText = isFuture ? "СВІТЛО" : "СВІТЛО Є";
-                    badgeHtml = `<div class="badge-row"><div class="badge on">${iconLightningSVG} ${lightText}</div></div>`;
-                }
+                let lightText = isFuture ? "СВІТЛО" : "СВІТЛО Є";
+                let dot = int.isModified ? `<div onclick="alert('💡 Світло є (хоча за графіком мало б бути відключення)')" style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 5px rgba(34, 197, 94, 0.5); cursor: pointer; margin-left: 6px;"></div>` : '';
+                badgeHtml = `<div class="badge-row"><div class="badge on">${iconLightningSVG} ${lightText}</div>${dot}</div>`;
             }
+
 
 
             const intIcon = isEmergency ? iconZapOff : (isPartial ? iconWarning : (isVisuallyOn ? iconBulb : iconZapOff));
@@ -722,12 +713,13 @@ document.addEventListener('click', () => {
             if (typeof isAdmin !== 'undefined' && isAdmin) {
                 adminControls = `
                 <div style="margin-top: 12px; display: flex; gap: 8px; z-index: 10; position: relative;">
-                    <button onclick="openEditModal('${int.startStr}', '${int.displayEndStr}')" 
+                    <button onclick="openEditModal('${int.startStr}', '${int.displayEndStr}', '${stateClass}')" 
                             style="background: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; cursor: pointer;">
                         ✏️ Редагувати
                     </button>
                 </div>`;
             }
+
 
                         let infoIconHtml = int.info ? 
             `<span onclick="alert('${int.info}')" style="margin-left: 8px; cursor: pointer; display: inline-flex; align-items: center; color: #888; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'">
@@ -1016,43 +1008,30 @@ document.addEventListener('click', () => {
 
 
 
-<div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
-
     <div style="background: #111; border: 1px solid #333; border-radius: 20px; padding: 25px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
-        <h3 style="margin: 0 0 15px 0; font-weight: 900; font-size: 18px; letter-spacing: 0.5px;">Вкажи час (Години:Хвилини)</h3>
+        <h3 style="margin: 0 0 15px 0; font-weight: 900; font-size: 18px; letter-spacing: 0.5px;">Фактичний час цього блоку:</h3>
         
-        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
+        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 25px;">
             <input type="time" id="editStart" style="background: #222; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 8px; font-size: 16px; font-weight: bold; width: 100px; text-align: center;">
             <span style="color: #666; align-self: center; font-weight: bold;">—</span>
             <input type="time" id="editEnd" style="background: #222; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 8px; font-size: 16px; font-weight: bold; width: 100px; text-align: center;">
         </div>
         
-        <h4 style="color: #888; margin: 0 0 12px 0; font-size: 13px; font-weight: normal; text-transform: uppercase; letter-spacing: 0.5px;">На вказаний вище час:</h4>
-        
-        <button class="f-link" onclick="sendCustomEdit('cancel')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(34, 197, 94, 0.1); color: #22c55e; border-color: rgba(34, 197, 94, 0.3); font-size: 14px;">
-            🟢 Зафіксувати, що тут Є СВІТЛО
+        <button class="f-link" onclick="sendSmartEdit()" style="width: 100%; justify-content: center; margin-bottom: 15px; background: rgba(34, 197, 94, 0.1); color: #22c55e; border-color: rgba(34, 197, 94, 0.3); font-size: 14px;">
+            ✅ Зберегти нові межі
         </button>
-        <button class="f-link" onclick="sendCustomEdit('emergency')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(217, 70, 59, 0.1); color: var(--c-red); border-color: rgba(217, 70, 59, 0.3); font-size: 14px;">
-            🔴 Зафіксувати, що тут НЕМА СВІТЛА
-        </button>
-        <button class="f-link" onclick="sendCustomEdit('partial')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(249, 115, 22, 0.1); color: var(--c-orange); border-color: rgba(249, 115, 22, 0.3); font-size: 14px;">
-            🌓 Світло є частково
-        </button>
-        
-        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0;"></div>
 
-        <button class="f-link" onclick="sendCustomEdit('restore')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px dashed #aaa; font-size: 14px;">
-            🧹 Прибрати ручні зміни (Повернути графік)
-        </button>
+        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 20px 0;"></div>
+
         <button class="f-link" onclick="sendResetDay()" style="width: 100%; justify-content: center; margin-bottom: 20px; background: rgba(217, 70, 59, 0.05); color: #aaa; border: 1px dashed rgba(217, 70, 59, 0.4); font-size: 14px;">
             🔄 Скинути взагалі всі зміни за добу
         </button>
-
         
         <div style="color: #666; font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; letter-spacing: 1px;" onclick="document.getElementById('editModal').style.display='none'">
             Закрити
         </div>
     </div>
+
 </div>
 
     <div id="pointsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
