@@ -418,17 +418,12 @@ document.addEventListener('click', () => {
     if (mascotCooldown || !img || img.style.display === 'none' || !img.src) return;
 
     const baseSrc = img.src.split('?')[0];
-    
-   
-    img.src = '';
-    
-    setTimeout(() => { 
-        img.src = baseSrc + '?v=' + Date.now(); 
-    }, 20);
+    img.src = baseSrc + '?v=' + Date.now();
     
     mascotCooldown = true;
     setTimeout(() => { mascotCooldown = false; }, 2500);
 });
+
 
 
 
