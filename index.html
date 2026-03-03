@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -437,51 +438,29 @@ document.addEventListener('click', () => {
         return `${h}:${m}`;
     }
 
-        let origModalS = '';
-    let origModalE = '';
-    let origModalState = '';
-
-    function openEditModal(startStr, endStr, state) {
-        origModalS = startStr;
-        origModalE = (endStr === '00:00' || endStr === '24:00') ? '23:59' : endStr;
-        origModalState = state;
+    function openEditModal(startStr, endStr) {
         document.getElementById('editStart').value = startStr;
-        document.getElementById('editEnd').value = origModalE;
+        document.getElementById('editEnd').value = (endStr === '00:00' || endStr === '24:00') ? '23:59' : endStr;
         document.getElementById('editModal').style.display = 'flex';
     }
 
-    async function sendSmartEdit() {
-        let newS = document.getElementById('editStart').value;
-        let newE = document.getElementById('editEnd').value;
-        if (!newS || !newE) return alert('Вкажи час');
-        if (newE === '23:59') newE = '24:00';
-        let oE = origModalE === '23:59' ? '24:00' : origModalE;
-
-        let patches = [];
-        let nMinsS = timeToMins(newS);
-        let nMinsE = timeToMins(newE);
-        let oMinsS = timeToMins(origModalS);
-        let oMinsE = timeToMins(oE);
-        let isOffBlock = (origModalState === 'off' || origModalState === 'emergency');
-
-        // Магія: вираховуємо де обрізали блок і створюємо автоматичні латки
-        if (nMinsE < oMinsE) patches.push({ type: isOffBlock ? 'cancel' : 'emergency', start: newE, end: oE });
-        if (nMinsE > oMinsE) patches.push({ type: isOffBlock ? 'emergency' : 'cancel', start: oE, end: newE });
-        if (nMinsS > oMinsS) patches.push({ type: isOffBlock ? 'cancel' : 'emergency', start: origModalS, end: newS });
-        if (nMinsS < oMinsS) patches.push({ type: isOffBlock ? 'emergency' : 'cancel', start: newS, end: origModalS });
-
-        if (patches.length === 0) return alert('Межі не змінилися');
+    async function sendCustomEdit(type) {
+        let s = document.getElementById('editStart').value;
+        let e = document.getElementById('editEnd').value;
+        if (!s || !e) return alert('Вкажи обидва значення часу');
+        if (e === '23:59') e = '24:00';
 
         document.getElementById('editModal').style.display = 'none';
         document.getElementById('app').style.display = 'none';
         document.getElementById('loader').style.display = 'block';
-        document.getElementById('loader').textContent = 'Склеюємо графік... ⚡';
+        document.getElementById('loader').textContent = 'Записуємо зміни... ⚡';
 
+        const payload = {
+            source: 'miniapp', secret: tg.initDataUnsafe?.start_param || '', userId: tg.initDataUnsafe?.user?.id || 0,
+            date: activeDates[0], action: 'add_override', type: type, interval: { start: s, end: e }
+        };
         try {
-            for (let p of patches) {
-                const payload = { source: 'miniapp', secret: tg.initDataUnsafe?.start_param || '', userId: tg.initDataUnsafe?.user?.id || 0, date: activeDates[0], action: 'add_override', type: p.type, interval: { start: p.start, end: p.end } };
-                await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-            }
+            await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
             setTimeout(fetchData, 1500);
         } catch (err) { alert('❌ Помилка: ' + err.message); fetchData(); }
     }
@@ -531,6 +510,7 @@ document.addEventListener('click', () => {
         const payload = { source: 'miniapp', secret: tg.initDataUnsafe?.start_param || '', userId: tg.initDataUnsafe?.user?.id || 0, action: text ? 'set_announcement' : 'clear_announcement', text: text };
         try { await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); setTimeout(fetchData, 1500); } catch (err) { alert('Помилка: ' + err.message); fetchData(); }
     }
+
 
     async function fetchData() {
     try {
@@ -1122,7 +1102,7 @@ document.addEventListener('click', () => {
 </script>
 <div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
     <div style="background: #111; border: 1px solid #333; border-radius: 20px; padding: 25px; width: 100%; max-width: 380px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); box-sizing: border-box;">
-        <h3 style="margin: 0 0 15px 0; font-weight: 900; font-size: 18px; letter-spacing: 0.5px;">Фактичний час цього блоку:</h3>
+        <h3 style="margin: 0 0 15px 0; font-weight: 900; font-size: 18px; letter-spacing: 0.5px;">На вказаний час:</h3>
         
         <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 25px;">
             <input type="time" id="editStart" style="background: #222; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 8px; font-size: 16px; font-weight: bold; width: 100px; text-align: center;">
@@ -1130,12 +1110,21 @@ document.addEventListener('click', () => {
             <input type="time" id="editEnd" style="background: #222; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 8px; font-size: 16px; font-weight: bold; width: 100px; text-align: center;">
         </div>
         
-        <button class="f-link" onclick="sendSmartEdit()" style="width: 100%; justify-content: center; margin-bottom: 15px; background: rgba(34, 197, 94, 0.1); color: #22c55e; border-color: rgba(34, 197, 94, 0.3); font-size: 14px;">
-            ✅ Зберегти нові межі
+        <button class="f-link" onclick="sendCustomEdit('cancel')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(34, 197, 94, 0.1); color: #22c55e; border-color: rgba(34, 197, 94, 0.3); font-size: 14px;">
+            💡 Світло Є (Скасувати відключення)
+        </button>
+        <button class="f-link" onclick="sendCustomEdit('emergency')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(217, 70, 59, 0.1); color: var(--c-red); border-color: rgba(217, 70, 59, 0.3); font-size: 14px;">
+            ⚠️ Позапланове (Нема світла)
+        </button>
+        <button class="f-link" onclick="sendCustomEdit('partial')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(249, 115, 22, 0.1); color: var(--c-orange); border-color: rgba(249, 115, 22, 0.3); font-size: 14px;">
+            🌓 Частково (Є не у всіх)
         </button>
 
-        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 20px 0;"></div>
+        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0;"></div>
 
+        <button class="f-link" onclick="sendCustomEdit('restore')" style="width: 100%; justify-content: center; margin-bottom: 10px; background: rgba(255, 255, 255, 0.05); color: #fff; border: 1px dashed #aaa; font-size: 14px;">
+            🧹 Видалити цю зміну (Повернути як було)
+        </button>
         <button class="f-link" onclick="sendResetDay()" style="width: 100%; justify-content: center; margin-bottom: 20px; background: rgba(217, 70, 59, 0.05); color: #aaa; border: 1px dashed rgba(217, 70, 59, 0.4); font-size: 14px;">
             🔄 Скинути взагалі всі зміни за добу
         </button>
@@ -1145,6 +1134,7 @@ document.addEventListener('click', () => {
         </div>
     </div>
 </div>
+
 
 
     <div id="pointsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
