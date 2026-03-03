@@ -415,15 +415,21 @@ allMascots.forEach(src => {
 let mascotCooldown = false;
 document.addEventListener('click', () => {
     const img = document.getElementById('mascotImg');
-    
     if (mascotCooldown || !img || img.style.display === 'none' || !img.src) return;
 
     const baseSrc = img.src.split('?')[0];
-    img.src = baseSrc + '?v=' + Date.now();
+    
+   
+    img.src = '';
+    
+    setTimeout(() => { 
+        img.src = baseSrc + '?v=' + Date.now(); 
+    }, 20);
     
     mascotCooldown = true;
     setTimeout(() => { mascotCooldown = false; }, 2500);
 });
+
 
 
 
@@ -619,7 +625,7 @@ document.addEventListener('click', () => {
 }
 
 
-    function buildDisplayIntervals(rawIntervals, overrides) {
+        function buildDisplayIntervals(rawIntervals, overrides) {
         let minuteMap = new Array(1440).fill('on');
         let baseMap = new Array(1440).fill('on');
 
@@ -688,13 +694,35 @@ document.addEventListener('click', () => {
                     if (current.endMin < 1440 && baseMap[current.endMin] === 'off' && minuteMap[current.endMin] === 'on') isMod = true;
                 }
 
+                
+                let origStartStr = null;
+                let origEndStr = null;
+                if (isMod) {
+                    let baseS = null;
+                    let baseE = null;
+                    for (let m = current.startMin; m < current.endMin; m++) {
+                        if (baseMap[m] === 'off') { baseS = m; break; }
+                    }
+                    if (baseS !== null) {
+                        while(baseS > 0 && baseMap[baseS - 1] === 'off') baseS--;
+                        baseE = baseS;
+                        while(baseE < 1440 && baseMap[baseE] === 'off') baseE++;
+                        origStartStr = minsToStr(baseS);
+                        origEndStr = minsToStr(baseE);
+                    } else {
+                        origStartStr = "Світло є"; 
+                    }
+                }
+
                 merged.push({
                     startMin: current.startMin, endMin: current.endMin,
                     startStr: minsToStr(current.startMin), displayEndStr: minsToStr(current.endMin),
                     type: finalType,
                     isEmergencyBlock: isEmergencyBlock,
                     isPartialBlock: isPartialBlock,
-                    isModified: isMod
+                    isModified: isMod,
+                    origStartStr: origStartStr,
+                    origEndStr: origEndStr
                 });
 
                 if (i < 1440) current = { startMin: i, mergeState: mergeState };
@@ -704,8 +732,7 @@ document.addEventListener('click', () => {
     }
 
 
-
-                function generateDayHtml(rawIntervals, overrides, currentMins, isToday) { 
+    function generateDayHtml(rawIntervals, overrides, currentMins, isToday) { 
         const displayIntervals = buildDisplayIntervals(rawIntervals || [], overrides);
         let html = '';
 
@@ -780,16 +807,28 @@ document.addEventListener('click', () => {
 
             let infoIconHtml = int.info ? `<span onclick="alert('${int.info}')" style="margin-left: 8px; cursor: pointer; display: inline-flex; align-items: center; color: #888; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>` : '';
 
-           
-            let modAlertText = "✏️ Час цього блоку було змінено";
+            let modAlertText = "✏️ Фактичний час цього блоку змінено вручну";
             let modSuperscript = '';
             if (int.isModified) {
-                if (isEmergency) modAlertText = `⚠️ Позапланове відключення з ${int.startStr} до ${displayEnd}`;
-                else if (isPartial) modAlertText = `🌓 Світло частково з ${int.startStr} до ${displayEnd}`;
-                else if (int.type === 'on') modAlertText = `💡 Світло увімкнули раніше (або скасовано) з ${int.startStr} до ${displayEnd}`;
-                else modAlertText = `✏️ Час відключення змінено: з ${int.startStr} до ${displayEnd}`;
+                let hasOrig = int.origStartStr && int.origStartStr !== "Світло є";
                 
-                                modSuperscript = `<span onclick="alert('${modAlertText}')" style="display: inline-flex; align-items: flex-start; margin-left: 5px; color: rgba(255,255,255,0.2); cursor: pointer; transition: 0.2s; transform: translateY(-2px);" onmouseover="this.style.color='rgba(255,255,255,0.6)'" onmouseout="this.style.color='rgba(255,255,255,0.2)'"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>`;
+                if (isEmergency || int.type === 'off') {
+                    if (hasOrig) {
+                        modAlertText = `✏️ Час відключення було змінено: з ${int.origStartStr}-${int.origEndStr} на ${int.startStr}-${displayEnd}`;
+                    } else {
+                        modAlertText = `⚠️ Позапланове відключення: додано вручну на ${int.startStr}-${displayEnd}`;
+                    }
+                } else if (isPartial) {
+                    modAlertText = `🌓 Світло є частково: додано вручну на ${int.startStr}-${displayEnd}`;
+                } else if (int.type === 'on') {
+                    if (hasOrig) {
+                        modAlertText = `💡 Графік скасовано: замість відключення ${int.origStartStr}-${int.origEndStr} світло є з ${int.startStr}`;
+                    } else {
+                        modAlertText = `💡 Світло є (скасовано вручну) з ${int.startStr} до ${displayEnd}`;
+                    }
+                }
+                
+                modSuperscript = `<span onclick="alert('${modAlertText}')" style="display: inline-flex; align-items: flex-start; margin-left: 4px; color: rgba(255,255,255,0.5); cursor: pointer; transition: 0.2s; transform: translateY(-3px);" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.5)'"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>`;
             }
 
             html += `
@@ -816,6 +855,7 @@ document.addEventListener('click', () => {
         });
         return html;
     }
+
 
 
 
