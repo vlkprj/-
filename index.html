@@ -251,6 +251,36 @@
     animation: footerPeek 1.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+.zen-spin {
+    position: absolute; 
+    left: 50%; 
+    bottom: 35px; 
+    margin-left: -15px; 
+    width: 30px; 
+    height: 30px; 
+    animation: spinSlow 4s linear infinite; 
+    z-index: 0;
+}
+.z-dot {
+    position: absolute; 
+    top: 50%; 
+    left: 50%; 
+    width: 6px; 
+    height: 6px;
+    background: rgba(255,255,255,0.8); 
+    border-radius: 50%; 
+    box-shadow: 0 0 10px rgba(255,255,255,0.5);
+    transform: rotate(calc(var(--i) * 60deg)) translate(15px, -50%);
+    animation: pulseDot 2s ease-in-out infinite; 
+    animation-delay: calc(var(--i) * 0.15s);
+}
+@keyframes spinSlow { 100% { transform: rotate(360deg); } }
+@keyframes pulseDot {
+    0%, 100% { opacity: 0.2; transform: rotate(calc(var(--i) * 60deg)) translate(15px, -50%) scale(0.6); }
+    50% { opacity: 1; transform: rotate(calc(var(--i) * 60deg)) translate(15px, -50%) scale(1.2); }
+}
+
+
 
     </style>
 </head>
@@ -281,7 +311,12 @@
             <div class="date-badge" id="dateDisplay">ОЧІКУЄМО</div>
         </div>
               <div class="dashboard" style="position: relative;">
+                        <div id="mascotLoader" class="zen-spin" style="display: none;">
+                <div class="z-dot" style="--i:0"></div><div class="z-dot" style="--i:1"></div><div class="z-dot" style="--i:2"></div>
+                <div class="z-dot" style="--i:3"></div><div class="z-dot" style="--i:4"></div><div class="z-dot" style="--i:5"></div>
+            </div>
             <img id="mascotImg" src="" alt="Cat" class="mascot-header" style="display: none;">
+
 
 
 
@@ -577,66 +612,93 @@ document.addEventListener('click', () => {
 }
 
 
-        function buildDisplayIntervals(rawIntervals, overrides) {
-    let minuteMap = new Array(1440).fill('on');
-    let baseMap = new Array(1440).fill('on');
+    function buildDisplayIntervals(rawIntervals, overrides) {
+        let minuteMap = new Array(1440).fill('on');
+        let baseMap = new Array(1440).fill('on');
 
-    rawIntervals.forEach(int => {
-        let type = int.type || int.planType || 'off';
-        for (let i = int.startMin; i < int.endMin; i++) {
-            minuteMap[i] = type;
-            baseMap[i] = type;
-        }
-    });
-
-    if (overrides && overrides.length > 0) {
-        overrides.forEach(ov => {
-            for (let i = ov.startMin; i < ov.endMin; i++) {
-                if (ov.type === 'restore') minuteMap[i] = baseMap[i];
-                else if (ov.type === 'emergency') minuteMap[i] = 'emergency';
-                else if (ov.type === 'partial') minuteMap[i] = 'partial';
-                else minuteMap[i] = 'on'; 
+        rawIntervals.forEach(int => {
+            let type = int.type || int.planType || 'off';
+            for (let i = int.startMin; i < int.endMin; i++) {
+                minuteMap[i] = type;
+                baseMap[i] = type;
             }
         });
-    }
 
-    let merged = [];
-    let current = null;
-    for (let i = 0; i <= 1440; i++) {
-        let state = i < 1440 ? minuteMap[i] : null;
-
-        if (i === 0) {
-            current = { startMin: i, state: state };
-            continue;
+        if (overrides && overrides.length > 0) {
+            overrides.forEach(ov => {
+                for (let i = ov.startMin; i < ov.endMin; i++) {
+                    if (ov.type === 'restore') minuteMap[i] = baseMap[i];
+                    else if (ov.type === 'emergency') minuteMap[i] = 'emergency';
+                    else if (ov.type === 'partial') minuteMap[i] = 'partial';
+                    else minuteMap[i] = 'on'; 
+                }
+            });
         }
 
-        if (i === 1440 || state !== current.state) {
-            current.endMin = i;
-            
-          
-            let isMod = false;
-            if (current.state === 'off' || current.state === 'emergency' || current.state === 'partial') {
-                if (current.startMin > 0 && baseMap[current.startMin - 1] === 'off' && minuteMap[current.startMin - 1] === 'on') isMod = true;
-                if (current.endMin < 1440 && baseMap[current.endMin] === 'off' && minuteMap[current.endMin] === 'on') isMod = true;
+        let merged = [];
+        let current = null;
+
+        function getMergeState(st) {
+            if (st === 'off' || st === 'emergency') return 'off_group';
+            return st;
+        }
+
+        for (let i = 0; i <= 1440; i++) {
+            let rawState = i < 1440 ? minuteMap[i] : null;
+            let mergeState = rawState ? getMergeState(rawState) : null;
+
+            if (i === 0) {
+                current = { startMin: i, mergeState: mergeState };
+                continue;
             }
 
-            merged.push({
-                startMin: current.startMin, endMin: current.endMin,
-                startStr: minsToStr(current.startMin), displayEndStr: minsToStr(current.endMin),
-                type: (current.state === 'emergency' || current.state === 'partial') ? 'on' : current.state,
-                isEmergencyBlock: current.state === 'emergency',
-                isPartialBlock: current.state === 'partial',
-                isModified: isMod
-            });
+            if (i === 1440 || mergeState !== current.mergeState) {
+                current.endMin = i;
+                
+                let isMod = false;
+                let hasBaseOff = false;
+                let hasEmergency = false;
 
-            if (i < 1440) current = { startMin: i, state: state };
+                for(let m = current.startMin; m < current.endMin; m++) {
+                    if (baseMap[m] === 'off') hasBaseOff = true;
+                    if (minuteMap[m] !== baseMap[m]) isMod = true;
+                    if (minuteMap[m] === 'emergency') hasEmergency = true;
+                }
+                
+                let finalType = current.mergeState;
+                let isEmergencyBlock = false;
+                let isPartialBlock = current.mergeState === 'partial';
+
+                if (current.mergeState === 'off_group') {
+                    finalType = 'off';
+                    if (hasEmergency && !hasBaseOff) {
+                        isEmergencyBlock = true;
+                    }
+                }
+
+                if (finalType === 'off' || isEmergencyBlock || isPartialBlock) {
+                    if (current.startMin > 0 && baseMap[current.startMin - 1] === 'off' && minuteMap[current.startMin - 1] === 'on') isMod = true;
+                    if (current.endMin < 1440 && baseMap[current.endMin] === 'off' && minuteMap[current.endMin] === 'on') isMod = true;
+                }
+
+                merged.push({
+                    startMin: current.startMin, endMin: current.endMin,
+                    startStr: minsToStr(current.startMin), displayEndStr: minsToStr(current.endMin),
+                    type: finalType,
+                    isEmergencyBlock: isEmergencyBlock,
+                    isPartialBlock: isPartialBlock,
+                    isModified: isMod
+                });
+
+                if (i < 1440) current = { startMin: i, mergeState: mergeState };
+            }
         }
+        return merged;
     }
-    return merged;
 }
 
 
-        function generateDayHtml(rawIntervals, overrides, currentMins, isToday) { 
+            function generateDayHtml(rawIntervals, overrides, currentMins, isToday) { 
         const displayIntervals = buildDisplayIntervals(rawIntervals || [], overrides);
         let html = '';
 
@@ -666,19 +728,15 @@ document.addEventListener('click', () => {
             if (isPast) classes += ' past-interval';
             
             let badgeHtml = '';
-            let intervalTextStyle = '';
-
             if (isEmergency) {
                 badgeHtml = `<div class="badge-row"><div class="badge emergency">${iconWarning} ПОЗАПЛАНОВЕ</div></div>`;
             } else if (isPartial) { 
                 badgeHtml = `<div class="badge-row"><div class="badge partial">🌓 ЧАСТКОВО</div></div>`;
             } else if (int.type === 'off') {
-                let dot = int.isModified ? `<div onclick="alert('⚠️ Позапланове відключення (не за графіком)')" style="display: flex; align-items: center; justify-content: center; margin-left: 6px; cursor: pointer; color: rgba(255,255,255,0.5); transition: 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.5)'"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></div>` : '';
-                badgeHtml = `<div class="badge-row"><div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div>${dot}</div>`;
+                badgeHtml = `<div class="badge-row"><div class="badge off"><span style="color:var(--c-red); display:flex;">${iconBan}</span> ВІДКЛЮЧЕННЯ</div></div>`;
             } else if (int.type === 'on') {
                 let lightText = isFuture ? "СВІТЛО" : "СВІТЛО Є";
-                let dot = int.isModified ? `<div onclick="alert('💡 Світло є (хоча за графіком мало б бути відключення)')" style="display: flex; align-items: center; justify-content: center; margin-left: 6px; cursor: pointer; color: rgba(255,255,255,0.5); transition: 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.5)'"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></div>` : '';
-                badgeHtml = `<div class="badge-row"><div class="badge on">${iconLightningSVG} ${lightText}</div>${dot}</div>`;
+                badgeHtml = `<div class="badge-row"><div class="badge on">${iconLightningSVG} ${lightText}</div></div>`;
             }
 
             const intIcon = isEmergency ? iconZapOff : (isPartial ? iconWarning : (isVisuallyOn ? iconBulb : iconZapOff));
@@ -715,11 +773,24 @@ document.addEventListener('click', () => {
 
             let infoIconHtml = int.info ? `<span onclick="alert('${int.info}')" style="margin-left: 8px; cursor: pointer; display: inline-flex; align-items: center; color: #888; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.8'"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>` : '';
 
+            let modAlertText = "✏️ Фактичний час цього блоку змінено вручну";
+            if (int.isModified) {
+                if (isEmergency) modAlertText = `⚠️ Позапланове відключення з ${int.startStr} до ${displayEnd}`;
+                else if (isPartial) modAlertText = `🌓 Світло частково з ${int.startStr} до ${displayEnd}`;
+                else if (int.type === 'on') modAlertText = `💡 Світло увімкнули раніше (або скасовано) з ${int.startStr} до ${displayEnd}`;
+                else modAlertText = `✏️ Час відключення змінено вручну: з ${int.startStr} до ${displayEnd}`;
+            }
+
+            let modIndicator = int.isModified ? `<div onclick="alert('${modAlertText}')" style="position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #fff; border-radius: 50%; border: 2px solid var(--c-dark); cursor: pointer; box-shadow: 0 0 5px rgba(255,255,255,0.3);"></div>` : '';
+
             html += `
             <div class="${classes}">
                 <div class="tl-head">
                     <div class="time-col ${timeColClass}">${int.startStr}</div>
-                    <div class="icon-node"><div class="icon-circle">${houseSvg}</div></div>
+                    <div class="icon-node" style="position: relative;">
+                        <div class="icon-circle">${houseSvg}</div>
+                        ${modIndicator}
+                    </div>
                     <div class="badge-col">${badgeHtml}</div>
                     ${nowIndicator}
                 </div>
@@ -729,7 +800,7 @@ document.addEventListener('click', () => {
                     <div class="interval-col" style="flex-direction: column; align-items: flex-start; justify-content: center;">
                         <div class="interval ${stateClass}">
                             <div class="interval-icon">${intIcon}</div>
-                            <span class="interval-text" style="${intervalTextStyle}">${int.startStr} – ${displayEnd}</span>
+                            <span class="interval-text" style="">${int.startStr} – ${displayEnd}</span>
                             ${infoIconHtml}
                         </div>
                         ${adminControls}
@@ -739,6 +810,7 @@ document.addEventListener('click', () => {
         });
         return html;
     }
+
 
 
         function renderAllDays(currentMins) {
@@ -839,15 +911,22 @@ document.addEventListener('click', () => {
         }
 
         container.innerHTML = fullHtml;
-        if (!initialScrollDone) {
+         if (!initialScrollDone) {
             setTimeout(() => {
                 const activeEl = document.querySelector('.active-now');
                 if (activeEl) activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 initialScrollDone = true;
-                setTimeout(() => {
-                    const f = document.querySelector('.app-footer');
-                    if (f) f.classList.add('footer-bounce');
-                }, 1000);
+                
+                const f = document.querySelector('.app-footer');
+                if (f) {
+                    const observer = new IntersectionObserver((entries) => {
+                        if (entries[0].isIntersecting) {
+                            f.classList.add('footer-bounce');
+                            observer.disconnect();
+                        }
+                    }, { threshold: 0.1 }); 
+                    observer.observe(f);
+                }
             }, 300);
         }
     }
@@ -939,14 +1018,19 @@ document.addEventListener('click', () => {
                 timerDisplay.style.textShadow = '';
                 timerLabel.textContent = 'До включення:';
                 
-                const mascotImg = document.getElementById('mascotImg');
+                               const mascotImg = document.getElementById('mascotImg');
+                const mascotLoader = document.getElementById('mascotLoader');
                 if (currentMascotState !== 'off') {
+                    mascotLoader.style.display = 'block';
+                    mascotImg.style.display = 'none';
+                    mascotImg.onload = () => { mascotLoader.style.display = 'none'; mascotImg.style.display = 'block'; };
+                    
                     const randomSrc = offMascots[Math.floor(Math.random() * offMascots.length)];
                     mascotImg.src = randomSrc + '?v=' + Date.now();
-                    mascotImg.style.display = 'block';
                     mascotImg.style.filter = 'drop-shadow(0 0 15px rgba(217, 70, 59, 0.3))';
                     currentMascotState = 'off';
                 }
+
             } else {
                 timerStatus.innerHTML = `${statusIconOn} Світло є`;
                 timerStatus.style.color = 'var(--c-yellow)';
@@ -955,13 +1039,18 @@ document.addEventListener('click', () => {
                 timerDisplay.style.textShadow = '';
                 timerLabel.textContent = 'До відключення:';
                 
-                const mascotImg = document.getElementById('mascotImg');
+                                const mascotImg = document.getElementById('mascotImg');
+                const mascotLoader = document.getElementById('mascotLoader');
                 if (currentMascotState !== 'on') {
+                    mascotLoader.style.display = 'block';
+                    mascotImg.style.display = 'none';
+                    mascotImg.onload = () => { mascotLoader.style.display = 'none'; mascotImg.style.display = 'block'; };
+                    
                     mascotImg.src = './catOnlight.webp?v=' + Date.now();
-                    mascotImg.style.display = 'block';
                     mascotImg.style.filter = 'drop-shadow(0 0 20px rgba(251, 191, 36, 0.35))';
                     currentMascotState = 'on';
                 }
+
             }
 
             if (nextEventMinsAbs !== null) {
