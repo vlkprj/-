@@ -413,20 +413,18 @@ allMascots.forEach(src => {
 });
 
 let mascotCooldown = false;
-document.addEventListener('click', function(e) {
-   
-    if (e.target.closest('.sticky-header') || e.target.closest('.app-footer')) {
-        const mascotImg = document.getElementById('mascotImg');
-        
-      
-        if (mascotCooldown || !mascotImg || mascotImg.style.display === 'none' || !mascotImg.src) return;
-        
-        const baseSrc = mascotImg.src.split('?')[0];
-        mascotImg.src = baseSrc + '?v=' + Date.now();
-        mascotCooldown = true;
-        setTimeout(() => { mascotCooldown = false; }, 2000);
-    }
+document.addEventListener('click', () => {
+    const img = document.getElementById('mascotImg');
+    
+    if (mascotCooldown || !img || img.style.display === 'none' || !img.src) return;
+
+    const baseSrc = img.src.split('?')[0];
+    img.src = baseSrc + '?v=' + Date.now();
+    
+    mascotCooldown = true;
+    setTimeout(() => { mascotCooldown = false; }, 2500);
 });
+
 
 
 
@@ -791,7 +789,7 @@ document.addEventListener('click', function(e) {
                 else if (int.type === 'on') modAlertText = `💡 Світло увімкнули раніше (або скасовано) з ${int.startStr} до ${displayEnd}`;
                 else modAlertText = `✏️ Час відключення змінено: з ${int.startStr} до ${displayEnd}`;
                 
-                modSuperscript = `<span onclick="alert('${modAlertText}')" style="display: inline-flex; align-items: flex-start; margin-left: 4px; color: rgba(255,255,255,0.5); cursor: pointer; transition: 0.2s; transform: translateY(-3px);" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.5)'"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>`;
+                                modSuperscript = `<span onclick="alert('${modAlertText}')" style="display: inline-flex; align-items: flex-start; margin-left: 5px; color: rgba(255,255,255,0.2); cursor: pointer; transition: 0.2s; transform: translateY(-2px);" onmouseover="this.style.color='rgba(255,255,255,0.6)'" onmouseout="this.style.color='rgba(255,255,255,0.2)'"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>`;
             }
 
             html += `
