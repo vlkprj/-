@@ -883,22 +883,23 @@ document.addEventListener('click', () => {
                     modSuperscript = `<span onclick="showInfoAlert('${encodedHtml}')" style="display: inline-flex; align-items: center; margin-left: 6px; color: #888; cursor: pointer;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>`;
                 }
 
-                                                let canceledHtml = '';
+                                                                let canceledHtml = '';
                 if (int.canceledIntervals && int.canceledIntervals.length > 0) {
                     let cancelLines = int.canceledIntervals.map(ci => {
                         let text = ci.reason === 'changed' ? 'змінено' : 'скасовано';
                         let color = ci.reason === 'changed' ? 'rgba(249, 115, 22, 0.7)' : 'rgba(34, 197, 94, 0.6)';
                         
-                        return `<div style="margin-top: 2px; padding-left: 32px; display: flex; align-items: flex-start; gap: 8px; opacity: 0.85;">
-                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 3px; flex-shrink: 0;"><polyline points="15 10 20 15 15 20"></polyline><path d="M4 4v7a4 4 0 0 0 4 4h12"></path></svg>
-                            <div style="display: flex; flex-direction: column; gap: 1px;">
-                                <span style="text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.3); text-decoration-thickness: 1.5px; color: #a1a1aa; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">${ci.startStr} - ${ci.endStr}</span>
+                        return `<div style="margin-top: 4px; padding-left: 32px; display: flex; align-items: flex-start; gap: 8px;">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 2px; flex-shrink: 0;"><polyline points="15 10 20 15 15 20"></polyline><path d="M4 4v7a4 4 0 0 0 4 4h12"></path></svg>
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <span style="color: rgba(255,255,255,0.25); font-size: 13px; font-weight: 600; letter-spacing: 0.5px;">${ci.startStr} - ${ci.endStr}</span>
                                 <span style="color: ${color}; font-size: 11px; font-weight: 700; text-transform: lowercase;">${text}</span>
                             </div>
                         </div>`;
                     }).join('');
                     canceledHtml = `<div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">${cancelLines}</div>`;
                 }
+
 
 
 
