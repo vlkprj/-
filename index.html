@@ -355,7 +355,7 @@
 <div class="app-footer">
     
     <div class="source-text" style="font-size: 13px; color: #888; margin-bottom: 25px; line-height: 1.4; padding: 0 10px;">
-        <b style="color: #aaa;">Джерело:</b> Харківобленерго, Сергій Д. та інші інсайдери Валківського чатіку
+        <b style="color: #aaa;">Джерело:</b> Харківобленерго, Сергій Д та інші інсайдери Валківського чатіку
     </div>
 
     <div class="footer-links">
@@ -886,7 +886,7 @@ document.addEventListener('click', () => {
                 let canceledHtml = '';
                 if (int.canceledIntervals && int.canceledIntervals.length > 0) {
                     let cancelLines = int.canceledIntervals.map(ci => {
-                        let text = ci.reason === 'changed' ? 'змінено' : 'скасовано';
+                        let text = ci.reason === 'changed' ? 'час змінено' : 'скасовано';
                         let color = ci.reason === 'changed' ? 'rgba(249, 115, 22, 0.7)' : 'rgba(34, 197, 94, 0.6)';
                         
                         return `<div style="margin-top: 2px; padding-left: 32px; display: flex; align-items: center; gap: 6px; opacity: 0.85;">
