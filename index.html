@@ -924,38 +924,6 @@ document.addEventListener('click', () => {
             return html;
         }
 
-
-            html += `
-            <div class="${classes}">
-                <div class="tl-head">
-                    <div class="time-col ${timeColClass}">${int.startStr}</div>
-                    <div class="icon-node"><div class="icon-circle">${houseSvg}</div></div>
-                    <div class="badge-col">${badgeHtml}</div>
-                    ${nowIndicator}
-                </div>
-                <div class="tl-body">
-                    <div class="time-col"></div>
-                    <div class="line-node">${dotsHtml}</div>
-                    <div class="interval-col" style="flex-direction: column; align-items: flex-start; justify-content: center;">
-                        <div class="interval ${stateClass}" style="margin-top: 6px;">
-                            <div class="interval-icon">${intIcon}</div>
-                            <span class="interval-text" style="display: flex; align-items: center;">${int.startStr} – ${displayEnd}${modSuperscript}</span>
-                            ${infoIconHtml}
-                        </div>
-                        ${canceledHtml}
-                        ${adminControls}
-                    </div>
-                </div>
-            </div>`;
-        });
-        return html;
-    }
-
-
-
-
-
-
         function renderAllDays(currentMins) {
         const container = document.getElementById('timelineContainer');
         let fullHtml = '';
