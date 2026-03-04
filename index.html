@@ -951,7 +951,7 @@ document.addEventListener('click', () => {
                         </div>
                     </div>
                 </div>`;
-                                   });
+                                               });
 
             let changes = [];
             displayIntervals.forEach(int => {
@@ -981,47 +981,50 @@ document.addEventListener('click', () => {
                     clearTimeout(window.changesTimer);
                     clearTimeout(window.chCloseTimer);
                     window.changesTimer = setTimeout(function() {
-                        var m = document.getElementById('ch-mod');
-                        if(m) {
-                            m.style.opacity='1'; 
-                            m.style.pointerEvents='auto'; 
-                            m.style.transform='translateX(-50%) translateY(0) scale(1)';
-                            window.chCloseTimer = setTimeout(window.closeCh, 7000);
-                        }
+                        window.openCh(true);
                     }, 1200);
-                    window.closeCh = function() {
+                    window.closeCh = function(e) {
+                        if(e) e.stopPropagation();
                         var m = document.getElementById('ch-mod');
                         var f = document.getElementById('ch-fab');
+                        var o = document.getElementById('ch-overlay');
                         clearTimeout(window.chCloseTimer);
                         if(m) { m.style.opacity='0'; m.style.pointerEvents='none'; m.style.transform='translateX(-50%) translateY(40px) scale(0.95)'; }
+                        if(o) { o.style.opacity='0'; o.style.pointerEvents='none'; }
                         if(f) { setTimeout(function(){ f.style.opacity='1'; f.style.pointerEvents='auto'; f.style.transform='scale(1)'; }, 300); }
                     };
-                    window.openCh = function() {
+                    window.openCh = function(isAuto) {
                         var m = document.getElementById('ch-mod');
                         var f = document.getElementById('ch-fab');
+                        var o = document.getElementById('ch-overlay');
                         clearTimeout(window.chCloseTimer);
                         if(f) { f.style.opacity='0'; f.style.pointerEvents='none'; f.style.transform='scale(0.5)'; }
+                        if(o) { o.style.opacity='1'; o.style.pointerEvents='auto'; }
                         if(m) { setTimeout(function(){ m.style.opacity='1'; m.style.pointerEvents='auto'; m.style.transform='translateX(-50%) translateY(0) scale(1)'; }, 200); }
+                        if(isAuto === true) { window.chCloseTimer = setTimeout(window.closeCh, 7000); }
                     };
                 `.replace(/\n/g, ' ').replace(/"/g, '&quot;');
 
                 html += `
-                <div id="ch-mod" style="opacity: 0; pointer-events: none; position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(40px) scale(0.95); width: 92%; max-width: 380px; background: rgba(25, 25, 25, 0.85); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 20px 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05) inset; z-index: 9999; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.15); box-sizing: border-box;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px;">
-                        <h3 style="margin: 0; font-size: 16px; color: #fff; font-weight: 700; display: flex; align-items: center; gap: 8px;">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#a1a1aa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline><path d="M12 7v5l4 2"></path></svg>
-                            Зміни в графіку
-                        </h3>
-                        <div onclick="window.closeCh()" style="padding: 8px; margin: -8px; cursor: pointer; color: #a1a1aa; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#a1a1aa'">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <div id="ch-overlay" onclick="window.closeCh()" style="opacity: 0; pointer-events: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9998; background: transparent; transition: opacity 0.3s;"></div>
+
+                <div id="ch-mod" style="opacity: 0; pointer-events: none; position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(40px) scale(0.95); width: 92%; max-width: 380px; background: rgba(20, 20, 20, 0.75); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 20px 24px; box-shadow: 0 24px 48px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05) inset; z-index: 9999; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.15); box-sizing: border-box;">
+                    
+                    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 16px; position: relative;">
+                        <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.05); padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #a1a1aa; letter-spacing: 0.5px;">
+                            Зміни в графіку:
+                        </div>
+                        <div onclick="window.closeCh(event)" style="position: absolute; right: -4px; top: 50%; transform: translateY(-50%); padding: 8px; cursor: pointer; color: #71717a; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#71717a'">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
                         </div>
                     </div>
+
                     <div style="display: flex; flex-direction: column;">
                         ${digestLines}
                     </div>
                 </div>
 
-                <div id="ch-fab" onclick="window.openCh()" style="opacity: 0; pointer-events: none; position: fixed; bottom: 32px; right: 24px; background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.15); border-radius: 50%; width: 56px; height: 56px; display: flex; justify-content: center; align-items: center; box-shadow: 0 12px 32px rgba(0,0,0,0.5); z-index: 9998; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: scale(0.5); cursor: pointer;">
+                <div id="ch-fab" onclick="window.openCh()" style="opacity: 0; pointer-events: none; position: fixed; bottom: 32px; right: 24px; background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.15); border-radius: 50%; width: 56px; height: 56px; display: flex; justify-content: center; align-items: center; box-shadow: 0 12px 32px rgba(0,0,0,0.5); z-index: 9997; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: scale(0.5); cursor: pointer;">
                     <div style="position: absolute; top: 12px; right: 12px; width: 10px; height: 10px; background: #f97316; border-radius: 50%; box-shadow: 0 0 12px #f97316; animation: digestPulse 2s infinite;"></div>
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline><path d="M12 7v5l4 2"></path></svg>
                 </div>
@@ -1032,6 +1035,7 @@ document.addEventListener('click', () => {
 
             return html;
         }
+
 
 
 
