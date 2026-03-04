@@ -887,19 +887,20 @@ document.addEventListener('click', () => {
                 if (int.canceledIntervals && int.canceledIntervals.length > 0) {
                     let cancelLines = int.canceledIntervals.map(ci => {
                         if (ci.reason === 'changed') {
-                            return `<div style="margin-top: 4px; padding-left: 32px; color: #a1a1aa; font-size: 13px; line-height: 1.4; letter-spacing: 0.2px;">
-                                <span style="color: rgba(249, 115, 22, 0.8); font-size: 16px; margin-right: 6px; vertical-align: -1px;">•</span>
-                                Планове відключення з <b style="color: #d4d4d8;">${ci.startStr} до ${ci.endStr}</b> було змінено на <b style="color: #f4f4f5;">${int.startStr}-${displayEnd}</b>.
+                            return `<div style="margin-top: 4px; padding-left: 2px; display: flex; align-items: flex-start; gap: 6px; color: #a1a1aa; font-size: 13px; line-height: 1.4; letter-spacing: 0.2px;">
+                                <span style="color: rgba(249, 115, 22, 0.8); font-size: 18px; line-height: 1; margin-top: -2px;">•</span>
+                                <span>Планове відключення з <span style="color: #d4d4d8;">${ci.startStr} до ${ci.endStr}</span> було змінено на <span style="color: #e4e4e7;">${int.startStr}-${displayEnd}</span></span>
                             </div>`;
                         } else {
-                            return `<div style="margin-top: 4px; padding-left: 32px; color: #a1a1aa; font-size: 13px; line-height: 1.4; letter-spacing: 0.2px;">
-                                <span style="color: rgba(34, 197, 94, 0.8); font-size: 16px; margin-right: 6px; vertical-align: -1px;">•</span>
-                                Відключення з <b style="color: #d4d4d8;">${ci.startStr} до ${ci.endStr}</b> було скасоване.
+                            return `<div style="margin-top: 4px; padding-left: 2px; display: flex; align-items: flex-start; gap: 6px; color: #a1a1aa; font-size: 13px; line-height: 1.4; letter-spacing: 0.2px;">
+                                <span style="color: rgba(34, 197, 94, 0.8); font-size: 18px; line-height: 1; margin-top: -2px;">•</span>
+                                <span>Відключення з <span style="color: #d4d4d8;">${ci.startStr} до ${ci.endStr}</span> було скасоване</span>
                             </div>`;
                         }
                     }).join('');
                     canceledHtml = `<div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">${cancelLines}</div>`;
                 }
+
 
 
 
