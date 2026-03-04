@@ -886,7 +886,7 @@ document.addEventListener('click', () => {
                                                                 let canceledHtml = '';
                 if (int.canceledIntervals && int.canceledIntervals.length > 0) {
                     let cancelLines = int.canceledIntervals.map(ci => {
-                        let text = ci.reason === 'changed' ? 'змінено' : 'скасовано';
+                        let text = ci.reason === 'changed' ? 'змінено час' : 'скасовано';
                         let color = ci.reason === 'changed' ? 'rgba(249, 115, 22, 0.7)' : 'rgba(34, 197, 94, 0.6)';
                         
                         return `<div style="margin-top: 4px; padding-left: 32px; display: flex; align-items: flex-start; gap: 8px;">
