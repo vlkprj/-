@@ -883,26 +883,24 @@ document.addEventListener('click', () => {
                     modSuperscript = `<span onclick="showInfoAlert('${encodedHtml}')" style="display: inline-flex; align-items: center; margin-left: 6px; color: #888; cursor: pointer;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg></span>`;
                 }
 
-                                                                       let canceledHtml = '';
+                let canceledHtml = '';
                 if (int.canceledIntervals && int.canceledIntervals.length > 0) {
                     let cancelLines = int.canceledIntervals.map(ci => {
                         if (ci.reason === 'changed') {
-                            return `<div style="margin-top: 6px; margin-left: 32px; padding-left: 10px; border-left: 2px solid rgba(249, 115, 22, 0.5); display: flex; flex-direction: column; gap: 2px;">
-                                <span style="color: rgba(255,255,255,0.45); font-size: 12px; font-weight: 600;">діє замість планового:</span>
-                                <span style="color: rgba(249, 115, 22, 0.9); font-size: 14px; font-weight: 700; text-decoration: line-through; text-decoration-color: rgba(249, 115, 22, 0.4);">${ci.startStr} - ${ci.endStr}</span>
+                            return `<div style="margin-top: 4px; padding-left: 32px; color: #a1a1aa; font-size: 13px; line-height: 1.4; letter-spacing: 0.2px;">
+                                <span style="color: rgba(249, 115, 22, 0.8); font-size: 16px; margin-right: 6px; vertical-align: -1px;">•</span>
+                                Планове відключення з <b style="color: #d4d4d8;">${ci.startStr} до ${ci.endStr}</b> було змінено на <b style="color: #f4f4f5;">${int.startStr}-${displayEnd}</b>.
                             </div>`;
                         } else {
-                            return `<div style="margin-top: 6px; margin-left: 32px; padding-left: 10px; border-left: 2px solid rgba(34, 197, 94, 0.5); display: flex; flex-direction: column; gap: 3px;">
-                                <span style="color: rgba(255,255,255,0.45); font-size: 12px; font-weight: 600;">планове відключення:</span>
-                                <div style="display: flex; align-items: center; gap: 8px;">
-                                    <span style="color: #a1a1aa; font-size: 14px; font-weight: 700; text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.25);">${ci.startStr} - ${ci.endStr}</span>
-                                    <span style="background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.2); color: #22c55e; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;">скасовано</span>
-                                </div>
+                            return `<div style="margin-top: 4px; padding-left: 32px; color: #a1a1aa; font-size: 13px; line-height: 1.4; letter-spacing: 0.2px;">
+                                <span style="color: rgba(34, 197, 94, 0.8); font-size: 16px; margin-right: 6px; vertical-align: -1px;">•</span>
+                                Відключення з <b style="color: #d4d4d8;">${ci.startStr} до ${ci.endStr}</b> було скасоване.
                             </div>`;
                         }
                     }).join('');
-                    canceledHtml = `<div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">${cancelLines}</div>`;
+                    canceledHtml = `<div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">${cancelLines}</div>`;
                 }
+
 
 
 
