@@ -951,34 +951,9 @@ document.addEventListener('click', () => {
                         </div>
                     </div>
                 </div>`;
-            });
-            
-                                    let changes = [];
-            displayIntervals.forEach(int => {
-                if (int.canceledIntervals && int.canceledIntervals.length > 0) {
-                    int.canceledIntervals.forEach(ci => {
-                        changes.push({ ...ci, newStart: int.startStr, newEnd: int.displayEndStr });
-                    });
-                }
-            });
+                       });
 
-            let digestHtml = '';
-            if (changes.length > 0 && isToday) {
-                let digestLines = changes.map(ci => {
-                    if (ci.reason === 'changed') {
-                        return `<div style="background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.15); border-radius: 14px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px;">
-                            <span style="color: #f97316; font-size: 16px; margin-top: -1px; flex-shrink: 0;">⚡</span>
-                            <div style="color: #d4d4d8; font-size: 14px; line-height: 1.4; letter-spacing: 0.2px;">Час відключення <b>${ci.startStr}-${ci.endStr}</b> змінено на <b style="color: #fff;">${ci.newStart}-${ci.newEnd}</b></div>
-                        </div>`;
-                    } else {
-                        return `<div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.15); border-radius: 14px; padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px;">
-                            <span style="color: #22c55e; font-size: 16px; margin-top: -1px; flex-shrink: 0;">✅</span>
-                            <div style="color: #d4d4d8; font-size: 14px; line-height: 1.4; letter-spacing: 0.2px;">Заплановане відключення <b>${ci.startStr}-${ci.endStr}</b> було <b style="color: #22c55e;">скасовано</b></div>
-                        </div>`;
-                    }
-                }).join('');
-
-                            let changes = [];
+            let changes = [];
             displayIntervals.forEach(int => {
                 if (int.canceledIntervals && int.canceledIntervals.length > 0) {
                     int.canceledIntervals.forEach(ci => {
@@ -1053,10 +1028,9 @@ document.addEventListener('click', () => {
                 `;
             }
 
-
-
             return html;
         }
+
 
         function renderAllDays(currentMins) {
         const container = document.getElementById('timelineContainer');
