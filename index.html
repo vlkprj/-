@@ -886,17 +886,18 @@ document.addEventListener('click', () => {
                  }
 
             
-                       let canceledHtml = '';
+                                   let canceledHtml = '';
             if (int.canceledIntervals && int.canceledIntervals.length > 0) {
                 let cancelLines = int.canceledIntervals.map(ci => 
-                    `<div style="margin-top: 6px; display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.15); width: max-content;">
-                        <span style="text-decoration: line-through; color: rgba(255,255,255,0.4); font-size: 13px; font-weight: 700;">${ci.startStr} - ${ci.endStr}</span>
-                        <span style="color: rgba(34, 197, 94, 0.4); font-size: 10px;">•</span>
-                        <span style="color: #22c55e; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">скасовано</span>
+                    `<div style="margin-top: 2px; padding-left: 32px; display: flex; align-items: center; gap: 6px; opacity: 0.85;">
+                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#555" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: -1px; flex-shrink: 0;"><polyline points="15 10 20 15 15 20"></polyline><path d="M4 4v7a4 4 0 0 0 4 4h12"></path></svg>
+                        <span style="text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.2); color: #777; font-size: 13px; font-weight: 700;">${ci.startStr} - ${ci.endStr}</span>
+                        <span style="color: rgba(34, 197, 94, 0.6); font-size: 11px; font-weight: 700; text-transform: lowercase;">скасовано</span>
                     </div>`
                 ).join('');
-                canceledHtml = `<div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 4px;">${cancelLines}</div>`;
+                canceledHtml = `<div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;">${cancelLines}</div>`;
             }
+
 
 
 
