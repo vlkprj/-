@@ -978,19 +978,81 @@ document.addEventListener('click', () => {
                     }
                 }).join('');
 
-                digestHtml = `
-                <div style="margin: 16px 16px 24px 16px; padding: 16px; border-radius: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
-                    <div style="color: #a1a1aa; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 2v20"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-                        Зміни в графіку
+                            let changes = [];
+            displayIntervals.forEach(int => {
+                if (int.canceledIntervals && int.canceledIntervals.length > 0) {
+                    int.canceledIntervals.forEach(ci => {
+                        changes.push({ ...ci, newStart: int.startStr, newEnd: int.displayEndStr, reason: ci.reason });
+                    });
+                }
+            });
+
+            if (changes.length > 0 && isToday) {
+                let digestLines = changes.map(ci => {
+                    if (ci.reason === 'changed') {
+                        return `<div style="background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.15); border-radius: 12px; padding: 10px 12px; display: flex; align-items: flex-start; gap: 8px;">
+                            <span style="color: #f97316; font-size: 14px; margin-top: 1px; flex-shrink: 0;">⚡</span>
+                            <div style="color: #d4d4d8; font-size: 13px; line-height: 1.4;">Відключення <b style="color:#fff;">${ci.startStr}-${ci.endStr}</b> змінено на <b style="color: #fff;">${ci.newStart}-${ci.newEnd}</b></div>
+                        </div>`;
+                    } else {
+                        return `<div style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.15); border-radius: 12px; padding: 10px 12px; display: flex; align-items: flex-start; gap: 8px;">
+                            <span style="color: #22c55e; font-size: 14px; margin-top: 1px; flex-shrink: 0;">✅</span>
+                            <div style="color: #d4d4d8; font-size: 13px; line-height: 1.4;">Відключення <b style="color:#fff;">${ci.startStr}-${ci.endStr}</b> було <b style="color: #22c55e;">скасовано</b></div>
+                        </div>`;
+                    }
+                }).join('');
+
+                let jsPayload = `
+                    clearTimeout(window.changesTimer);
+                    clearTimeout(window.chCloseTimer);
+                    window.changesTimer = setTimeout(function() {
+                        var m = document.getElementById('ch-mod');
+                        if(m) {
+                            m.style.opacity='1'; 
+                            m.style.pointerEvents='auto'; 
+                            m.style.transform='translateX(-50%) translateY(0) scale(1)';
+                            window.chCloseTimer = setTimeout(window.closeCh, 7000);
+                        }
+                    }, 1200);
+                    window.closeCh = function() {
+                        var m = document.getElementById('ch-mod');
+                        var f = document.getElementById('ch-fab');
+                        clearTimeout(window.chCloseTimer);
+                        if(m) { m.style.opacity='0'; m.style.pointerEvents='none'; m.style.transform='translateX(-50%) translateY(40px) scale(0.95)'; }
+                        if(f) { setTimeout(function(){ f.style.opacity='1'; f.style.pointerEvents='auto'; f.style.transform='scale(1)'; }, 300); }
+                    };
+                    window.openCh = function() {
+                        var m = document.getElementById('ch-mod');
+                        var f = document.getElementById('ch-fab');
+                        clearTimeout(window.chCloseTimer);
+                        if(f) { f.style.opacity='0'; f.style.pointerEvents='none'; f.style.transform='scale(0.5)'; }
+                        if(m) { setTimeout(function(){ m.style.opacity='1'; m.style.pointerEvents='auto'; m.style.transform='translateX(-50%) translateY(0) scale(1)'; }, 200); }
+                    };
+                `.replace(/\n/g, ' ').replace(/"/g, '&quot;');
+
+                html += `
+                <div id="ch-mod" style="opacity: 0; pointer-events: none; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(40px) scale(0.95); width: 90%; max-width: 360px; background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); z-index: 9999; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.15); box-sizing: border-box;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                        <h3 style="margin: 0; font-size: 15px; color: #fff; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                            Зміни в графіку
+                        </h3>
+                        <div onclick="window.closeCh()" style="background: rgba(255,255,255,0.1); width: 26px; height: 26px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; color: #a1a1aa; font-weight: bold; font-size: 12px; transition: background 0.2s;">✕</div>
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
                         ${digestLines}
                     </div>
-                </div>`;
+                </div>
+
+                <div id="ch-fab" onclick="window.openCh()" style="opacity: 0; pointer-events: none; position: fixed; bottom: 24px; right: 24px; background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.15); border-radius: 50%; width: 52px; height: 52px; display: flex; justify-content: center; align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 9998; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: scale(0.5); cursor: pointer;">
+                    <div style="position: absolute; top: 10px; right: 10px; width: 10px; height: 10px; background: #f97316; border-radius: 50%; box-shadow: 0 0 10px #f97316; animation: digestPulse 2s infinite;"></div>
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                </div>
+                <style>@keyframes digestPulse { 0% { transform: scale(0.95); opacity: 1; } 50% { transform: scale(1.15); opacity: 0.5; } 100% { transform: scale(0.95); opacity: 1; } }</style>
+                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" onload="${jsPayload}" style="display:none;">
+                `;
             }
 
-            html = digestHtml + html;
 
 
             return html;
