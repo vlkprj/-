@@ -7,7 +7,21 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root { --c-yellow: #fbbf24; --c-red: #d9463b; --c-dark: #060606; --c-orange: #f97316;}
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--c-dark); color: #ffffff; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+        body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--c-dark); 
+    color: #ffffff; 
+    margin: 0; 
+    padding: 0; 
+    -webkit-font-smoothing: antialiased; 
+    -moz-osx-font-smoothing: grayscale; 
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+}
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
         .sticky-header { position: sticky; top: 0; left: 0; width: 100%; background: rgba(6, 6, 6, 0.85); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); z-index: 100; padding: 15px 20px; box-sizing: border-box; border-bottom: 1px solid rgba(255,255,255,0.08); box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .branding { display: flex; align-items: center; gap: 8px; }
@@ -872,22 +886,23 @@ document.addEventListener('click', () => {
                  }
 
             
-                        let canceledHtml = '';
+                                    let canceledHtml = '';
             if (int.canceledIntervals && int.canceledIntervals.length > 0) {
                 const iconBanSmall = `<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line></svg>`;
                 let cancelLines = int.canceledIntervals.map(ci => 
-                    `<div style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; padding: 6px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04); background: rgba(0,0,0,0.2);">
+                    `<div style="margin-top: 8px; padding: 8px 12px; border-radius: 10px; border: 1px dashed rgba(255,255,255,0.1); background: rgba(0,0,0,0.25); display: flex; flex-direction: column; gap: 6px; width: 100%; box-sizing: border-box;">
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="display: flex; align-items: center; color: #666;">${iconBanSmall}</span>
-                            <span style="color: #999; font-size: 15px; font-weight: 700; text-decoration: line-through; text-decoration-color: rgba(255,255,255,0.2); text-decoration-thickness: 1.5px;">${ci.startStr} - ${ci.endStr}</span>
+                            <span style="display: flex; align-items: center; color: rgba(255,255,255,0.3);">${iconBanSmall}</span>
+                            <span style="color: #999; font-size: 15px; font-weight: 700; letter-spacing: 0.5px;">${ci.startStr} - ${ci.endStr}</span>
                         </div>
-                        <div style="color: #888; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">
+                        <div style="display: inline-flex; align-items: center; justify-content: center; background: rgba(34, 197, 94, 0.1); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 6px; padding: 2px 8px; font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; width: max-content; margin-left: 20px;">
                             скасовано
                         </div>
                     </div>`
                 ).join('');
-                canceledHtml = `<div>${cancelLines}</div>`;
+                canceledHtml = `<div style="width: 100%; padding-right: 10px; box-sizing: border-box;">${cancelLines}</div>`;
             }
+
 
 
 
@@ -903,7 +918,7 @@ document.addEventListener('click', () => {
                     <div class="time-col"></div>
                     <div class="line-node">${dotsHtml}</div>
                     <div class="interval-col" style="flex-direction: column; align-items: flex-start; justify-content: center;">
-                        <div class="interval ${stateClass}">
+                        <div class="interval ${stateClass}" style="margin-top: 6px;">
                             <div class="interval-icon">${intIcon}</div>
                             <span class="interval-text" style="display: flex; align-items: center;">${int.startStr} – ${displayEnd}${modSuperscript}</span>
                             ${infoIconHtml}
