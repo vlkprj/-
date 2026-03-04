@@ -915,15 +915,16 @@ document.addEventListener('click', () => {
                     } else if (isPartial) {
                         title = "Часткове відключення";
                         desc = `Діє з <b>${int.startStr}</b> до <b>${displayEnd}</b> (є не у всіх).`;
-                    } else if (int.type === 'on') {
+                                        } else if (int.type === 'on') {
                         if (hasOrig) {
                             title = "Відключення скасовано";
-                            desc = `Замість ${int.origStartStr}–${int.origEndStr} світло залишається.`;
+                            desc = `Заплановане відключення з <b>${int.origStartStr}</b> до <b>${int.origEndStr}</b> скасовано. Заряджаємось`;
                         } else {
                             title = "Графік скасовано";
                             desc = `Світло є з <b>${int.startStr}</b> до <b>${displayEnd}</b>.`;
                         }
                     }
+
                     
                     let encodedHtml = encodeURIComponent(`<div style="color:#888; font-size:12px; margin-bottom:8px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">${title}</div><div style="font-size:15px; color:#eee; font-weight:500;">${desc}</div>`).replace(/'/g, "%27");
                     
