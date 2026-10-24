@@ -367,6 +367,10 @@
     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
     Додати
 </div>
+    <div class="f-link f-link-shine" onclick="openNotif()" style="cursor: pointer;">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Сповіщення
+    </div>
     <div class="f-link" onclick="document.getElementById('pointsModal').style.display='flex'" style="cursor: pointer;">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
         Пункти незламності
@@ -392,7 +396,8 @@
     tg.expand(); tg.setHeaderColor('#060606'); tg.setBackgroundColor('#060606');
 
     const startParam = tg.initDataUnsafe?.start_param || '';
-    const isAdmin = startParam === 'godmode_valky';
+    const ADMIN_IDS = [174448777, 109310713, 8768831184];
+    const isAdmin = ADMIN_IDS.includes(tg.initDataUnsafe?.user?.id);
 
     const BIN_ID = '699b325fd0ea881f40cf7aaf';
     const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzOdh8XlJ-Thk-i8oKfMazc7Jvr5G_yIKGFuV2B9W7IGTpD_eQA77Bg52pJmpWh58XLEg/exec';
@@ -528,7 +533,7 @@ document.addEventListener('click', () => {
         document.getElementById('loader').textContent = 'Записуємо зміни... ⚡';
 
         const payload = {
-            source: 'miniapp', secret: tg.initDataUnsafe?.start_param || '', userId: tg.initDataUnsafe?.user?.id || 0,
+            source: 'miniapp', initData: tg.initData,
             date: activeDates[0], action: 'add_override', type: type, interval: { start: s, end: e }
         };
         try {
@@ -544,7 +549,7 @@ document.addEventListener('click', () => {
         document.getElementById('loader').style.display = 'block';
         document.getElementById('loader').textContent = 'Скидаємо графік... 🔄';
         
-        const payload = { source: 'miniapp', secret: tg.initDataUnsafe?.start_param || '', userId: tg.initDataUnsafe?.user?.id || 0, date: activeDates[0], action: 'reset_day' };
+        const payload = { source: 'miniapp', initData: tg.initData, date: activeDates[0], action: 'reset_day' };
         try {
             await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
             setTimeout(fetchData, 1500);
@@ -557,7 +562,7 @@ document.addEventListener('click', () => {
         document.getElementById('loader').style.display = 'block';
         document.getElementById('loader').textContent = 'Прибираємо сміття... 🧹';
         
-        const payload = { source: 'miniapp', secret: tg.initDataUnsafe?.start_param || '', userId: tg.initDataUnsafe?.user?.id || 0, action: 'clean_old', activeDates: activeDates };
+        const payload = { source: 'miniapp', initData: tg.initData, action: 'clean_old', activeDates: activeDates };
         try {
             await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
             setTimeout(fetchData, 1500);
@@ -569,7 +574,7 @@ document.addEventListener('click', () => {
         document.getElementById('app').style.display = 'none';
         document.getElementById('loader').style.display = 'block';
         document.getElementById('loader').textContent = 'Публікуємо... 🚀';
-        const payload = { source: 'miniapp', secret: tg.initDataUnsafe?.start_param || '', userId: tg.initDataUnsafe?.user?.id || 0, action: 'publish_draft' };
+        const payload = { source: 'miniapp', initData: tg.initData, action: 'publish_draft' };
         try { await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); setTimeout(fetchData, 1500); } catch (err) { alert('Помилка: ' + err.message); fetchData(); }
     }
 
@@ -579,7 +584,7 @@ document.addEventListener('click', () => {
         document.getElementById('app').style.display = 'none';
         document.getElementById('loader').style.display = 'block';
         document.getElementById('loader').textContent = 'Оновлюємо ... 🤫';
-        const payload = { source: 'miniapp', secret: tg.initDataUnsafe?.start_param || '', userId: tg.initDataUnsafe?.user?.id || 0, action: text ? 'set_announcement' : 'clear_announcement', text: text };
+        const payload = { source: 'miniapp', initData: tg.initData, action: text ? 'set_announcement' : 'clear_announcement', text: text };
         try { await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); setTimeout(fetchData, 1500); } catch (err) { alert('Помилка: ' + err.message); fetchData(); }
     }
 
@@ -589,6 +594,7 @@ document.addEventListener('click', () => {
         const response = await fetch(`${GAS_WEB_APP_URL}?t=${Date.now()}`, { cache: 'no-store' });
         const result = await response.json();
         const data = result.record;
+        window.allDays = data.days || {};
 
         const months = ["СІЧНЯ", "ЛЮТОГО", "БЕРЕЗНЯ", "КВІТНЯ", "ТРАВНЯ", "ЧЕРВНЯ", "ЛИПНЯ", "СЕРПНЯ", "ВЕРЕСНЯ", "ЖОВТНЯ", "ЛИСТОПАДА", "ГРУДНЯ"];
         const today = new Date();
@@ -666,6 +672,7 @@ document.addEventListener('click', () => {
         }
 
         startTimerAndRender();
+        onAppReady();
     } catch (error) {
         document.getElementById('loader').textContent = "Помилка завантаження. Спробуй пізніше.";
     }
@@ -1060,8 +1067,8 @@ document.addEventListener('click', () => {
         if (typeof isAdmin !== 'undefined' && isAdmin) {
             fullHtml += `
             <div style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: center;">
-                <button onclick="sendPublishDraft()" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); padding: 10px 15px; border-radius: 10px; font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer;">
-                    🚀 Опублікувати
+                <button onclick="openGen()" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); padding: 10px 15px; border-radius: 10px; font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer;">
+                    📣 Канал
                 </button>
                 <button onclick="sendAnnouncement()" style="background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); padding: 10px 15px; border-radius: 10px; font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer;">
                     🤫 Інсайд
@@ -1447,6 +1454,240 @@ document.addEventListener('click', () => {
     </div>
 </div>
 
+
+
+<!-- ===== СПОВІЩЕННЯ / АДМІН (v2) ===== -->
+<style>
+@keyframes npUp { from { transform: translate(-50%, 40px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+.sw { width: 46px; height: 28px; border-radius: 14px; background: #333; position: relative; cursor: pointer; transition: .2s; flex-shrink: 0; }
+.sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: .2s; }
+.sw.on { background: var(--c-yellow); } .sw.on::after { left: 21px; background: #000; }
+.nrow { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.nrow b { color: #fff; font-size: 14px; display: block; margin-bottom: 3px; } .nrow span { color: #888; font-size: 12px; line-height: 1.35; display: block; }
+.nchips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.nchip { flex: 1; text-align: center; padding: 10px 6px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: #aaa; font-size: 13px; font-weight: 800; cursor: pointer; min-width: 60px; }
+.nchip.on { background: var(--c-yellow); color: #000; border-color: var(--c-yellow); }
+.gbtn { border: none; border-radius: 14px; padding: 14px; font-weight: 900; font-size: 14px; width: 100%; cursor: pointer; background: var(--c-yellow); color: #000; }
+.gbtn:disabled { opacity: .4; }
+#gCap { position: absolute; left: -9999px; top: 0; width: 540px; padding: 35px; background: #fff; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+.g-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
+.g-title { font-size: 26px; font-weight: 900; text-transform: uppercase; line-height: 1.1; color: #000; }
+.g-sub { font-size: 14px; color: #6b7280; font-weight: 500; margin-top: 6px; }
+.g-logo { height: 55px; width: auto; object-fit: contain; }
+.g-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 25px; }
+.g-box { position: relative; aspect-ratio: 1.5/1; border-radius: 18px; overflow: hidden; font-weight: 700; font-size: 22px; background: #fbbf24; }
+.g-base, .g-over { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.g-base { background: #fbbf24; color: #1f2937; z-index: 1; }
+.g-over { background: #1f2937; color: #fff; z-index: 2; overflow: hidden; display: none; width: 0; }
+.g-oc { position: absolute; top: 0; height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
+.g-icon { width: 22px; height: 22px; display: block; flex-shrink: 0; }
+.g-time { display: block; white-space: nowrap; line-height: 1; margin-top: 2px; }
+.g-foot { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 18px; border-top: 1px solid #f3f4f6; color: #6b7280; font-size: 13px; font-weight: 500; line-height: 1.3; }
+</style>
+
+<!-- Нефорсований «пуш» про нову фічу -->
+<div id="notifPromo" style="display:none; position:fixed; bottom:calc(18px + env(safe-area-inset-bottom, 0px)); left:50%; transform:translateX(-50%); z-index:900; width:calc(100% - 32px); max-width:420px; background:#111; border:1px solid #333; border-radius:20px; padding:16px 18px; box-shadow:0 10px 40px rgba(0,0,0,0.6); animation:npUp .5s ease-out;">
+    <div style="display:flex; gap:12px; align-items:flex-start;">
+        <div style="font-size:26px; line-height:1;">🔔</div>
+        <div style="flex-grow:1;">
+            <div style="font-weight:900; font-size:15px; color:var(--c-yellow); margin-bottom:4px;">Нова фішка: сповіщення</div>
+            <div style="font-size:13px; color:#ccc; line-height:1.4;">Нагадаємо про відключення і повідомимо про новий графік чи зміни. Вмикається за 10 секунд.</div>
+        </div>
+        <div onclick="hidePromo(true)" style="color:#666; font-size:26px; line-height:1; cursor:pointer; padding:0 2px;">&times;</div>
+    </div>
+    <div style="display:flex; gap:10px; margin-top:14px;">
+        <button class="gbtn" style="padding:11px; font-size:13px;" onclick="openNotif()">Налаштувати</button>
+        <button class="gbtn" style="padding:11px; font-size:13px; background:rgba(255,255,255,0.08); color:#aaa; width:auto; padding-left:18px; padding-right:18px;" onclick="hidePromo(true)">Не зараз</button>
+    </div>
+</div>
+
+<!-- Налаштування сповіщень -->
+<div id="notifModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10000; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;">
+  <div style="background:#111; border:1px solid #333; border-radius:20px; width:100%; max-width:450px; max-height:88vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.5); overflow:hidden;">
+    <div style="padding:20px 20px 15px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-weight:900; font-size:18px; color:var(--c-yellow);">🔔 Сповіщення</h3>
+        <div onclick="document.getElementById('notifModal').style.display='none'" style="color:#666; font-size:32px; cursor:pointer; line-height:1; padding:0 5px;">&times;</div>
+    </div>
+    <div style="padding:6px 20px 20px; overflow-y:auto; text-align:left;">
+        <div class="nrow"><div><b>🔌 Зміни в графіку</b><span>Якщо щось змінилось або відключення скасували</span></div><div class="sw" id="swChg" onclick="nSet('chg', ns.chg ? 0 : 1)"></div></div>
+        <div class="nrow"><div><b>💡 Новий графік</b><span>Коли опублікують графік на новий день</span></div><div class="sw" id="swPub" onclick="nSet('pub', ns.pub ? 0 : 1)"></div></div>
+        <div style="padding:14px 0 4px;"><b style="color:#fff; font-size:14px;">🕑 Нагадати про відключення</b>
+            <div class="nchips" id="nChips">
+                <div class="nchip" data-v="0" onclick="nSet('remind',0)">Вимк.</div>
+                <div class="nchip" data-v="30" onclick="nSet('remind',30)">за 30 хв</div>
+                <div class="nchip" data-v="60" onclick="nSet('remind',60)">за 1 год</div>
+                <div class="nchip" data-v="120" onclick="nSet('remind',120)">за 2 год</div>
+            </div>
+        </div>
+        <div id="nStatus" style="min-height:20px; margin-top:12px; font-size:13px; color:#aaa; text-align:center; line-height:1.4;"></div>
+        <div style="margin-top:10px; font-size:12px; color:#666; line-height:1.4; text-align:center;">Сповіщення приходять від бота в Telegram. Їх можна вимкнути тут будь-коли, бот і додаток при цьому не блокуються. Вночі (23:00–07:00) приходять без звуку.</div>
+        <div onclick="nSet('all',0)" style="margin-top:14px; text-align:center; color:#d9463b; font-size:13px; font-weight:800; cursor:pointer;">Вимкнути все</div>
+    </div>
+  </div>
+</div>
+
+<!-- Адмінка: генератор для каналу + статистика -->
+<div id="genModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10000; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;">
+  <div style="background:#111; border:1px solid #333; border-radius:20px; width:100%; max-width:450px; max-height:92vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.5); overflow:hidden;">
+    <div style="padding:20px 20px 15px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-weight:900; font-size:18px; color:var(--c-yellow);">📣 Канал і статистика</h3>
+        <div onclick="document.getElementById('genModal').style.display='none'" style="color:#666; font-size:32px; cursor:pointer; line-height:1; padding:0 5px;">&times;</div>
+    </div>
+    <div style="padding:16px 20px 20px; overflow-y:auto; text-align:left;">
+        <div id="gChips" class="nchips" style="margin:0 0 14px;"></div>
+        <img id="gImg" alt="" style="width:100%; border-radius:12px; display:none; margin-bottom:12px;">
+        <div id="gText" style="white-space:pre-wrap; font-size:13px; color:#ccc; line-height:1.45; background:rgba(255,255,255,0.05); border-radius:12px; padding:12px; margin-bottom:12px;"></div>
+        <button class="gbtn" id="gPub" onclick="genPublish()" disabled>🚀 Опублікувати в каналі</button>
+        <div id="gStats" style="margin-top:18px; font-size:13px; color:#aaa; line-height:1.6;"></div>
+    </div>
+  </div>
+</div>
+
+<div id="gCap">
+    <div class="g-head"><div><div class="g-title" id="gTitle">ГРАФІК</div><div class="g-sub">За інформацією Харківобленерго</div></div><img src="./logo.png" alt="" class="g-logo" onerror="this.style.display='none'"></div>
+    <div class="g-grid" id="gGrid"></div>
+    <div class="g-foot"><svg style="width:20px;height:20px;flex-shrink:0;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg><div>Під час аварійних відключень графік не діє</div></div>
+</div>
+
+<script>
+const $g = id => document.getElementById(id);
+async function gasCall(p) {
+    const r = await fetch(GAS_WEB_APP_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(Object.assign({ source: 'miniapp', initData: tg.initData }, p)) });
+    return r.json();
+}
+
+// ---- «пуш» про нову фішку ----
+let promoTimer = null;
+function showPromoMaybe() {
+    try {
+        const n = +(localStorage.getItem('np_v1_n') || 0);
+        if (localStorage.getItem('np_v1_done') || n >= 2) return;
+        localStorage.setItem('np_v1_n', n + 1);
+    } catch (e) {}
+    setTimeout(() => { $g('notifPromo').style.display = 'block'; promoTimer = setTimeout(() => hidePromo(false), 14000); }, 2500);
+}
+function hidePromo(done) {
+    $g('notifPromo').style.display = 'none'; clearTimeout(promoTimer);
+    if (done) { try { localStorage.setItem('np_v1_done', '1'); } catch (e) {} }
+}
+
+// ---- налаштування сповіщень ----
+let ns = { chg: 0, pub: 0, remind: 0 }, nsBusy = false;
+function nStatus(h) { $g('nStatus').innerHTML = h || ''; }
+function nRender() {
+    $g('swChg').classList.toggle('on', !!ns.chg); $g('swPub').classList.toggle('on', !!ns.pub);
+    document.querySelectorAll('#nChips .nchip').forEach(c => c.classList.toggle('on', +c.dataset.v === +ns.remind));
+}
+async function openNotif() {
+    hidePromo(true); $g('notifModal').style.display = 'flex'; nStatus('Завантаження…');
+    try {
+        const r = await gasCall({ action: 'get_settings' });
+        if (r.ok) { ns = r.settings; nRender(); nStatus(''); } else nStatus('⚠️ Не вдалося завантажити. Спробуй пізніше.');
+    } catch (e) { nStatus('⚠️ Не вдалося завантажити. Спробуй пізніше.'); }
+}
+function askWrite() {
+    return new Promise(res => {
+        try { if (tg.isVersionAtLeast && tg.isVersionAtLeast('6.9') && tg.requestWriteAccess) { tg.requestWriteAccess(() => res()); return; } } catch (e) {}
+        res();
+    });
+}
+async function nSet(k, v) {
+    if (nsBusy) return;
+    const old = Object.assign({}, ns);
+    if (k === 'all') ns = { chg: 0, pub: 0, remind: 0 }; else ns[k] = v;
+    nRender(); nsBusy = true; nStatus('Зберігаю…');
+    const turningOn = (ns.chg || ns.pub || ns.remind) && !(old.chg || old.pub || old.remind);
+    if (turningOn) await askWrite();
+    try {
+        const r = await gasCall({ action: 'save_settings', settings: ns });
+        if (r.ok) nStatus(turningOn ? '✅ Підключено! Тестове повідомлення вже в чаті з ботом' : '✅ Збережено');
+        else { ns = old; nRender(); nStatus('⚠️ Не вдалося написати тобі. Відкрий <a href="https://t.me/valkyelectrifybot" style="color:var(--c-yellow);">бота</a>, натисни Start і спробуй ще раз.'); }
+    } catch (e) { ns = old; nRender(); nStatus('⚠️ Помилка мережі. Спробуй ще раз.'); }
+    nsBusy = false;
+}
+
+// ---- адмінка: генератор картинки для каналу ----
+const gBulb = '<svg class="g-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1.2 1.5-2.5 1.5-4a6 6 0 0 0-6-6 6 6 0 0 0-6 6c0 1.4.5 2.7 1.5 4 .7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>';
+const gZap = '<svg class="g-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="12.41 6.75 13 2 10.57 4.92"/><polyline points="18.57 12.91 21 10 15.66 10"/><polyline points="8 8 3 14 12 14 11 22 16 16"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
+let gCaption = '', gToken = 0;
+const gFmt = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+function gClock(t) {
+    const [h, m] = t.split(':').map(Number), i = (h % 12) || 12, ix = i === 12 ? 0 : i;
+    return (m >= 30 ? ['🕧','🕜','🕝','🕞','🕟','🕠','🕡','🕢','🕣','🕤','🕥','🕦'] : ['🕛','🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚'])[ix];
+}
+function gLoadLib() {
+    return new Promise((res, rej) => {
+        if (window.html2canvas) return res();
+        const s = document.createElement('script'); s.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+        s.onload = res; s.onerror = rej; document.head.appendChild(s);
+    });
+}
+async function openGen() {
+    $g('genModal').style.display = 'flex';
+    const days = window.allDays || {}, keys = Object.keys(days).sort((a, b) => (days[b].updatedAt || '').localeCompare(days[a].updatedAt || ''));
+    $g('gChips').innerHTML = keys.map(k => `<div class="nchip" data-k="${k}" onclick="genRender('${k}')">${k}</div>`).join('') || '<div style="color:#888;font-size:13px;">Графіків ще немає</div>';
+    if (keys.length) genRender(keys[0]);
+    gasCall({ action: 'stats' }).then(s => {
+        if (s.ok) $g('gStats').innerHTML = `👥 Користувачів в апці: <b style="color:#fff">${s.total}</b><br>За 24 год: <b style="color:#fff">${s.d1}</b> · за 7 днів: <b style="color:#fff">${s.d7}</b><br>🔔 Підписано: зміни <b style="color:#fff">${s.chg}</b> · новий графік <b style="color:#fff">${s.pub}</b><br>🕑 Нагадування: 30 хв <b style="color:#fff">${s.r30}</b> · 1 год <b style="color:#fff">${s.r60}</b> · 2 год <b style="color:#fff">${s.r120}</b>`;
+    }).catch(() => {});
+}
+async function genRender(key) {
+    const my = ++gToken, day = (window.allDays || {})[key]; if (!day) return;
+    document.querySelectorAll('#gChips .nchip').forEach(c => c.classList.toggle('on', c.dataset.k === key));
+    $g('gPub').disabled = true; $g('gImg').style.display = 'none';
+    const offs = (day.intervals || []).filter(i => (i.type || 'off') === 'off'), st = new Array(24).fill('on');
+    offs.forEach(o => {
+        const s = o.startMin, e = o.endMin, sm = s % 60, em = e % 60;
+        for (let h = 0; h < 24; h++) {
+            const hs = h * 60, he = hs + 60;
+            if (hs >= s && he <= e) st[h] = 'off';
+            else if (s > hs && s < he) st[h] = sm >= 30 ? 'start-half' : 'off';
+            else if (e > hs && e < he) st[h] = em >= 30 ? 'end-half' : 'on';
+        }
+    });
+    $g('gTitle').innerHTML = 'ГРАФІК<br>НА ' + key;
+    const grid = $g('gGrid'); grid.innerHTML = '';
+    for (let i = 0; i < 24; i++) {
+        const t = String(i).padStart(2, '0') + ':00', b = document.createElement('div'); b.className = 'g-box';
+        b.innerHTML = `<div class="g-base">${gBulb}<span class="g-time">${t}</span></div><div class="g-over"><div class="g-oc">${gZap}<span class="g-time">${t}</span></div></div>`;
+        grid.appendChild(b);
+    }
+    grid.querySelectorAll('.g-box').forEach((b, i) => {
+        const ov = b.querySelector('.g-over'), oc = b.querySelector('.g-oc'), s = st[i];
+        oc.style.width = b.offsetWidth + 'px';
+        if (s === 'off') { ov.style.display = 'block'; ov.style.width = '100%'; ov.style.left = '0'; oc.style.left = '0'; }
+        else if (s === 'start-half') { ov.style.display = 'block'; ov.style.width = '50.5%'; ov.style.right = '0'; ov.style.left = 'auto'; oc.style.right = '0'; oc.style.left = 'auto'; }
+        else if (s === 'end-half') { ov.style.display = 'block'; ov.style.width = '50.5%'; ov.style.left = '0'; oc.style.left = '0'; }
+    });
+    const lines = offs.map(o => `${gClock(gFmt(o.startMin))} ${gFmt(o.startMin)}-${gFmt(o.endMin)}`).join('\n') || '✅ Відключень не заплановано';
+    gCaption = `⚡️💡 ГРАФІК НА ${key} від Харківобленерго\n\n${lines}\n\n👉🏻 t.me/valkyelectrifybot/electric`;
+    $g('gText').textContent = gCaption;
+    try {
+        await gLoadLib(); await new Promise(r => setTimeout(r, 200));
+        const canvas = await html2canvas($g('gCap'), { scale: 2, backgroundColor: null, logging: false, useCORS: true });
+        if (my !== gToken) return;
+        $g('gImg').src = canvas.toDataURL('image/png'); $g('gImg').style.display = 'block'; $g('gPub').disabled = false;
+    } catch (e) { $g('gText').textContent += '\n\n⚠️ Не вдалося створити картинку'; }
+}
+async function genPublish() {
+    if (!confirm('Опублікувати цей графік у каналі?')) return;
+    const b = $g('gPub'); b.disabled = true; b.textContent = 'Публікую…';
+    try {
+        const r = await gasCall({ action: 'publish_channel', image: $g('gImg').src, caption: gCaption });
+        alert(r.ok ? '✅ Опубліковано в каналі' : '❌ Помилка: ' + (r.error || 'невідома'));
+    } catch (e) { alert('❌ Помилка: ' + e.message); }
+    b.textContent = '🚀 Опублікувати в каналі'; b.disabled = false;
+}
+
+// ---- виклик після завантаження даних (один раз) ----
+let readyDone = false;
+function onAppReady() {
+    if (readyDone) return; readyDone = true;
+    try { const l = +(localStorage.getItem('np_ping') || 0); if (Date.now() - l > 6 * 3600 * 1000) { gasCall({ action: 'ping' }).then(r => { if (r.ok) localStorage.setItem('np_ping', Date.now()); }).catch(() => {}); } } catch (e) {}
+    const sp = tg.initDataUnsafe?.start_param || '';
+    if (sp === 'settings') openNotif(); else if (sp === 'gen' && isAdmin) openGen(); else showPromoMaybe();
+}
+</script>
 
 </body>
 </html>
