@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -112,6 +113,12 @@
         .f-link { color: #aaa; text-decoration: none; font-size: 13px; font-weight: 700; background: rgba(255,255,255,0.06); padding: 11px 18px; border-radius: 14px; transition: 0.2s; display: flex; align-items: center; gap: 7px; border: 1px solid rgba(255,255,255,0.07); }
         .f-link:active { background: rgba(255,255,255,0.12); color: #fff; }
         .f-link svg { flex-shrink: 0; }
+        .f-link-notif { flex: 1 1 100%; justify-content: center; font-size: 15px; font-weight: 900; letter-spacing: .3px; padding: 14px 18px; color: #1a1300; background: linear-gradient(135deg, #fbbf24, #f59e0b); border: 1px solid #fcd34d; box-shadow: 0 0 22px rgba(251, 191, 36, 0.35); }
+        .f-link-notif:active { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; }
+        .f-link-notif .bell-ico { width: 19px; height: 19px; transform-origin: 50% 10%; animation: bellRing 3.5s ease-in-out infinite; }
+        @keyframes bellRing { 0%, 55%, 100% { transform: rotate(0); } 60% { transform: rotate(16deg); } 65% { transform: rotate(-14deg); } 70% { transform: rotate(10deg); } 75% { transform: rotate(-8deg); } 80% { transform: rotate(4deg); } 85% { transform: rotate(0); } }
+        .f-link-support { color: #fb7185; background: rgba(251, 113, 133, 0.08); border-color: rgba(251, 113, 133, 0.3); }
+        .f-link-support:active { background: rgba(251, 113, 133, 0.18); color: #fecdd3; }
         .disclaimer-box { 
             display: flex; align-items: flex-start; text-align: left; gap: 8px; font-size: 13px;
             color: #777; line-height: 1.4; font-weight: 500; background: rgba(255,255,255,0.03); 
@@ -121,6 +128,10 @@
 
         .source-text { font-size: 12px; color: #666; font-weight: 500; }
         .loader { text-align: center; color: #888; margin-top: 50px; font-weight: bold; }
+        .loader-vis { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center; pointer-events: none; }
+        .loader-vis .zen-container { margin: 0; transform: scale(2.4); }
+        .loader-cat { width: 150px; height: auto; max-height: 40vh; object-fit: contain; filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.35)); animation: loaderCatIn .5s ease-out; }
+        @keyframes loaderCatIn { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
                  .mascot-header {
     position: absolute;
     left: 50%;
@@ -300,7 +311,16 @@
 </head>
 <body ontouchstart="">
 
-<div id="loader" class="loader">Синхронізація...⚡</div>
+<div id="loader" class="loader"><div id="loaderText">Синхронізація...⚡</div><div id="loaderVis" class="loader-vis"></div></div>
+<script>
+// Екран синхронізації: рандом — котик або дві крапки, що зливаються в одну
+(function () {
+    window.loaderDots = '<div class="zen-container"><div class="zen-particle top"></div><div class="zen-particle bottom"></div><div class="zen-flash"></div></div>';
+    var v = document.getElementById('loaderVis');
+    if (Math.random() < 0.5) v.innerHTML = '<img src="./catOnlight.webp" alt="" class="loader-cat" onerror="this.parentNode.innerHTML=window.loaderDots">';
+    else v.innerHTML = window.loaderDots;
+})();
+</script>
 
 <div id="toastInside" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: #111; border: 1px solid #333; border-radius: 20px; padding: 15px 20px; width: max-content; max-width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.5); align-items: center; gap: 12px;">
     <div style="font-size: 22px; line-height: 1;">💬</div>
@@ -359,18 +379,22 @@
     </div>
 
     <div class="footer-links">
+    <div class="f-link f-link-notif f-link-shine" onclick="openNotif()" style="cursor: pointer;">
+        <svg class="bell-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Сповіщення
+    </div>
     <a href="https://t.me/share/url?url=t.me/valkyelectrifybot/electric&text=💡%20Актуальний%20графік%20відключень%20світла%20у%20Валках" class="f-link" target="_blank">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         Поділитися
     </a>
     <div class="f-link f-link-shine" onclick="alert('Щоб не шукати додаток кожного разу: натисни на три крапки ⋯ у правому верхньому куті і обери «Додати на домашній екран» 📱')" style="cursor: pointer;">
-    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-    Додати
-</div>
-    <div class="f-link f-link-shine" onclick="openNotif()" style="cursor: pointer;">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        Сповіщення
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        Додати
     </div>
+    <a href="https://t.me/valkysho_bot" class="f-link" target="_blank">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Написати
+    </a>
     <div class="f-link" onclick="document.getElementById('pointsModal').style.display='flex'" style="cursor: pointer;">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
         Пункти незламності
@@ -383,9 +407,9 @@
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         Базарчик
     </a>
-    <a href="https://t.me/valkysho_bot" class="f-link" target="_blank">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
-        Бот
+    <a href="https://donatello.to/valkyshotam" class="f-link f-link-support" target="_blank">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Підтримати
     </a>
 </div>
 
@@ -415,6 +439,11 @@
     let globalAnnouncement = null;
     let activeDates = []; 
     let initialScrollDone = false;
+
+    function setLoader(text, isError) {
+        document.getElementById('loaderText').textContent = text;
+        document.getElementById('loaderVis').style.display = isError ? 'none' : 'flex';
+    }
 
     function timeToMins(t) {
         if (!t) return null;
@@ -530,7 +559,7 @@ document.addEventListener('click', () => {
         document.getElementById('editModal').style.display = 'none';
         document.getElementById('app').style.display = 'none';
         document.getElementById('loader').style.display = 'block';
-        document.getElementById('loader').textContent = 'Записуємо зміни... ⚡';
+        setLoader('Записуємо зміни... ⚡');
 
         const payload = {
             source: 'miniapp', initData: tg.initData,
@@ -547,7 +576,7 @@ document.addEventListener('click', () => {
         document.getElementById('editModal').style.display = 'none';
         document.getElementById('app').style.display = 'none';
         document.getElementById('loader').style.display = 'block';
-        document.getElementById('loader').textContent = 'Скидаємо графік... 🔄';
+        setLoader('Скидаємо графік... 🔄');
         
         const payload = { source: 'miniapp', initData: tg.initData, date: activeDates[0], action: 'reset_day' };
         try {
@@ -560,7 +589,7 @@ document.addEventListener('click', () => {
         if (!confirm('Точно видалити всі застарілі дні з бази?')) return;
         document.getElementById('app').style.display = 'none';
         document.getElementById('loader').style.display = 'block';
-        document.getElementById('loader').textContent = 'Прибираємо сміття... 🧹';
+        setLoader('Прибираємо сміття... 🧹');
         
         const payload = { source: 'miniapp', initData: tg.initData, action: 'clean_old', activeDates: activeDates };
         try {
@@ -573,7 +602,7 @@ document.addEventListener('click', () => {
         if (!confirm('Опублікувати новий графік для всіх?')) return;
         document.getElementById('app').style.display = 'none';
         document.getElementById('loader').style.display = 'block';
-        document.getElementById('loader').textContent = 'Публікуємо... 🚀';
+        setLoader('Публікуємо... 🚀');
         const payload = { source: 'miniapp', initData: tg.initData, action: 'publish_draft' };
         try { await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); setTimeout(fetchData, 1500); } catch (err) { alert('Помилка: ' + err.message); fetchData(); }
     }
@@ -583,7 +612,7 @@ document.addEventListener('click', () => {
         if (text === null) return;
         document.getElementById('app').style.display = 'none';
         document.getElementById('loader').style.display = 'block';
-        document.getElementById('loader').textContent = 'Оновлюємо ... 🤫';
+        setLoader('Оновлюємо ... 🤫');
         const payload = { source: 'miniapp', initData: tg.initData, action: text ? 'set_announcement' : 'clear_announcement', text: text };
         try { await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }); setTimeout(fetchData, 1500); } catch (err) { alert('Помилка: ' + err.message); fetchData(); }
     }
@@ -674,7 +703,7 @@ document.addEventListener('click', () => {
         startTimerAndRender();
         onAppReady();
     } catch (error) {
-        document.getElementById('loader').textContent = "Помилка завантаження. Спробуй пізніше.";
+        setLoader("Помилка завантаження. Спробуй пізніше.", true);
     }
 }
 
@@ -1104,7 +1133,7 @@ document.addEventListener('click', () => {
             
             let hOff = Math.floor(offMins / 60);
             let mOff = offMins % 60;
-            let totalOffText = `${hOff} год ${mOff > 0 ? mOff + ' хв' : ''}`;
+            let totalOffText = `${hOff} год. ${mOff > 0 ? mOff + ' хв' : ''}`.trim();
 
            
 
@@ -1459,13 +1488,14 @@ document.addEventListener('click', () => {
 <!-- ===== СПОВІЩЕННЯ / АДМІН (v2) ===== -->
 <style>
 @keyframes npUp { from { transform: translate(-50%, 40px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-.sw { width: 46px; height: 28px; border-radius: 14px; background: #333; position: relative; cursor: pointer; transition: .2s; flex-shrink: 0; }
-.sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: .2s; }
-.sw.on { background: var(--c-yellow); } .sw.on::after { left: 21px; background: #000; }
-.nrow { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-.nrow b { color: #fff; font-size: 14px; display: block; margin-bottom: 3px; } .nrow span { color: #888; font-size: 12px; line-height: 1.35; display: block; }
-.nchips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-.nchip { flex: 1; text-align: center; padding: 10px 6px; border-radius: 12px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: #aaa; font-size: 13px; font-weight: 800; cursor: pointer; min-width: 60px; }
+.sw { width: 54px; height: 32px; border-radius: 16px; background: #333; position: relative; cursor: pointer; transition: .2s; flex-shrink: 0; }
+.sw::after { content: ''; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; border-radius: 50%; background: #fff; transition: .2s; }
+.sw.on { background: var(--c-yellow); } .sw.on::after { left: 25px; background: #000; }
+.nrow { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.nrow b { color: #fff; font-size: 16px; display: block; margin-bottom: 4px; } .nrow span { color: #999; font-size: 14px; line-height: 1.4; display: block; }
+.nsec { color: #fff; font-size: 16px; }
+.nchips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.nchip { flex: 1; text-align: center; padding: 13px 8px; border-radius: 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); color: #aaa; font-size: 15px; font-weight: 800; cursor: pointer; min-width: 70px; }
 .nchip.on { background: var(--c-yellow); color: #000; border-color: var(--c-yellow); }
 .gbtn { border: none; border-radius: 14px; padding: 14px; font-weight: 900; font-size: 14px; width: 100%; cursor: pointer; background: var(--c-yellow); color: #000; }
 .gbtn:disabled { opacity: .4; }
@@ -1502,26 +1532,35 @@ document.addEventListener('click', () => {
 </div>
 
 <!-- Налаштування сповіщень -->
-<div id="notifModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10000; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;">
-  <div style="background:#111; border:1px solid #333; border-radius:20px; width:100%; max-width:450px; max-height:88vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.5); overflow:hidden;">
-    <div style="padding:20px 20px 15px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;">
-        <h3 style="margin:0; font-weight:900; font-size:18px; color:var(--c-yellow);">🔔 Сповіщення</h3>
-        <div onclick="document.getElementById('notifModal').style.display='none'" style="color:#666; font-size:32px; cursor:pointer; line-height:1; padding:0 5px;">&times;</div>
+<div id="notifModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(8px); z-index:10000; align-items:center; justify-content:center; padding:14px; box-sizing:border-box;">
+  <div style="background:#111; border:1px solid #333; border-radius:22px; width:100%; max-width:480px; max-height:94vh; display:flex; flex-direction:column; box-shadow:0 10px 40px rgba(0,0,0,0.5); overflow:hidden;">
+    <div style="padding:22px 22px 16px; border-bottom:1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-weight:900; font-size:22px; color:var(--c-yellow);">🔔 Сповіщення</h3>
+        <div onclick="document.getElementById('notifModal').style.display='none'" style="color:#666; font-size:36px; cursor:pointer; line-height:1; padding:0 5px;">&times;</div>
     </div>
-    <div style="padding:6px 20px 20px; overflow-y:auto; text-align:left;">
+    <div style="padding:6px 22px 22px; overflow-y:auto; text-align:left;">
         <div class="nrow"><div><b>🔌 Зміни в графіку</b><span>Якщо щось змінилось або відключення скасували</span></div><div class="sw" id="swChg" onclick="nSet('chg', ns.chg ? 0 : 1)"></div></div>
         <div class="nrow"><div><b>💡 Новий графік</b><span>Коли опублікують новий графік</span></div><div class="sw" id="swPub" onclick="nSet('pub', ns.pub ? 0 : 1)"></div></div>
-        <div style="padding:14px 0 4px;"><b style="color:#fff; font-size:14px;">🕑 Нагадати про відключення</b>
+        <div style="padding:18px 0 6px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:20px;"><b class="nsec">🕑 Нагадати про відключення</b>
             <div class="nchips" id="nChips">
                 <div class="nchip" data-v="0" onclick="nSet('remind',0)">Вимк.</div>
                 <div class="nchip" data-v="30" onclick="nSet('remind',30)">за 30 хв</div>
-                <div class="nchip" data-v="60" onclick="nSet('remind',60)">за 1 год</div>
-                <div class="nchip" data-v="120" onclick="nSet('remind',120)">за 2 год</div>
+                <div class="nchip" data-v="60" onclick="nSet('remind',60)">за 1 год.</div>
+                <div class="nchip" data-v="120" onclick="nSet('remind',120)">за 2 год.</div>
             </div>
         </div>
-        <div id="nStatus" style="min-height:20px; margin-top:12px; font-size:13px; color:#aaa; text-align:center; line-height:1.4;"></div>
-        <div style="margin-top:10px; font-size:12px; color:#666; line-height:1.4; text-align:center;">Сповіщення приходять від бота в Telegram. Їх можна вимкнути тут в меню нижче будь-коли. Вночі (23:00–07:00) приходять без звуку.</div>
-        <div onclick="nSet('all',0)" style="margin-top:14px; text-align:center; color:#d9463b; font-size:13px; font-weight:800; cursor:pointer;">Вимкнути все</div>
+        <div style="padding:18px 0 6px;"><b class="nsec">💡 Нагадати, коли зʼявиться світло</b>
+            <div class="nchips" id="nChipsOn">
+                <div class="nchip" data-v="0" style="flex:1 1 26%;" onclick="nSet('light',0)">Вимк.</div>
+                <div class="nchip" data-v="1" style="flex:2 1 60%;" onclick="nSet('light',1)">Щойно за графіком</div>
+                <div class="nchip" data-v="5" style="flex:1 1 26%;" onclick="nSet('light',5)">за 5 хв</div>
+                <div class="nchip" data-v="10" style="flex:1 1 26%;" onclick="nSet('light',10)">за 10 хв</div>
+                <div class="nchip" data-v="20" style="flex:1 1 26%;" onclick="nSet('light',20)">за 20 хв</div>
+            </div>
+        </div>
+        <div id="nStatus" style="min-height:22px; margin-top:14px; font-size:14px; color:#aaa; text-align:center; line-height:1.45;"></div>
+        <div style="margin-top:10px; font-size:13px; color:#777; line-height:1.45; text-align:center;">Сповіщення приходять від бота в Telegram. Їх можна вимкнути тут в меню нижче будь-коли. Вночі (23:00–07:00) приходять без звуку.</div>
+        <div onclick="nSet('all',0)" style="margin-top:16px; text-align:center; color:#d9463b; font-size:15px; font-weight:800; cursor:pointer; padding:6px;">Вимкнути все</div>
     </div>
   </div>
 </div>
@@ -1572,17 +1611,18 @@ function hidePromo(done) {
 }
 
 // ---- налаштування сповіщень ----
-let ns = { chg: 0, pub: 0, remind: 0 }, nsBusy = false;
+let ns = { chg: 0, pub: 0, remind: 0, light: 0 }, nsBusy = false;
 function nStatus(h) { $g('nStatus').innerHTML = h || ''; }
 function nRender() {
     $g('swChg').classList.toggle('on', !!ns.chg); $g('swPub').classList.toggle('on', !!ns.pub);
-    document.querySelectorAll('#nChips .nchip').forEach(c => c.classList.toggle('on', +c.dataset.v === +ns.remind));
+    document.querySelectorAll('#nChips .nchip').forEach(c => c.classList.toggle('on', +c.dataset.v === (+ns.remind || 0)));
+    document.querySelectorAll('#nChipsOn .nchip').forEach(c => c.classList.toggle('on', +c.dataset.v === (+ns.light || 0)));
 }
 async function openNotif() {
     hidePromo(true); $g('notifModal').style.display = 'flex'; nStatus('Завантаження…');
     try {
         const r = await gasCall({ action: 'get_settings' });
-        if (r.ok) { ns = r.settings; nRender(); nStatus(''); } else nStatus('⚠️ Не вдалося завантажити. Спробуй пізніше.');
+        if (r.ok) { ns = Object.assign({ chg: 0, pub: 0, remind: 0, light: 0 }, r.settings); nRender(); nStatus(''); } else nStatus('⚠️ Не вдалося завантажити. Спробуй пізніше.');
     } catch (e) { nStatus('⚠️ Не вдалося завантажити. Спробуй пізніше.'); }
 }
 function askWrite() {
@@ -1594,9 +1634,9 @@ function askWrite() {
 async function nSet(k, v) {
     if (nsBusy) return;
     const old = Object.assign({}, ns);
-    if (k === 'all') ns = { chg: 0, pub: 0, remind: 0 }; else ns[k] = v;
+    if (k === 'all') ns = { chg: 0, pub: 0, remind: 0, light: 0 }; else ns[k] = v;
     nRender(); nsBusy = true; nStatus('Зберігаю…');
-    const turningOn = (ns.chg || ns.pub || ns.remind) && !(old.chg || old.pub || old.remind);
+    const turningOn = (ns.chg || ns.pub || ns.remind || ns.light) && !(old.chg || old.pub || old.remind || old.light);
     if (turningOn) await askWrite();
     try {
         const r = await gasCall({ action: 'save_settings', settings: ns });
@@ -1628,7 +1668,7 @@ async function openGen() {
     $g('gChips').innerHTML = keys.map(k => `<div class="nchip" data-k="${k}" onclick="genRender('${k}')">${k}</div>`).join('') || '<div style="color:#888;font-size:13px;">Графіків ще немає</div>';
     if (keys.length) genRender(keys[0]);
     gasCall({ action: 'stats' }).then(s => {
-        if (s.ok) $g('gStats').innerHTML = `👥 Користувачів в апці: <b style="color:#fff">${s.total}</b><br>За 24 год: <b style="color:#fff">${s.d1}</b> · за 7 днів: <b style="color:#fff">${s.d7}</b><br>🔔 Підписано: зміни <b style="color:#fff">${s.chg}</b> · новий графік <b style="color:#fff">${s.pub}</b><br>🕑 Нагадування: 30 хв <b style="color:#fff">${s.r30}</b> · 1 год <b style="color:#fff">${s.r60}</b> · 2 год <b style="color:#fff">${s.r120}</b>`;
+        if (s.ok) $g('gStats').innerHTML = `👥 Користувачів в апці: <b style="color:#fff">${s.total}</b><br>За 24 год.: <b style="color:#fff">${s.d1}</b> · за 7 днів: <b style="color:#fff">${s.d7}</b><br>🔔 Підписано: зміни <b style="color:#fff">${s.chg}</b> · новий графік <b style="color:#fff">${s.pub}</b><br>🕑 Нагадування: 30 хв <b style="color:#fff">${s.r30}</b> · 1 год. <b style="color:#fff">${s.r60}</b> · 2 год. <b style="color:#fff">${s.r120}</b><br>💡 Світло зʼявиться: щойно <b style="color:#fff">${s.l1 || 0}</b> · 5 хв <b style="color:#fff">${s.l5 || 0}</b> · 10 хв <b style="color:#fff">${s.l10 || 0}</b> · 20 хв <b style="color:#fff">${s.l20 || 0}</b>`;
     }).catch(() => {});
 }
 async function genRender(key) {
