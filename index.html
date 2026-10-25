@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -113,12 +112,11 @@
         .f-link { color: #aaa; text-decoration: none; font-size: 13px; font-weight: 700; background: rgba(255,255,255,0.06); padding: 11px 18px; border-radius: 14px; transition: 0.2s; display: flex; align-items: center; gap: 7px; border: 1px solid rgba(255,255,255,0.07); }
         .f-link:active { background: rgba(255,255,255,0.12); color: #fff; }
         .f-link svg { flex-shrink: 0; }
-        .f-link-notif { flex: 1 1 100%; justify-content: center; font-size: 15px; font-weight: 900; letter-spacing: .3px; padding: 14px 18px; color: #1a1300; background: linear-gradient(135deg, #fbbf24, #f59e0b); border: 1px solid #fcd34d; box-shadow: 0 0 22px rgba(251, 191, 36, 0.35); }
+        .f-link-notif { flex: 0 0 auto; justify-content: center; font-size: 15px; font-weight: 900; letter-spacing: .3px; padding: 12px 26px; color: #1a1300; background: linear-gradient(135deg, #fbbf24, #f59e0b); border: 1px solid #fcd34d; box-shadow: 0 0 22px rgba(251, 191, 36, 0.35); }
         .f-link-notif:active { background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; }
         .f-link-notif .bell-ico { width: 19px; height: 19px; transform-origin: 50% 10%; animation: bellRing 3.5s ease-in-out infinite; }
         @keyframes bellRing { 0%, 55%, 100% { transform: rotate(0); } 60% { transform: rotate(16deg); } 65% { transform: rotate(-14deg); } 70% { transform: rotate(10deg); } 75% { transform: rotate(-8deg); } 80% { transform: rotate(4deg); } 85% { transform: rotate(0); } }
-        .f-link-support { color: #fb7185; background: rgba(251, 113, 133, 0.08); border-color: rgba(251, 113, 133, 0.3); }
-        .f-link-support:active { background: rgba(251, 113, 133, 0.18); color: #fecdd3; }
+        .f-link-support svg { color: #fb7185; }
         .disclaimer-box { 
             display: flex; align-items: flex-start; text-align: left; gap: 8px; font-size: 13px;
             color: #777; line-height: 1.4; font-weight: 500; background: rgba(255,255,255,0.03); 
@@ -383,6 +381,7 @@
         <svg class="bell-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         Сповіщення
     </div>
+    <div style="flex-basis: 100%; height: 0; margin-top: -8px;"></div>
     <a href="https://t.me/share/url?url=t.me/valkyelectrifybot/electric&text=💡%20Актуальний%20графік%20відключень%20світла%20у%20Валках" class="f-link" target="_blank">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         Поділитися
