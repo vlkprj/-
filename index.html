@@ -355,6 +355,7 @@
             <div class="status-box">
                 <div class="status-label"><span class="live-dot"></span>Статус</div>
                 <div class="status-value" id="timerStatus">...</div>
+                <div class="verify-badge" id="verifyBadge" onclick="showVerifyInfo()">🔎 Уточнюємо</div>
             </div>
             <div class="timer-box">
                 <div class="timer-label" id="timerLabel">Оновлення...</div>
@@ -623,6 +624,8 @@ document.addEventListener('click', () => {
         const result = await response.json();
         const data = result.record;
         window.allDays = data.days || {};
+        window.verifyInfo = result.verify || null;
+        if (window.renderVerify) window.renderVerify();
 
         const months = ["СІЧНЯ", "ЛЮТОГО", "БЕРЕЗНЯ", "КВІТНЯ", "ТРАВНЯ", "ЧЕРВНЯ", "ЛИПНЯ", "СЕРПНЯ", "ВЕРЕСНЯ", "ЖОВТНЯ", "ЛИСТОПАДА", "ГРУДНЯ"];
         const today = new Date();
@@ -1725,7 +1728,193 @@ function onAppReady() {
     try { const l = +(localStorage.getItem('np_ping') || 0); if (Date.now() - l > 6 * 3600 * 1000) { gasCall({ action: 'ping' }).then(r => { if (r.ok) localStorage.setItem('np_ping', Date.now()); }).catch(() => {}); } } catch (e) {}
     const sp = tg.initDataUnsafe?.start_param || '';
     if (sp === 'settings') openNotif(); else if (sp === 'gen' && isAdmin) openGen(); else showPromoMaybe();
+    if (window.voteInit) window.voteInit();
 }
+</script>
+
+<!-- ===== ОПИТУВАННЯ «ЧИ Є СВІТЛО ЗАРАЗ» + бейдж «Уточнюємо» ===== -->
+<style>
+.verify-badge { display: none; align-self: flex-start; align-items: center; background: rgba(249, 115, 22, 0.12); color: var(--c-orange); border: 1px solid rgba(249, 115, 22, 0.45); border-radius: 8px; padding: 4px 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; line-height: 1; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+@media (max-width: 380px) { .verify-badge { font-size: 10px; padding: 3px 6px; } }
+
+#voteCard { display: none; position: fixed; left: 16px; right: 16px; max-width: 420px; margin: 0 auto; bottom: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 880; background: #111; border: 1px solid #333; border-radius: 20px; padding: 14px 16px 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); opacity: 0; -webkit-transform: translateY(24px); transform: translateY(24px); -webkit-transition: opacity .35s ease, -webkit-transform .35s ease; transition: opacity .35s ease, transform .35s ease; }
+#voteCard.lift { bottom: 96px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+#voteCard.show { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0); }
+.vc-top { display: flex; align-items: flex-start; justify-content: space-between; }
+.vc-tag { font-size: 11px; font-weight: 900; color: var(--c-yellow); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+.vc-q { font-size: 15px; font-weight: 800; color: #fff; line-height: 1.35; }
+.vc-x { background: none; border: none; color: #777; font-size: 30px; line-height: 1; padding: 0 2px 0 12px; margin: -6px -4px 0 0; cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent; }
+.vc-btns { display: flex; margin-top: 14px; }
+.vc-btn { flex: 1; min-height: 48px; padding: 10px 8px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #fff; font-size: 14px; font-weight: 800; line-height: 1.2; cursor: pointer; font-family: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.vc-btn + .vc-btn { margin-left: 10px; }
+.vc-btn.on { color: var(--c-yellow); border-color: rgba(251, 191, 36, 0.45); background: rgba(251, 191, 36, 0.08); }
+.vc-btn.off { color: #f0867d; border-color: rgba(217, 70, 59, 0.45); background: rgba(217, 70, 59, 0.08); }
+.vc-btn:active { background: rgba(255,255,255,0.16); }
+.vc-err { min-height: 0; font-size: 12px; color: #f0867d; margin-top: 8px; text-align: center; }
+.vc-row { display: flex; align-items: center; margin-top: 12px; }
+.vc-lbl { width: 104px; flex-shrink: 0; font-size: 13px; font-weight: 700; color: #999; }
+.vc-row.mine .vc-lbl { color: #fff; }
+.vc-track { flex: 1; height: 10px; border-radius: 6px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.vc-fill { height: 100%; width: 0; border-radius: 6px; -webkit-transition: width .6s ease; transition: width .6s ease; }
+.vc-fill.on { background: var(--c-yellow); }
+.vc-fill.off { background: var(--c-red); }
+.vc-pct { width: 46px; flex-shrink: 0; text-align: right; font-size: 14px; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
+.vc-note { margin-top: 14px; font-size: 13px; color: #ccc; line-height: 1.45; text-align: center; font-weight: 600; }
+.vc-total { margin-top: 4px; font-size: 12px; color: #777; text-align: center; }
+</style>
+
+<div id="voteCard" role="dialog">
+    <div class="vc-top">
+        <div>
+            <div class="vc-tag">Швидке опитування</div>
+            <div class="vc-q" id="vcQ"></div>
+        </div>
+        <button class="vc-x" id="vcX" type="button" aria-label="Закрити">&times;</button>
+    </div>
+    <div class="vc-btns" id="vcBtns">
+        <button class="vc-btn" id="vcA" type="button"></button>
+        <button class="vc-btn" id="vcB" type="button"></button>
+    </div>
+    <div class="vc-err" id="vcErr"></div>
+    <div id="vcRes" style="display:none;">
+        <div class="vc-row" id="vcRowOn"><div class="vc-lbl">💡 Світло є</div><div class="vc-track"><div class="vc-fill on" id="vcFillOn"></div></div><div class="vc-pct" id="vcPctOn">0%</div></div>
+        <div class="vc-row" id="vcRowOff"><div class="vc-lbl">🔌 Світла нема</div><div class="vc-track"><div class="vc-fill off" id="vcFillOff"></div></div><div class="vc-pct" id="vcPctOff">0%</div></div>
+        <div class="vc-note" id="vcNote"></div>
+        <div class="vc-total" id="vcTotal"></div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var VT = { st: null, timer: null, hideT: null, restarts: 0, busy: false, t0: Date.now() };
+    function $v(id) { return document.getElementById(id); }
+
+    function dismissed(slot) {
+        try { var d = JSON.parse(localStorage.getItem('vt_dis') || 'null'); return !!(d && d.s === slot && Date.now() - d.t < 3600000); } catch (e) { return false; }
+    }
+    function markDismissed(slot) {
+        try { localStorage.setItem('vt_dis', JSON.stringify({ s: slot, t: Date.now() })); } catch (e) {}
+    }
+
+    // ---- бейдж «Уточнюємо» ----
+    window.renderVerify = function () {
+        var b = $v('verifyBadge'); if (!b) return;
+        b.style.display = window.verifyInfo ? 'inline-flex' : 'none';
+    };
+    window.showVerifyInfo = function () {
+        var v = window.verifyInfo; if (!v || typeof showInfoAlert !== 'function') return;
+        var desc = v.expect === 'on'
+            ? 'Частина користувачів повідомляє, що світла зараз немає, хоча за графіком воно має бути.'
+            : 'Частина користувачів повідомляє, що світло вже є, хоча за графіком має бути відключення.';
+        var html = '<div style="color:#888; font-size:12px; margin-bottom:8px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">🔎 Уточнюємо</div>'
+            + '<div style="font-size:15px; color:#eee; font-weight:500;">' + desc + '<br><br>Перевіряємо інформацію, фактичний час може відрізнятися від графіка.</div>';
+        showInfoAlert(encodeURIComponent(html).replace(/'/g, '%27'));
+    };
+
+    // ---- картка опитування ----
+    function blocked() {
+        function open(id) { var e = $v(id); return !!(e && e.style.display === 'flex'); }
+        var app = $v('app'); if (!app || app.style.display === 'none') return true;
+        var promo = $v('notifPromo'); if (promo && promo.style.display === 'block') return true;
+        var ch = $v('ch-mod'); if (ch && ch.style.opacity === '1') return true;
+        return open('notifModal') || open('genModal') || open('editModal') || open('pointsModal') || open('infoAlertModal');
+    }
+    function waitAndShow() {
+        clearInterval(VT.timer);
+        var n = 0;
+        VT.timer = setInterval(function () {
+            n++;
+            if (n > 60) { clearInterval(VT.timer); return; }
+            if (Date.now() - VT.t0 < 4000 || blocked()) return;
+            clearInterval(VT.timer);
+            showCard();
+        }, 1000);
+    }
+    function setBtn(el, o) {
+        el.textContent = o.t;
+        el.setAttribute('data-v', o.v);
+        el.className = 'vc-btn ' + (o.v === 1 ? 'on' : 'off');
+    }
+    function showCard() {
+        var c = $v('voteCard'), st = VT.st; if (!c || !st) return;
+        if (st.expect === 'off') {
+            $v('vcQ').textContent = '📊🔌 За графіком зараз відключення. Світла справді немає?';
+            setBtn($v('vcA'), { v: 0, t: 'Так, світла нема' });
+            setBtn($v('vcB'), { v: 1, t: 'Ні, світло є' });
+        } else {
+            $v('vcQ').textContent = '📊💡 За графіком зараз світло має бути. Воно є?';
+            setBtn($v('vcA'), { v: 1, t: 'Так, світло є' });
+            setBtn($v('vcB'), { v: 0, t: 'Ні, світла нема' });
+        }
+        $v('vcBtns').style.display = 'flex';
+        $v('vcRes').style.display = 'none';
+        $v('vcErr').textContent = '';
+        c.className = $v('ch-fab') ? 'lift' : '';
+        c.style.display = 'block';
+        void c.offsetWidth;
+        c.className += ' show';
+    }
+    function hideCard() {
+        var c = $v('voteCard'); if (!c) return;
+        clearTimeout(VT.hideT);
+        c.className = c.className.replace(/\bshow\b/, '');
+        setTimeout(function () { if (c.className.indexOf('show') < 0) c.style.display = 'none'; }, 400);
+    }
+    function showResult(r) {
+        var s = r.stats || { yes: 0, no: 0 }, total = s.yes + s.no;
+        var pOn = total ? Math.round(s.yes * 100 / total) : 0, pOff = total ? 100 - pOn : 0;
+        var note;
+        if (total < 3) note = 'Поки що замало голосів. Дякуємо, що відповіли 🙌';
+        else if (s.yes > s.no) note = 'Більшість користувачів повідомили, що світло є 💡';
+        else if (s.no > s.yes) note = 'Більшість користувачів повідомили, що світла нема 🔌';
+        else note = 'Думки розділилися 🤷';
+
+        $v('vcQ').textContent = 'Дякуємо! Ось що кажуть інші:';
+        $v('vcBtns').style.display = 'none';
+        $v('vcErr').textContent = '';
+        $v('vcPctOn').textContent = pOn + '%';
+        $v('vcPctOff').textContent = pOff + '%';
+        $v('vcNote').textContent = note;
+        $v('vcTotal').textContent = 'Відповіли: ' + total;
+        $v('vcRowOn').className = 'vc-row' + (r.mine === 1 ? ' mine' : '');
+        $v('vcRowOff').className = 'vc-row' + (r.mine === 0 ? ' mine' : '');
+        $v('vcFillOn').style.width = '0';
+        $v('vcFillOff').style.width = '0';
+        $v('vcRes').style.display = 'block';
+        setTimeout(function () { $v('vcFillOn').style.width = pOn + '%'; $v('vcFillOff').style.width = pOff + '%'; }, 60);
+        markDismissed(r.slot);
+        clearTimeout(VT.hideT);
+        VT.hideT = setTimeout(hideCard, 20000);
+    }
+    function sendVote(v) {
+        if (VT.busy || !VT.st) return;
+        VT.busy = true; $v('vcErr').textContent = '';
+        gasCall({ action: 'vote', slot: VT.st.slot, v: v }).then(function (r) {
+            VT.busy = false;
+            if (!r || !r.ok || !r.active) { hideCard(); return; }
+            if (r.stale) { hideCard(); if (VT.restarts++ < 2) setTimeout(window.voteInit, 600); return; }
+            showResult(r);
+        }).catch(function () {
+            VT.busy = false;
+            $v('vcErr').textContent = 'Не вийшло, спробуй ще раз';
+        });
+    }
+
+    window.voteInit = function () {
+        if (typeof gasCall !== 'function') return;
+        gasCall({ action: 'vote_get' }).then(function (r) {
+            if (!r || !r.ok || !r.active || r.mine != null || dismissed(r.slot)) return;
+            VT.st = r;
+            waitAndShow();
+        }).catch(function () {});
+    };
+
+    $v('vcA').onclick = function () { sendVote(+this.getAttribute('data-v')); };
+    $v('vcB').onclick = function () { sendVote(+this.getAttribute('data-v')); };
+    $v('vcX').onclick = function () { if (VT.st) markDismissed(VT.st.slot); hideCard(); };
+
+    window.renderVerify();
+})();
 </script>
 
 </body>
