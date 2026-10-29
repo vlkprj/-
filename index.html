@@ -140,7 +140,7 @@
     height: 95px;
     object-fit: contain;
     transform-origin: bottom center;
-    pointer-events: none;
+    pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation;
     z-index: 1;
 }
 
@@ -356,6 +356,7 @@
                 <div class="status-label"><span class="live-dot"></span>Статус</div>
                 <div class="status-value" id="timerStatus">...</div>
                 <div class="verify-badge" id="verifyBadge" onclick="showVerifyInfo()">🔎 Уточнюємо</div>
+                <div class="crowd-pill" id="crowdPill" role="button" onclick="crowdTap()"></div>
             </div>
             <div class="timer-box">
                 <div class="timer-label" id="timerLabel">Оновлення...</div>
@@ -520,16 +521,16 @@ allMascots.forEach(src => {
 });
 
 let mascotCooldown = false;
-document.addEventListener('click', () => {
+window.replayCat = () => {
     const img = document.getElementById('mascotImg');
     if (mascotCooldown || !img || img.style.display === 'none' || !img.src) return;
 
     const baseSrc = img.src.split('?')[0];
     img.src = baseSrc + '?v=' + Date.now();
-    
+
     mascotCooldown = true;
     setTimeout(() => { mascotCooldown = false; }, 2500);
-});
+};
 
 
 
@@ -625,6 +626,8 @@ document.addEventListener('click', () => {
         const data = result.record;
         window.allDays = data.days || {};
         window.verifyInfo = result.verify || null;
+        window.crowdInfo = result.crowd || null;
+        window.noSchedFlag = !!(data && data.noSchedule);
         if (window.renderVerify) window.renderVerify();
 
         const months = ["СІЧНЯ", "ЛЮТОГО", "БЕРЕЗНЯ", "КВІТНЯ", "ТРАВНЯ", "ЧЕРВНЯ", "ЛИПНЯ", "СЕРПНЯ", "ВЕРЕСНЯ", "ЖОВТНЯ", "ЛИСТОПАДА", "ГРУДНЯ"];
@@ -690,6 +693,11 @@ document.addEventListener('click', () => {
                     parsedAnnouncement = ""; 
                 }
             }
+        }
+
+        {   // режим «Графіків немає» працює, лише поки на сьогодні і завтра справді нічого немає
+            const _has = d => !!(d && ((d.intervals && d.intervals.length) || (d.overrides && d.overrides.length)));
+            window.noSchedule = !!window.noSchedFlag && !activeDates.some(k => _has(dbDays[k]));
         }
 
         document.getElementById('loader').style.display = 'none';
@@ -1097,14 +1105,24 @@ document.addEventListener('click', () => {
 
         if (typeof isAdmin !== 'undefined' && isAdmin) {
             fullHtml += `
-            <div style="display: flex; gap: 10px; margin-bottom: 20px; justify-content: center;">
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; justify-content: center;">
                 <button onclick="openGen()" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); padding: 10px 15px; border-radius: 10px; font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer;">
                     📣 Канал
                 </button>
                 <button onclick="sendAnnouncement()" style="background: rgba(168, 85, 247, 0.15); color: #a855f7; border: 1px solid rgba(168, 85, 247, 0.3); padding: 10px 15px; border-radius: 10px; font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer;">
                     🤫 Інсайд
                 </button>
+                <button onclick="toggleNoSched()" style="background: rgba(251, 191, 36, 0.12); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); padding: 10px 15px; border-radius: 10px; font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer;">
+                    ${window.noSchedFlag ? '☀️ Без графіків: УВІМК.' : '☀️ Без графіків'}
+                </button>
             </div>`;
+        }
+
+        if (window.noSchedule) {
+            fullHtml += `<div class="nosched-block"><div class="nosched-ico">${iconBulb}</div><div class="nosched-t">Графіків відключень немає</div><div class="nosched-s">Світло є у звичайному режимі. Щойно щось зміниться, ми одразу оновимо додаток</div></div>`;
+            container.innerHTML = fullHtml;
+            initialScrollDone = true;
+            return;
         }
 
         if (activeDates.length === 0) {
@@ -1275,9 +1293,10 @@ document.addEventListener('click', () => {
                 lastRenderedIntervalIndex = currentIntIndex;
             }
 
+            const isNoSched = !!window.noSchedule;
             let isPlaceholderDay = dbDays[activeDates[0]] && (!dbDays[activeDates[0]].intervals || dbDays[activeDates[0]].intervals.length === 0) && (!dbDays[activeDates[0]].overrides || dbDays[activeDates[0]].overrides.length === 0);
 
-            if (isPlaceholderDay) {
+            if (isPlaceholderDay && !isNoSched) {
                 timerStatus.innerHTML = `${iconBulb} Немає даних`;
                 timerStatus.style.color = '#888';
                 timerDisplay.className = 'timer-time';
@@ -1349,6 +1368,11 @@ document.addEventListener('click', () => {
                         timerLabel.textContent = "До кінця доби";
                     }
                 }
+            }
+
+            if (isNoSched) {   // режим «Графіків немає»: статус «Світло є» стабільно, замість таймера напис
+                timerLabel.textContent = 'Графіків немає';
+                timerDisplay.textContent = '—';
             }
         }, 1000);
     }
@@ -1732,41 +1756,82 @@ function onAppReady() {
 }
 </script>
 
-<!-- ===== ОПИТУВАННЯ «ЧИ Є СВІТЛО ЗАРАЗ» + бейдж «Уточнюємо» ===== -->
+<!-- ===== ОПИТУВАННЯ «ЧИ Є СВІТЛО ЗАРАЗ» + підпис «підтвердили» + бейдж «Уточнюємо» ===== -->
 <style>
+/* котик лежить над шапкою: лого і дата мають бути вище нього, щоб тапи по них не губилися */
+.branding, .date-badge { position: relative; z-index: 3; }
+
 .verify-badge { display: none; align-self: flex-start; align-items: center; background: rgba(249, 115, 22, 0.12); color: var(--c-orange); border: 1px solid rgba(249, 115, 22, 0.45); border-radius: 8px; padding: 4px 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; line-height: 1; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 @media (max-width: 380px) { .verify-badge { font-size: 10px; padding: 3px 6px; } }
 
+/* підпис «підтвердили N людей, X хв тому»: клікабельна пілюля */
+.crowd-pill { display: none; align-self: flex-start; align-items: center; position: relative; box-sizing: border-box; max-width: 100%; white-space: nowrap; padding: 5px 9px; border-radius: 999px; background: rgba(34, 197, 94, 0.10); border: 1px solid rgba(34, 197, 94, 0.38); color: #4ade80; font-size: 11px; font-weight: 800; line-height: 1; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.crowd-pill::after { content: ''; position: absolute; top: -8px; bottom: -8px; left: -4px; right: -4px; }
+.crowd-pill:active { background: rgba(34, 197, 94, 0.24); }
+.crowd-pill .cp-sep { opacity: 0.55; margin: 0 4px; }
+.crowd-pill .cp-chev { margin-left: 5px; opacity: 0.8; font-size: 13px; line-height: 1; }
+.crowd-pill .cp-word { display: none; }
+@media (min-width: 420px) { .crowd-pill .cp-word { display: inline; } }
+@media (max-width: 380px) { .crowd-pill { font-size: 10px; padding: 4px 7px; } }
+@media (max-width: 340px) { .crowd-pill .cp-ppl { display: none; } }   /* зовсім вузькі екрани: «✓ 21 · щойно ›» без слова «людина» */
+
+/* текст статусу й таймера не перехоплює тапи: котик під ним лишається клікабельним цілком */
+.status-box, .timer-box { pointer-events: none; }
+.crowd-pill, .verify-badge { pointer-events: auto; }
+
+/* картка опитування */
 #voteCard { display: none; position: fixed; left: 16px; right: 16px; max-width: 420px; margin: 0 auto; bottom: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 880; background: #111; border: 1px solid #333; border-radius: 20px; padding: 14px 16px 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); opacity: 0; -webkit-transform: translateY(24px); transform: translateY(24px); -webkit-transition: opacity .35s ease, -webkit-transform .35s ease; transition: opacity .35s ease, transform .35s ease; }
 #voteCard.lift { bottom: 96px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 #voteCard.show { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0); }
 .vc-top { display: flex; align-items: flex-start; justify-content: space-between; }
 .vc-tag { font-size: 11px; font-weight: 900; color: var(--c-yellow); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
-.vc-q { font-size: 15px; font-weight: 800; color: #fff; line-height: 1.35; }
+.vc-ctx { font-size: 12px; font-weight: 700; color: #999; margin-bottom: 3px; }
+.vc-q { font-size: 16px; font-weight: 800; color: #fff; line-height: 1.35; }
 .vc-x { background: none; border: none; color: #777; font-size: 30px; line-height: 1; padding: 0 2px 0 12px; margin: -6px -4px 0 0; cursor: pointer; font-family: inherit; -webkit-tap-highlight-color: transparent; }
 .vc-btns { display: flex; margin-top: 14px; }
-.vc-btn { flex: 1; min-height: 48px; padding: 10px 8px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #fff; font-size: 14px; font-weight: 800; line-height: 1.2; cursor: pointer; font-family: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.vc-btn { -webkit-box-flex: 1; flex: 1 1 0; min-width: 0; min-height: 48px; padding: 10px 6px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #fff; font-size: 15px; font-weight: 800; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; font-family: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .vc-btn + .vc-btn { margin-left: 10px; }
 .vc-btn.on { color: var(--c-yellow); border-color: rgba(251, 191, 36, 0.45); background: rgba(251, 191, 36, 0.08); }
 .vc-btn.off { color: #f0867d; border-color: rgba(217, 70, 59, 0.45); background: rgba(217, 70, 59, 0.08); }
 .vc-btn:active { background: rgba(255,255,255,0.16); }
+@media (max-width: 340px) { .vc-btn { font-size: 14px; padding: 10px 4px; } .vc-btn + .vc-btn { margin-left: 8px; } }
 .vc-err { min-height: 0; font-size: 12px; color: #f0867d; margin-top: 8px; text-align: center; }
 .vc-row { display: flex; align-items: center; margin-top: 12px; }
-.vc-lbl { width: 104px; flex-shrink: 0; font-size: 13px; font-weight: 700; color: #999; }
+.vc-lbl { width: 96px; flex-shrink: 0; font-size: 13px; font-weight: 700; color: #999; white-space: nowrap; }
 .vc-row.mine .vc-lbl { color: #fff; }
-.vc-track { flex: 1; height: 10px; border-radius: 6px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.vc-track { flex: 1; min-width: 0; height: 10px; border-radius: 6px; background: rgba(255,255,255,0.08); overflow: hidden; }
 .vc-fill { height: 100%; width: 0; border-radius: 6px; -webkit-transition: width .6s ease; transition: width .6s ease; }
 .vc-fill.on { background: var(--c-yellow); }
 .vc-fill.off { background: var(--c-red); }
 .vc-pct { width: 46px; flex-shrink: 0; text-align: right; font-size: 14px; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
 .vc-note { margin-top: 14px; font-size: 13px; color: #ccc; line-height: 1.45; text-align: center; font-weight: 600; }
 .vc-total { margin-top: 4px; font-size: 12px; color: #777; text-align: center; }
+
+/* режим «Графіків немає» */
+.nosched-block { text-align: center; padding: 34px 20px 20px; }
+.nosched-ico { display: flex; justify-content: center; margin-bottom: 14px; color: var(--c-yellow); filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.4)); }
+.nosched-ico svg { width: 38px; height: 38px; }
+.nosched-t { font-size: 16px; font-weight: 900; color: #fff; margin-bottom: 8px; }
+.nosched-s { font-size: 13px; color: #888; line-height: 1.5; font-weight: 500; max-width: 280px; margin: 0 auto; }
+
+/* котик: емодзі-салют і тост */
+#emojiRain { position: fixed; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 950; }
+.rain-emoji { position: absolute; left: 0; top: 0; margin: -12px 0 0 -12px; line-height: 1; pointer-events: none; will-change: transform, opacity; -webkit-user-select: none; user-select: none; animation: emojiFall 2s both; }
+@keyframes emojiFall {
+    0%   { transform: translate3d(0, 0, 0) rotate(0deg) scale(0.5); opacity: 0; animation-timing-function: ease-out; }
+    12%  { opacity: 1; }
+    30%  { transform: translate3d(calc(var(--dx) * 0.55), calc(var(--up) * -1), 0) rotate(calc(var(--rot) * 0.3)) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.5, 0, 1, 0.8); }
+    100% { transform: translate3d(var(--dx), var(--dy), 0) rotate(var(--rot)) scale(1); opacity: 0; }
+}
+#catToast { display: none; opacity: 0; position: fixed; left: 50%; -webkit-transform: translateX(-50%); transform: translateX(-50%); top: 20px; top: calc(14px + env(safe-area-inset-top, 0px)); z-index: 960; max-width: 90%; box-sizing: border-box; background: rgba(17, 17, 17, 0.94); border: 1px solid #333; border-radius: 16px; padding: 12px 18px; color: #f4f4f5; font-size: 14px; font-weight: 700; line-height: 1.4; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); pointer-events: none; -webkit-transition: opacity .25s ease; transition: opacity .25s ease; }
+@media (prefers-reduced-motion: reduce) { .rain-emoji { display: none; } }
 </style>
 
 <div id="voteCard" role="dialog">
     <div class="vc-top">
         <div>
             <div class="vc-tag">Швидке опитування</div>
+            <div class="vc-ctx" id="vcCtx"></div>
             <div class="vc-q" id="vcQ"></div>
         </div>
         <button class="vc-x" id="vcX" type="button" aria-label="Закрити">&times;</button>
@@ -1778,15 +1843,18 @@ function onAppReady() {
     <div class="vc-err" id="vcErr"></div>
     <div id="vcRes" style="display:none;">
         <div class="vc-row" id="vcRowOn"><div class="vc-lbl">💡 Світло є</div><div class="vc-track"><div class="vc-fill on" id="vcFillOn"></div></div><div class="vc-pct" id="vcPctOn">0%</div></div>
-        <div class="vc-row" id="vcRowOff"><div class="vc-lbl">🔌 Світла нема</div><div class="vc-track"><div class="vc-fill off" id="vcFillOff"></div></div><div class="vc-pct" id="vcPctOff">0%</div></div>
+        <div class="vc-row" id="vcRowOff"><div class="vc-lbl">🔌 Немає</div><div class="vc-track"><div class="vc-fill off" id="vcFillOff"></div></div><div class="vc-pct" id="vcPctOff">0%</div></div>
         <div class="vc-note" id="vcNote"></div>
         <div class="vc-total" id="vcTotal"></div>
     </div>
 </div>
 
+<div id="catToast"></div>
+<div id="emojiRain"></div>
+
 <script>
 (function () {
-    var VT = { st: null, timer: null, hideT: null, restarts: 0, busy: false, t0: Date.now() };
+    var VT = { st: null, timer: null, hideT: null, restarts: 0, busy: false, peek: false, t0: Date.now() };
     function $v(id) { return document.getElementById(id); }
 
     function dismissed(slot) {
@@ -1796,10 +1864,30 @@ function onAppReady() {
         try { localStorage.setItem('vt_dis', JSON.stringify({ s: slot, t: Date.now() })); } catch (e) {}
     }
 
-    // ---- бейдж «Уточнюємо» ----
+    // ---- бейдж «Уточнюємо» і підпис «підтвердили» ----
+    function plural(n) {
+        var a = n % 10, b = n % 100;
+        if (a === 1 && b !== 11) return 'людина';
+        if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return 'людини';
+        return 'людей';
+    }
+    function agoText(ts) {
+        var m = Math.max(0, Math.floor((Date.now() / 1000 - ts) / 60));
+        return m < 1 ? 'щойно' : m + ' хв';
+    }
     window.renderVerify = function () {
-        var b = $v('verifyBadge'); if (!b) return;
+        var b = $v('verifyBadge'), p = $v('crowdPill'); if (!b) return;
         b.style.display = window.verifyInfo ? 'inline-flex' : 'none';
+        if (!p) return;
+        var c = window.crowdInfo;
+        if (!window.verifyInfo && c && c.n >= 3 && c.last) {
+            var n = c.n | 0, ago = agoText(c.last);
+            p.innerHTML = '<span>✓</span>&nbsp;<span class="cp-word">Підтвердили&nbsp;</span><b>' + n + '</b><span class="cp-ppl">&nbsp;' + plural(n) + '</span><span class="cp-sep">·</span>' + ago + '<span class="cp-chev">›</span>';
+            p.setAttribute('aria-label', 'Підтвердили ' + n + ' ' + plural(n) + ', ' + ago + (ago === 'щойно' ? '' : ' тому') + '. Натисніть, щоб побачити результати опитування');
+            p.style.display = 'inline-flex';
+        } else {
+            p.style.display = 'none';
+        }
     };
     window.showVerifyInfo = function () {
         var v = window.verifyInfo; if (!v || typeof showInfoAlert !== 'function') return;
@@ -1810,6 +1898,8 @@ function onAppReady() {
             + '<div style="font-size:15px; color:#eee; font-weight:500;">' + desc + '<br><br>Перевіряємо інформацію, фактичний час може відрізнятися від графіка.</div>';
         showInfoAlert(encodeURIComponent(html).replace(/'/g, '%27'));
     };
+    window.crowdTap = function () { window.voteShowResults(12000); };
+    setInterval(function () { if (window.crowdInfo && !window.verifyInfo) window.renderVerify(); }, 30000);
 
     // ---- картка опитування ----
     function blocked() {
@@ -1835,24 +1925,27 @@ function onAppReady() {
         el.setAttribute('data-v', o.v);
         el.className = 'vc-btn ' + (o.v === 1 ? 'on' : 'off');
     }
-    function showCard() {
-        var c = $v('voteCard'), st = VT.st; if (!c || !st) return;
-        if (st.expect === 'off') {
-            $v('vcQ').textContent = '📊🔌 За графіком зараз відключення. Світла справді немає?';
-            setBtn($v('vcA'), { v: 0, t: 'Так, світла нема' });
-            setBtn($v('vcB'), { v: 1, t: 'Ні, світло є' });
-        } else {
-            $v('vcQ').textContent = '📊💡 За графіком зараз світло має бути. Воно є?';
-            setBtn($v('vcA'), { v: 1, t: 'Так, світло є' });
-            setBtn($v('vcB'), { v: 0, t: 'Нема' });
-        }
-        $v('vcBtns').style.display = 'flex';
-        $v('vcRes').style.display = 'none';
-        $v('vcErr').textContent = '';
+    function present() {
+        var c = $v('voteCard'); if (!c) return;
+        clearInterval(VT.timer);
+        if (c.style.display === 'block' && c.className.indexOf('show') >= 0) return;
         c.className = $v('ch-fab') ? 'lift' : '';
         c.style.display = 'block';
         void c.offsetWidth;
         c.className += ' show';
+    }
+    function showCard() {
+        var st = VT.st; if (!st) return;
+        clearTimeout(VT.hideT);
+        $v('vcCtx').style.display = 'block';
+        $v('vcCtx').textContent = st.expect === 'off' ? 'За графіком зараз відключення' : 'За графіком зараз має бути світло';
+        $v('vcQ').textContent = 'Світло зараз є?';
+        setBtn($v('vcA'), { v: 1, t: '💡 Світло є' });
+        setBtn($v('vcB'), { v: 0, t: '🔌 Немає' });
+        $v('vcBtns').style.display = 'flex';
+        $v('vcRes').style.display = 'none';
+        $v('vcErr').textContent = '';
+        present();
     }
     function hideCard() {
         var c = $v('voteCard'); if (!c) return;
@@ -1860,16 +1953,17 @@ function onAppReady() {
         c.className = c.className.replace(/\bshow\b/, '');
         setTimeout(function () { if (c.className.indexOf('show') < 0) c.style.display = 'none'; }, 400);
     }
-    function showResult(r) {
+    function showResult(r, ms, title) {
         var s = r.stats || { yes: 0, no: 0 }, total = s.yes + s.no;
         var pOn = total ? Math.round(s.yes * 100 / total) : 0, pOff = total ? 100 - pOn : 0;
         var note;
         if (total < 3) note = 'Поки що замало голосів. Дякуємо, що відповіли 🙌';
         else if (s.yes > s.no) note = 'Більшість користувачів повідомили, що світло є 💡';
-        else if (s.no > s.yes) note = 'Більшість користувачів повідомили, що світла нема 🔌';
+        else if (s.no > s.yes) note = 'Більшість користувачів повідомили, що світла немає 🔌';
         else note = 'Думки розділилися 🤷';
 
-        $v('vcQ').textContent = 'Дякуємо! Ось що кажуть інші:';
+        $v('vcCtx').style.display = 'none';
+        $v('vcQ').textContent = title || 'Дякуємо! Ось що кажуть інші:';
         $v('vcBtns').style.display = 'none';
         $v('vcErr').textContent = '';
         $v('vcPctOn').textContent = pOn + '%';
@@ -1884,7 +1978,8 @@ function onAppReady() {
         setTimeout(function () { $v('vcFillOn').style.width = pOn + '%'; $v('vcFillOff').style.width = pOff + '%'; }, 60);
         markDismissed(r.slot);
         clearTimeout(VT.hideT);
-        VT.hideT = setTimeout(hideCard, 20000);
+        VT.hideT = setTimeout(hideCard, ms || 20000);
+        present();
     }
     function sendVote(v) {
         if (VT.busy || !VT.st) return;
@@ -1893,7 +1988,7 @@ function onAppReady() {
             VT.busy = false;
             if (!r || !r.ok || !r.active) { hideCard(); return; }
             if (r.stale) { hideCard(); if (VT.restarts++ < 2) setTimeout(window.voteInit, 600); return; }
-            showResult(r);
+            showResult(r, 20000);
         }).catch(function () {
             VT.busy = false;
             $v('vcErr').textContent = 'Не вийшло, спробуй ще раз';
@@ -1909,11 +2004,144 @@ function onAppReady() {
         }).catch(function () {});
     };
 
+    // показати результати (тап по пілюлі або по котику); хто ще не голосував, побачить саме опитування
+    window.voteShowResults = function (ms) {
+        if (VT.peek || typeof gasCall !== 'function') return;
+        VT.peek = true;
+        function fail() { VT.peek = false; if (window.catToast) window.catToast('⚠️ Не вдалося завантажити, спробуй ще раз', 2500); }
+        gasCall({ action: 'vote_get' }).then(function (r) {
+            VT.peek = false;
+            if (!r || !r.ok) { fail(); return; }
+            if (!r.active) { if (window.catToast) window.catToast((window.CAT_CONFIG && window.CAT_CONFIG.tap3NoPoll) || '📊 Опитування зараз немає', 2500); return; }
+            if (r.mine != null) { showResult(r, ms, 'Світло зараз є? Ось що кажуть люди:'); return; }
+            VT.st = r; showCard();
+        }).catch(fail);
+    };
+
     $v('vcA').onclick = function () { sendVote(+this.getAttribute('data-v')); };
     $v('vcB').onclick = function () { sendVote(+this.getAttribute('data-v')); };
     $v('vcX').onclick = function () { if (VT.st) markDismissed(VT.st.slot); hideCard(); };
 
     window.renderVerify();
+})();
+
+// ---- адмін: режим «Графіків немає» (стабільно «Світло є», без таймера) ----
+window.toggleNoSched = function () {
+    var on = !window.noSchedFlag;
+    var q = on
+        ? 'Увімкнути режим «Графіків немає»?\n\nСтатус буде стабільно «Світло є», а замість таймера напис «Графіків немає». Режим вимкнеться сам, щойно ти опублікуєш новий графік.'
+        : 'Вимкнути режим «Графіків немає»?';
+    if (!confirm(q)) return;
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('loader').style.display = 'block';
+    setLoader('Оновлюємо... ☀️');
+    gasCall({ action: 'set_no_schedule', on: on ? 1 : 0 }).then(function (r) {
+        if (!r || !r.ok) alert('❌ Помилка: ' + ((r && r.error) || 'невідома'));
+        fetchData();
+    }).catch(function (e) { alert('❌ Помилка: ' + e.message); fetchData(); });
+};
+</script>
+
+<!-- =====================================================================
+     КОТИК: НАЛАШТУВАННЯ. Тут можна змінювати тексти, емодзі і час показу.
+     Кліки по котику за одну сесію (поки апка відкрита):
+       1-й  емодзі розлітаються і падають   (tap1Emojis, tap1Count)
+       2-й  скільки годин без світла сьогодні (tap2Prefix та інші tap2…)
+       3-й  результати опитування            (tap3Ms)
+       4-й  «це вам не тапалка»              (tap4Text)
+       5-й і далі: просто анімація котика
+     Час показу вказано в мілісекундах: 3000 = 3 секунди.
+     ===================================================================== -->
+<script>
+var CAT_CONFIG = {
+    // 1-й клік
+    tap1Emojis: ['💡', '⚡️', '🔦'],
+    tap1Count: 16,
+
+    // 2-й клік
+    tap2Prefix: '💬 Всього без світла сьогодні: ',
+    tap2None: '💬 Сьогодні без відключень 🎉',
+    tap2NoData: '💬 Графіка на сьогодні ще нема',
+    tap2NoSched: '💬 Графіків немає, світло є ☀️',
+    tap2Ms: 3000,
+
+    // 3-й клік
+    tap3Ms: 3000,
+    tap3NoPoll: '📊 Опитування зараз немає',
+
+    // 4-й клік
+    tap4Text: '💬 це вам не тапалка 😾',
+    tap4Ms: 2500
+};
+</script>
+
+<script>
+(function () {
+    var CFG = window.CAT_CONFIG, taps = 0, toastT = null;
+    function $c(id) { return document.getElementById(id); }
+
+    window.catToast = function (text, ms) {
+        var t = $c('catToast'); if (!t) return;
+        t.textContent = text;
+        t.style.display = 'block';
+        void t.offsetWidth;
+        t.style.opacity = '1';
+        clearTimeout(toastT);
+        toastT = setTimeout(function () {
+            t.style.opacity = '0';
+            setTimeout(function () { if (t.style.opacity === '0') t.style.display = 'none'; }, 300);
+        }, ms || 3000);
+    };
+
+    function rain() {
+        try { if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) {}
+        var host = $c('emojiRain'), img = $c('mascotImg'); if (!host || !img) return;
+        var r = img.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight;
+        var sx = r.left + r.width / 2, sy = r.top + r.height / 2;
+        var n = CFG.tap1Count || 16;
+        if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) n = Math.round(n * 0.6);   // слабші телефони: менше емодзі
+        var list = CFG.tap1Emojis && CFG.tap1Emojis.length ? CFG.tap1Emojis : ['💡'];
+        for (var i = 0; i < n; i++) {
+            var el = document.createElement('span');
+            var dur = 1500 + Math.random() * 1100, delay = Math.random() * 250;
+            el.className = 'rain-emoji';
+            el.textContent = list[Math.floor(Math.random() * list.length)];
+            el.style.left = sx + 'px';
+            el.style.top = sy + 'px';
+            el.style.fontSize = (20 + Math.random() * 14) + 'px';
+            el.style.setProperty('--dx', ((Math.random() * 2 - 1) * Math.min(W * 0.45, 180)) + 'px');
+            el.style.setProperty('--up', (30 + Math.random() * 60) + 'px');
+            el.style.setProperty('--dy', (H - sy + 60 + Math.random() * 40) + 'px');
+            el.style.setProperty('--rot', ((Math.random() * 2 - 1) * 360) + 'deg');
+            el.style.animationDuration = dur + 'ms';
+            el.style.animationDelay = delay + 'ms';
+            host.appendChild(el);
+            (function (x, life) { setTimeout(function () { if (x.parentNode) x.parentNode.removeChild(x); }, life); })(el, dur + delay + 400);
+        }
+    }
+
+    function offText() {
+        try {
+            if (window.noSchedule) return CFG.tap2NoSched;
+            var d = dbDays[activeDates[0]];
+            if (!d || (!(d.intervals && d.intervals.length) && !(d.overrides && d.overrides.length))) return CFG.tap2NoData;
+            var ints = buildDisplayIntervals(d.intervals || [], d.overrides || []), mins = 0;
+            ints.forEach(function (i) { if (i.isEmergencyBlock || i.type === 'off') mins += i.endMin - i.startMin; });
+            if (!mins) return CFG.tap2None;
+            var h = Math.floor(mins / 60), m = mins % 60;
+            return CFG.tap2Prefix + h + ' год.' + (m ? ' ' + m + ' хв' : '');
+        } catch (e) { return CFG.tap2NoData; }
+    }
+
+    var cat = $c('mascotImg');
+    if (cat) cat.addEventListener('click', function () {
+        taps++;
+        if (taps === 1) rain();
+        else if (taps === 2) window.catToast(offText(), CFG.tap2Ms);
+        else if (taps === 3) { if (window.voteShowResults) window.voteShowResults(CFG.tap3Ms); }
+        else if (taps === 4) window.catToast(CFG.tap4Text, CFG.tap4Ms);
+        else if (window.replayCat) window.replayCat();
+    });
 })();
 </script>
 
