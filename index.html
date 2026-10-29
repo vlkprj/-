@@ -1903,6 +1903,7 @@ function onAppReady() {
 
 <script>
 (function () {
+    var RESULT_MS = 10000;   // скільки висить картка з результатами опитування (мс)
     var VT = { st: null, timer: null, hideT: null, restarts: 0, busy: false, peek: false, t0: Date.now(), waiting: false, ready: false };
     function $v(id) { return document.getElementById(id); }
 
@@ -1954,7 +1955,7 @@ function onAppReady() {
             + '<div style="font-size:15px; color:#eee; font-weight:500;">' + desc + '<br><br>Перевіряємо інформацію, фактичний час може відрізнятися від графіка.</div>';
         showInfoAlert(encodeURIComponent(html).replace(/'/g, '%27'));
     };
-    window.crowdTap = function () { window.voteShowResults(12000); };
+    window.crowdTap = function () { window.voteShowResults(RESULT_MS); };
     setInterval(function () { if (window.crowdInfo && !window.verifyInfo) window.renderVerify(); }, 30000);
 
     // ---- картка опитування ----
@@ -2034,7 +2035,7 @@ function onAppReady() {
         setTimeout(function () { $v('vcFillOn').style.width = pOn + '%'; $v('vcFillOff').style.width = pOff + '%'; }, 60);
         markDismissed(r.slot);
         clearTimeout(VT.hideT);
-        VT.hideT = setTimeout(hideCard, ms || 20000);
+        VT.hideT = setTimeout(hideCard, ms || RESULT_MS);
         present();
     }
     function sendVote(v) {
@@ -2044,7 +2045,7 @@ function onAppReady() {
             VT.busy = false;
             if (!r || !r.ok || !r.active) { hideCard(); return; }
             if (r.stale) { hideCard(); if (VT.restarts++ < 2) setTimeout(window.voteInit, 600); return; }
-            showResult(r, 20000);
+            showResult(r, RESULT_MS);
         }).catch(function () {
             VT.busy = false;
             $v('vcErr').textContent = 'Не вийшло, спробуй ще раз';
@@ -2079,17 +2080,17 @@ function onAppReady() {
     $v('vcX').onclick = function () { if (VT.st) markDismissed(VT.st.slot); hideCard(); };
 
     // ===== МІНІ-КАРТКА «підтвердили» з бейджа «Світло є / Відключення» в таймлайні =====
-    // Показ: один раз за сесію, коли зникли всі спливаючі вікна (опитування, новина про сповіщення,
-    // зміни в графіку, модалки). Потім: тап по бейджу відкриває ту саму картку знову.
-    // Після зникнення картки: «натискання» бейджа + лінія-пігулка навколо нього.
-    // Грає після перших fxMax закриттів картки за сесію (далі вже ні, щоб не набридало).
+    // Послідовність при відкритті додатку (без жодного тапу, один раз за сесію):
+    //   1) одразу: «натискання» бейджа + лінія-пігулка навколо нього
+    //   2) через cardAfterMs: з'являється картка (вікна опитування/новин її не чекає), висить showMs
+    //   3) після її зникнення: ефект ще раз, а за echoMs після його кінця ще один
+    // Потім: тап по бейджу відкриває ту саму картку знову (вже без ефектів).
     var CC_CFG = {
-        showMs: 3400,      // скільки висить картка (мс)
-        calmMs: 1500,      // скільки має бути «тиша» без вікон перед автопоказом (мс)
-        warmupMs: 5000,    // мінімальна пауза після появи таймлайну (мс), щоб встигли з'явитись вікна
-        fxMax: 3           // скільки разів за сесію грати «натискання + пігулку» після закриття картки
+        showMs: 3400,        // скільки висить картка (мс)
+        cardAfterMs: 800,    // пауза між першим ефектом і появою картки (0 = одночасно)
+        echoMs: 500          // пауза між другим і третім ефектом (мс)
     };
-    var CC = { open: false, hiding: false, t: null, autoDone: false, fxCount: 0 };
+    var CC = { open: false, hiding: false, t: null, autoDone: false, cardShown: false, stage: 0 };
     var CC_RM = false, CC_LITE = false;
     try { CC_RM = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
     try { CC_LITE = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || (navigator.deviceMemory && navigator.deviceMemory <= 2); } catch (e) {}
@@ -2134,7 +2135,7 @@ function onAppReady() {
     function ccShow() {
         var b = ccBadge(); if (!b || !ccData()) return false;
         clearTimeout(CC.t);
-        CC.open = true; CC.hiding = false;
+        CC.open = true; CC.hiding = false; CC.cardShown = true;
         ccMount(b, true);
         CC.t = setTimeout(function () { ccHide(false); }, CC_CFG.showMs);
         return true;
@@ -2143,6 +2144,7 @@ function onAppReady() {
         clearTimeout(CC.t);
         if (!CC.open) return;
         CC.open = false;
+        if (skipFx && CC.stage === 1) CC.stage = 3;   // пішли дивитись результати: решту ефектів пропускаємо
         var el = ccEl();
         if (!el) { ccUnmark(); if (!skipFx) ccAfterHide(); return; }
         el.className = el.className.replace(/\bcc-(in)\b/, '') + ' cc-out';
@@ -2154,16 +2156,21 @@ function onAppReady() {
             if (!skipFx) ccAfterHide();
         }, CC_RM ? 170 : 240);
     }
-    function ccAfterHide() {
-        if (CC.fxCount >= CC_CFG.fxMax || CC.open) return;
-        CC.fxCount++;                           // скільки разів уже грали за сесію
+    // «натискання» бейджа + лінія-пігулка; done викликається, коли ефект повністю догрався
+    function ccFx(done) {
         if (CC_RM) return;
         var b = ccBadge(); if (!b) return;
-        b.classList.add('bd-press');             // «натискання»
+        b.classList.add('bd-press');
         setTimeout(function () {
             b.classList.remove('bd-press');
-            var cur = ccBadge(); if (cur) ccRing(cur);   // лінія-пігулка (бейдж міг перемалюватись)
+            var cur = ccBadge(); if (cur) ccRing(cur);   // бейдж міг перемалюватись
         }, 300);
+        if (done) setTimeout(done, 1250);
+    }
+    function ccAfterHide() {
+        if (CC.open || CC.stage !== 1) return;
+        CC.stage = 2;
+        ccFx(function () { setTimeout(function () { ccFx(); }, CC_CFG.echoMs); });   // ефект, а за мить ще раз
     }
     function ccRing(b) {
         var w = b.offsetWidth, h = b.offsetHeight; if (!w || !h) return;
@@ -2206,35 +2213,38 @@ function onAppReady() {
     document.addEventListener('click', function (e) {
         var t = e.target, b = t && t.closest ? t.closest('.tl-item.active-now .badge') : null;
         if (!b || !ccData()) return;
-        CC.autoDone = true;
+        if (!CC.autoDone) { CC.autoDone = true; CC.stage = 1; }   // тап раніше за автопоказ: далі без нього
         if (CC.open && ccEl() && !CC.hiding) { clearTimeout(CC.t); CC.t = setTimeout(function () { ccHide(false); }, CC_CFG.showMs); return; }
         ccShow();
     }, false);
 
-    // автопоказ: після всіх спливаючих вікон
-    function popupsBusy() {
-        if (blocked()) return true;                                   // промо, зміни в графіку, модалки, прихований застосунок
-        var vc = $v('voteCard'); if (vc && vc.style.display === 'block') return true;
-        return !!(VT.waiting || !VT.ready);                           // опитування ще може з'явитись
+    // автопоказ: щойно додаток відкрився і бейдж стоїть на екрані (вікна опитування/новин не чекаємо)
+    function ccModalOpen() {
+        var app = $v('app'); if (!app || app.style.display === 'none') return true;
+        var ids = ['notifModal', 'genModal', 'editModal', 'pointsModal', 'infoAlertModal'];
+        for (var i = 0; i < ids.length; i++) { var e = $v(ids[i]); if (e && e.style.display === 'flex') return true; }
+        return false;                                                 // повноекранна модалка закриває бейдж: чекаємо
     }
-    var ccSeenAt = 0, ccQuietAt = 0, ccTicks = 0;
+    function ccStart() {
+        CC.autoDone = true; CC.stage = 1;
+        ccFx();                                                       // 1) ефект одразу
+        setTimeout(function () { if (!CC.cardShown) ccShow(); }, CC_CFG.cardAfterMs);   // 2) картка (3-й крок див. ccAfterHide)
+    }
+    var ccPrevTop = null, ccTicks = 0;
     var ccPoll = setInterval(function () {
         ccTicks++;
-        if (CC.autoDone || ccTicks > 700) { clearInterval(ccPoll); return; }   // ~8 хвилин і досить
-        if (document.hidden) return;
+        if (CC.autoDone || ccTicks > 480) { clearInterval(ccPoll); return; }   // ~2 хвилини і досить
+        if (document.hidden || ccModalOpen()) { ccPrevTop = null; return; }
         var b = ccBadge();
-        if (!b || !ccData()) { ccQuietAt = 0; return; }
-        var now = Date.now();
-        if (!ccSeenAt) ccSeenAt = now;
-        if (popupsBusy()) { ccQuietAt = 0; return; }
-        if (!ccQuietAt) ccQuietAt = now;
-        if (now - ccSeenAt < CC_CFG.warmupMs || now - ccQuietAt < CC_CFG.calmMs) return;
+        if (!b || !ccData()) { ccPrevTop = null; return; }
         var hd = document.querySelector('.sticky-header'), top = hd ? hd.getBoundingClientRect().bottom : 0, r = b.getBoundingClientRect();
+        var stable = ccPrevTop !== null && Math.abs(r.top - ccPrevTop) < 1;
+        ccPrevTop = r.top;
+        if (!stable) return;                                          // ще їде прокрутка до поточного проміжку
         if (r.top < top + 4 || r.bottom + 70 > window.innerHeight) return;   // бейдж має бути на екрані
-        CC.autoDone = true;
         clearInterval(ccPoll);
-        ccShow();
-    }, 700);
+        ccStart();
+    }, 250);
 
     // ===== «Уточнюємо» у верхньому статусі (замість «Світло є» / «Світла немає») =====
     // Викликається щосекунди з таймера шапки, одразу після того як він виставив звичайний статус.
