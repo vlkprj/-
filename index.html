@@ -355,8 +355,6 @@
             <div class="status-box">
                 <div class="status-label"><span class="live-dot"></span>Статус</div>
                 <div class="status-value" id="timerStatus">...</div>
-                <div class="verify-badge" id="verifyBadge" onclick="showVerifyInfo()">🔎 Уточнюємо</div>
-                <div class="crowd-pill" id="crowdPill" role="button" onclick="crowdTap()"></div>
             </div>
             <div class="timer-box">
                 <div class="timer-label" id="timerLabel">Оновлення...</div>
@@ -996,6 +994,7 @@ window.replayCat = () => {
                         <div class="time-col"></div>
                         <div class="line-node">${dotsHtml}</div>
                         <div class="interval-col" style="flex-direction: column; align-items: flex-start; justify-content: center;">
+                            ${isActive ? '<div class="crowd-line" id="crowdLine" role="button"></div>' : ''}
                             <div class="interval ${stateClass}" style="margin-top: 6px;">
                                 <div class="interval-icon">${intIcon}</div>
                                 <span class="interval-text" style="display: flex; align-items: center;">${int.startStr} – ${displayEnd}${modSuperscript}</span>
@@ -1207,6 +1206,7 @@ window.replayCat = () => {
         }
 
         container.innerHTML = fullHtml;
+        if (window.renderVerify) window.renderVerify();
          if (!initialScrollDone) {
             setTimeout(() => {
                 const activeEl = document.querySelector('.active-now');
@@ -1761,23 +1761,25 @@ function onAppReady() {
 /* котик лежить над шапкою: лого і дата мають бути вище нього, щоб тапи по них не губилися */
 .branding, .date-badge { position: relative; z-index: 3; }
 
-.verify-badge { display: none; align-self: flex-start; align-items: center; background: rgba(249, 115, 22, 0.12); color: var(--c-orange); border: 1px solid rgba(249, 115, 22, 0.45); border-radius: 8px; padding: 4px 8px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; line-height: 1; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-@media (max-width: 380px) { .verify-badge { font-size: 10px; padding: 3px 6px; } }
-
-/* підпис «підтвердили N людей, X хв тому»: клікабельна пілюля */
-.crowd-pill { display: none; align-self: flex-start; align-items: center; position: relative; box-sizing: border-box; max-width: 100%; white-space: nowrap; padding: 5px 9px; border-radius: 999px; background: rgba(34, 197, 94, 0.10); border: 1px solid rgba(34, 197, 94, 0.38); color: #4ade80; font-size: 11px; font-weight: 800; line-height: 1; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
-.crowd-pill::after { content: ''; position: absolute; top: -8px; bottom: -8px; left: -4px; right: -4px; }
-.crowd-pill:active { background: rgba(34, 197, 94, 0.24); }
-.crowd-pill .cp-sep { opacity: 0.55; margin: 0 4px; }
-.crowd-pill .cp-chev { margin-left: 5px; opacity: 0.8; font-size: 13px; line-height: 1; }
-.crowd-pill .cp-word { display: none; }
-@media (min-width: 420px) { .crowd-pill .cp-word { display: inline; } }
-@media (max-width: 380px) { .crowd-pill { font-size: 10px; padding: 4px 7px; } }
-@media (max-width: 340px) { .crowd-pill .cp-ppl { display: none; } }   /* зовсім вузькі екрани: «✓ 21 · щойно ›» без слова «людина» */
+/* підпис «підтвердили N людей, X хв тому» (або «Уточнюємо») під пілюлею поточного проміжку в графіку */
+.crowd-line { display: none; position: relative; align-items: flex-start; align-self: flex-start; max-width: 100%; margin: 0 0 4px; padding: 2px 0; font-size: 12px; font-weight: 700; line-height: 15px; color: #9a9aa3; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.crowd-line::after { content: ''; position: absolute; top: -8px; bottom: -8px; left: -6px; right: -6px; }
+.crowd-line .cl-ico { width: 15px; height: 15px; margin-right: 6px; flex-shrink: 0; color: #22c55e; }
+.crowd-line .cl-txt { min-width: 0; padding-bottom: 1px; border-bottom: 1px dashed rgba(255, 255, 255, 0.22); }
+.crowd-line .cl-txt b { color: #e4e4e7; font-weight: 800; }
+.crowd-line .cl-chev { width: 12px; height: 12px; margin: 1.5px 0 0 5px; flex-shrink: 0; opacity: 0.7; }
+.crowd-line:active .cl-txt { color: #fff; border-bottom-color: rgba(255, 255, 255, 0.5); }
+.crowd-line.cl-warn { color: var(--c-orange); }
+.crowd-line.cl-warn .cl-ico { color: var(--c-orange); }
+.crowd-line.cl-warn .cl-txt { border-bottom-color: rgba(249, 115, 22, 0.45); }
+@media (max-width: 419px) {   /* вузькі екрани: час на другому рядку */
+    .crowd-line .cl-txt { display: block; }
+    .crowd-line .cl-sep { display: none; }
+    .crowd-line .cl-b { display: block; font-size: 11px; opacity: 0.85; }
+}
 
 /* текст статусу й таймера не перехоплює тапи: котик під ним лишається клікабельним цілком */
 .status-box, .timer-box { pointer-events: none; }
-.crowd-pill, .verify-badge { pointer-events: auto; }
 
 /* картка опитування */
 #voteCard { display: none; position: fixed; left: 16px; right: 16px; max-width: 420px; margin: 0 auto; bottom: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 880; background: #111; border: 1px solid #333; border-radius: 20px; padding: 14px 16px 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); opacity: 0; -webkit-transform: translateY(24px); transform: translateY(24px); -webkit-transition: opacity .35s ease, -webkit-transform .35s ease; transition: opacity .35s ease, transform .35s ease; }
@@ -1873,20 +1875,30 @@ function onAppReady() {
     }
     function agoText(ts) {
         var m = Math.max(0, Math.floor((Date.now() / 1000 - ts) / 60));
-        return m < 1 ? 'щойно' : m + ' хв';
+        return m < 1 ? 'щойно' : m + ' хв тому';
     }
+    var SVG_OK = '<svg class="cl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="8 12.5 11 15.5 16 9"/></svg>';
+    var SVG_WARN = '<svg class="cl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></svg>';
+    var SVG_CHEV = '<svg class="cl-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>';
     window.renderVerify = function () {
-        var b = $v('verifyBadge'), p = $v('crowdPill'); if (!b) return;
-        b.style.display = window.verifyInfo ? 'inline-flex' : 'none';
-        if (!p) return;
-        var c = window.crowdInfo;
-        if (!window.verifyInfo && c && c.n >= 3 && c.last) {
+        var el = $v('crowdLine'); if (!el) return;       // рядок є лише під пілюлею поточного проміжку
+        var v = window.verifyInfo, c = window.crowdInfo;
+        if (v) {
+            el.className = 'crowd-line cl-warn';
+            el.innerHTML = SVG_WARN + '<span class="cl-txt"><span class="cl-a">Уточнюємо</span></span>' + SVG_CHEV;
+            el.setAttribute('aria-label', 'Уточнюємо. Натисніть, щоб дізнатися більше');
+            el.onclick = function () { window.showVerifyInfo(); };
+            el.style.display = 'inline-flex';
+        } else if (c && c.n >= 3 && c.last) {
             var n = c.n | 0, ago = agoText(c.last);
-            p.innerHTML = '<span>✓</span>&nbsp;<span class="cp-word">Підтвердили&nbsp;</span><b>' + n + '</b><span class="cp-ppl">&nbsp;' + plural(n) + '</span><span class="cp-sep">·</span>' + ago + '<span class="cp-chev">›</span>';
-            p.setAttribute('aria-label', 'Підтвердили ' + n + ' ' + plural(n) + ', ' + ago + (ago === 'щойно' ? '' : ' тому') + '. Натисніть, щоб побачити результати опитування');
-            p.style.display = 'inline-flex';
+            el.className = 'crowd-line';
+            el.innerHTML = SVG_OK + '<span class="cl-txt"><span class="cl-a">підтвердили <b>' + n + '</b> ' + plural(n) + '</span><span class="cl-sep"> · </span><span class="cl-b">' + ago + '</span></span>' + SVG_CHEV;
+            el.setAttribute('aria-label', 'Підтвердили ' + n + ' ' + plural(n) + ', ' + ago + '. Натисніть, щоб побачити результати опитування');
+            el.onclick = function () { window.crowdTap(); };
+            el.style.display = 'inline-flex';
         } else {
-            p.style.display = 'none';
+            el.style.display = 'none';
+            el.onclick = null;
         }
     };
     window.showVerifyInfo = function () {
