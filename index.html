@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -1374,6 +1375,7 @@ window.replayCat = () => {
                 timerLabel.textContent = 'Графіків немає';
                 timerDisplay.textContent = '—';
             }
+            if (window.applyVerifyTop) window.applyVerifyTop(isNoSched || isPlaceholderDay);   // «Уточнюємо» поверх статусу
         }, 1000);
     }
 
@@ -1783,6 +1785,9 @@ function onAppReady() {
 .badge.cc-tap { cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .badge.bd-press { animation: bdPress .32s ease-out; }
 @keyframes bdPress { 0% { transform: scale(1); } 42% { transform: scale(.9); } 100% { transform: scale(1); } }
+/* «Уточнюємо» у верхньому статусі: усе помаранчеве */
+.timer-time.verify { color: var(--c-orange); text-shadow: 0 0 15px rgba(249, 115, 22, 0.4); }
+.status-box.verify .live-dot { background-color: var(--c-orange); }
 .bd-ring { position: absolute; left: -4px; top: -4px; pointer-events: none; overflow: visible; }
 .bd-ring rect { fill: none; stroke-width: 1.6; stroke-linecap: round; }
 .tl-item.crowd-open { z-index: 30; }
@@ -1945,7 +1950,7 @@ function onAppReady() {
         var v = window.verifyInfo; if (!v || typeof showInfoAlert !== 'function') return;
         var desc = v.expect === 'on'
             ? 'Частина користувачів повідомляє, що світла зараз немає, хоча за графіком воно має бути.'
-            : 'Частина користувачів повідомляє, що світло вже є, хоча за графіком має бути відключення.';
+            : 'Частина користувачів повідомляє, що світло є, хоча за графіком зараз має бути відключення.';
         var html = '<div style="color:#888; font-size:12px; margin-bottom:8px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px;">🔎 Уточнюємо</div>'
             + '<div style="font-size:15px; color:#eee; font-weight:500;">' + desc + '<br><br>Перевіряємо інформацію, фактичний час може відрізнятися від графіка.</div>';
         showInfoAlert(encodeURIComponent(html).replace(/'/g, '%27'));
@@ -2077,13 +2082,15 @@ function onAppReady() {
     // ===== МІНІ-КАРТКА «підтвердили» з бейджа «Світло є / Відключення» в таймлайні =====
     // Показ: один раз за сесію, коли зникли всі спливаючі вікна (опитування, новина про сповіщення,
     // зміни в графіку, модалки). Потім: тап по бейджу відкриває ту саму картку знову.
-    // Після першого зникнення: одноразове «натискання» бейджа + лінія-пігулка навколо нього.
+    // Після зникнення картки: «натискання» бейджа + лінія-пігулка навколо нього.
+    // Грає після перших fxMax закриттів картки за сесію (далі вже ні, щоб не набридало).
     var CC_CFG = {
         showMs: 3400,      // скільки висить картка (мс)
         calmMs: 1500,      // скільки має бути «тиша» без вікон перед автопоказом (мс)
-        warmupMs: 5000     // мінімальна пауза після появи таймлайну (мс), щоб встигли з'явитись вікна
+        warmupMs: 5000,    // мінімальна пауза після появи таймлайну (мс), щоб встигли з'явитись вікна
+        fxMax: 3           // скільки разів за сесію грати «натискання + пігулку» після закриття картки
     };
-    var CC = { open: false, hiding: false, t: null, autoDone: false, fxDone: false };
+    var CC = { open: false, hiding: false, t: null, autoDone: false, fxCount: 0 };
     var CC_RM = false, CC_LITE = false;
     try { CC_RM = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
     try { CC_LITE = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || (navigator.deviceMemory && navigator.deviceMemory <= 2); } catch (e) {}
@@ -2149,8 +2156,8 @@ function onAppReady() {
         }, CC_RM ? 170 : 240);
     }
     function ccAfterHide() {
-        if (CC.fxDone || CC.open) return;
-        CC.fxDone = true;                       // ефект лише один раз за сесію
+        if (CC.fxCount >= CC_CFG.fxMax || CC.open) return;
+        CC.fxCount++;                           // скільки разів уже грали за сесію
         if (CC_RM) return;
         var b = ccBadge(); if (!b) return;
         b.classList.add('bd-press');             // «натискання»
@@ -2229,6 +2236,19 @@ function onAppReady() {
         clearInterval(ccPoll);
         ccShow();
     }, 700);
+
+    // ===== «Уточнюємо» у верхньому статусі (замість «Світло є» / «Світла немає») =====
+    // Викликається щосекунди з таймера шапки, одразу після того як він виставив звичайний статус.
+    var SVG_LUPA = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--c-orange)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></svg>';
+    window.applyVerifyTop = function (skip) {
+        var st = $v('timerStatus'), td = $v('timerDisplay'), box = st ? st.parentNode : null;
+        var on = !!(window.verifyInfo && !skip);
+        if (box && box.classList) { if (on) box.classList.add('verify'); else box.classList.remove('verify'); }
+        if (!on || !st) return;
+        st.innerHTML = SVG_LUPA + ' Уточнюємо';
+        st.style.color = 'var(--c-orange)';
+        if (td) { td.className = 'timer-time verify'; td.style.color = ''; td.style.textShadow = ''; }
+    };
 
     window.renderVerify();
 })();
