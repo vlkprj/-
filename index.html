@@ -1778,6 +1778,49 @@ function onAppReady() {
     .crowd-line .cl-b { display: block; font-size: 11px; opacity: 0.85; }
 }
 
+/* ===== «підтвердили»: міні-картка-бульбашка з бейджа в таймлайні ===== */
+.tl-item .badge { position: relative; }
+.badge.cc-tap { cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.badge.bd-press { animation: bdPress .32s ease-out; }
+@keyframes bdPress { 0% { transform: scale(1); } 42% { transform: scale(.9); } 100% { transform: scale(1); } }
+.bd-ring { position: absolute; left: -4px; top: -4px; pointer-events: none; overflow: visible; }
+.bd-ring rect { fill: none; stroke-width: 1.6; stroke-linecap: round; }
+.tl-item.crowd-open { z-index: 30; }
+
+.crowd-card { position: absolute; z-index: 5; display: flex; align-items: center; box-sizing: border-box; padding: 9px 12px 9px 10px; border-radius: 14px;
+    background: rgba(28, 28, 32, 0.97); border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; -webkit-user-select: none; user-select: none; will-change: transform, opacity; }
+/* скло (розмиття) лише там, де воно підтримується і телефон не слабкий; інакше суцільний фон */
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .crowd-card:not(.lite) { background: rgba(30, 30, 34, 0.55); -webkit-backdrop-filter: blur(14px) saturate(140%); backdrop-filter: blur(14px) saturate(140%); }
+}
+/* хвостик, що вказує на бейдж */
+.crowd-card::before { content: ''; position: absolute; top: -6px; left: var(--ax, 22px); width: 11px; height: 11px; background: inherit; border-left: 1px solid rgba(255, 255, 255, 0.14); border-top: 1px solid rgba(255, 255, 255, 0.14); -webkit-transform: rotate(45deg); transform: rotate(45deg); -webkit-clip-path: polygon(0 0, 100% 0, 0 100%); clip-path: polygon(0 0, 100% 0, 0 100%); }
+.crowd-card .cc-ico { width: 18px; height: 18px; margin-right: 9px; flex-shrink: 0; color: #22c55e; }
+.crowd-card .cc-t { display: flex; flex-direction: column; min-width: 0; }
+.crowd-card .cc-a { font-size: 13px; font-weight: 800; line-height: 1.25; color: #e4e4e7; white-space: nowrap; }
+.crowd-card .cc-a b { color: #fff; font-weight: 900; }
+.crowd-card .cc-b { font-size: 11px; font-weight: 700; line-height: 1.25; color: #9a9aa3; white-space: nowrap; }
+.crowd-card .cl-chev { width: 12px; height: 12px; margin-left: 9px; flex-shrink: 0; opacity: 0.55; }
+.crowd-card.cc-in { animation: ccIn .36s cubic-bezier(.2, .85, .3, 1.15) both; }
+.crowd-card.cc-out { animation: ccOut .22s ease-in both; }
+@keyframes ccIn { 0% { opacity: 0; transform: scale(.15); } 55% { opacity: 1; } 100% { opacity: 1; transform: scale(1); } }
+@keyframes ccOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.15); } }
+.crowd-card.rm.cc-in { animation: ccFadeIn .2s ease-out both; }
+.crowd-card.rm.cc-out { animation: ccFadeOut .15s ease-in both; }
+@keyframes ccFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ccFadeOut { from { opacity: 1; } to { opacity: 0; } }
+
+/* котик: 9-й клік, перевертається і назад */
+.mascot-header.cat-flip { transform-origin: 50% 55%; animation: catFlip 1.5s ease-in-out both; will-change: transform; }
+@keyframes catFlip {
+    0%   { transform: translateX(-50%) rotate(0deg); }
+    32%  { transform: translateX(-50%) rotate(180deg); }
+    66%  { transform: translateX(-50%) rotate(180deg); }
+    100% { transform: translateX(-50%) rotate(0deg); }
+}
+
 /* текст статусу й таймера не перехоплює тапи: котик під ним лишається клікабельним цілком */
 .status-box, .timer-box { pointer-events: none; }
 
@@ -1856,7 +1899,7 @@ function onAppReady() {
 
 <script>
 (function () {
-    var VT = { st: null, timer: null, hideT: null, restarts: 0, busy: false, peek: false, t0: Date.now() };
+    var VT = { st: null, timer: null, hideT: null, restarts: 0, busy: false, peek: false, t0: Date.now(), waiting: false, ready: false };
     function $v(id) { return document.getElementById(id); }
 
     function dismissed(slot) {
@@ -1881,6 +1924,7 @@ function onAppReady() {
     var SVG_WARN = '<svg class="cl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></svg>';
     var SVG_CHEV = '<svg class="cl-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>';
     window.renderVerify = function () {
+        if (window.ccSync) window.ccSync();               // після кожного перемальовування таймлайну: поновити картку/бейдж
         var el = $v('crowdLine'); if (!el) return;       // рядок є лише під пілюлею поточного проміжку
         var v = window.verifyInfo, c = window.crowdInfo;
         if (v) {
@@ -1890,12 +1934,8 @@ function onAppReady() {
             el.onclick = function () { window.showVerifyInfo(); };
             el.style.display = 'inline-flex';
         } else if (c && c.n >= 3 && c.last) {
-            var n = c.n | 0, ago = agoText(c.last);
-            el.className = 'crowd-line';
-            el.innerHTML = SVG_OK + '<span class="cl-txt"><span class="cl-a">підтвердили <b>' + n + '</b> ' + plural(n) + '</span><span class="cl-sep"> · </span><span class="cl-b">' + ago + '</span></span>' + SVG_CHEV;
-            el.setAttribute('aria-label', 'Підтвердили ' + n + ' ' + plural(n) + ', ' + ago + '. Натисніть, щоб побачити результати опитування');
-            el.onclick = function () { window.crowdTap(); };
-            el.style.display = 'inline-flex';
+            el.style.display = 'none';   // старий підпис «підтвердили» більше не показуємо: ці дані тепер у картці з бейджа (див. нижче)
+            el.onclick = null;
         } else {
             el.style.display = 'none';
             el.onclick = null;
@@ -1923,12 +1963,12 @@ function onAppReady() {
     }
     function waitAndShow() {
         clearInterval(VT.timer);
-        var n = 0;
+        var n = 0; VT.waiting = true;
         VT.timer = setInterval(function () {
             n++;
-            if (n > 60) { clearInterval(VT.timer); return; }
+            if (n > 60) { clearInterval(VT.timer); VT.waiting = false; return; }
             if (Date.now() - VT.t0 < 4000 || blocked()) return;
-            clearInterval(VT.timer);
+            clearInterval(VT.timer); VT.waiting = false;
             showCard();
         }, 1000);
     }
@@ -1939,7 +1979,7 @@ function onAppReady() {
     }
     function present() {
         var c = $v('voteCard'); if (!c) return;
-        clearInterval(VT.timer);
+        clearInterval(VT.timer); VT.waiting = false;
         if (c.style.display === 'block' && c.className.indexOf('show') >= 0) return;
         c.className = $v('ch-fab') ? 'lift' : '';
         c.style.display = 'block';
@@ -2008,12 +2048,12 @@ function onAppReady() {
     }
 
     window.voteInit = function () {
-        if (typeof gasCall !== 'function') return;
+        VT.ready = false;
+        if (typeof gasCall !== 'function') { VT.ready = true; return; }
         gasCall({ action: 'vote_get' }).then(function (r) {
-            if (!r || !r.ok || !r.active || r.mine != null || dismissed(r.slot)) return;
-            VT.st = r;
-            waitAndShow();
-        }).catch(function () {});
+            if (r && r.ok && r.active && r.mine == null && !dismissed(r.slot)) { VT.st = r; waitAndShow(); }
+            VT.ready = true;
+        }).catch(function () { VT.ready = true; });
     };
 
     // показати результати (тап по пілюлі або по котику); хто ще не голосував, побачить саме опитування
@@ -2033,6 +2073,162 @@ function onAppReady() {
     $v('vcA').onclick = function () { sendVote(+this.getAttribute('data-v')); };
     $v('vcB').onclick = function () { sendVote(+this.getAttribute('data-v')); };
     $v('vcX').onclick = function () { if (VT.st) markDismissed(VT.st.slot); hideCard(); };
+
+    // ===== МІНІ-КАРТКА «підтвердили» з бейджа «Світло є / Відключення» в таймлайні =====
+    // Показ: один раз за сесію, коли зникли всі спливаючі вікна (опитування, новина про сповіщення,
+    // зміни в графіку, модалки). Потім: тап по бейджу відкриває ту саму картку знову.
+    // Після першого зникнення: одноразове «натискання» бейджа + лінія-пігулка навколо нього.
+    var CC_CFG = {
+        showMs: 3400,      // скільки висить картка (мс)
+        calmMs: 1500,      // скільки має бути «тиша» без вікон перед автопоказом (мс)
+        warmupMs: 5000     // мінімальна пауза після появи таймлайну (мс), щоб встигли з'явитись вікна
+    };
+    var CC = { open: false, hiding: false, t: null, autoDone: false, fxDone: false };
+    var CC_RM = false, CC_LITE = false;
+    try { CC_RM = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+    try { CC_LITE = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || (navigator.deviceMemory && navigator.deviceMemory <= 2); } catch (e) {}
+
+    function ccData() {
+        var c = window.crowdInfo;
+        if (window.verifyInfo || !c || !(c.n >= 3) || !c.last) return null;   // у режимі «Уточнюємо» картки нема
+        return c;
+    }
+    function ccBadge() { return document.querySelector('.tl-item.active-now .badge'); }
+    function ccEl() { return $v('crowdCard'); }
+
+    function ccMount(badge, animate) {
+        var old = ccEl(); if (old && old.parentNode) old.parentNode.removeChild(old);
+        var c = ccData(), head = badge && badge.closest ? badge.closest('.tl-head') : null;
+        if (!c || !head) return null;
+        var n = c.n | 0;
+        var el = document.createElement('div');
+        el.id = 'crowdCard';
+        el.className = 'crowd-card' + (CC_LITE ? ' lite' : '') + (CC_RM ? ' rm' : '') + (animate ? ' cc-in' : '');
+        el.setAttribute('role', 'button');
+        el.innerHTML = SVG_OK.replace('cl-ico', 'cc-ico') + '<span class="cc-t"><span class="cc-a">підтвердили <b>' + n + '</b> ' + plural(n) + '</span><span class="cc-b">' + agoText(c.last) + '</span></span>' + SVG_CHEV;
+        el.onclick = function () { ccHide(true); if (window.crowdTap) window.crowdTap(); };   // тап по картці: результати опитування
+        head.appendChild(el);
+        // позиція під бейджем і хвостик, що вказує на нього
+        var hr = head.getBoundingClientRect(), br = badge.getBoundingClientRect(), left = 70;
+        el.style.left = left + 'px';
+        el.style.top = Math.round(br.bottom - hr.top + 9) + 'px';
+        el.style.maxWidth = Math.max(160, head.clientWidth - left) + 'px';
+        var ew = el.offsetWidth;
+        var ax = Math.round((br.left + Math.min(24, br.width / 2)) - (hr.left + left) - 5);
+        ax = Math.max(12, Math.min(ax, ew - 26));
+        el.style.setProperty('--ax', ax + 'px');
+        el.style.transformOrigin = (ax + 5) + 'px -4px';   // бульбашка «виростає» з вістря хвостика
+        var item = head.parentNode; if (item && item.classList) item.classList.add('crowd-open');
+        return el;
+    }
+    function ccUnmark() {
+        var items = document.querySelectorAll('.tl-item.crowd-open');
+        for (var i = 0; i < items.length; i++) items[i].classList.remove('crowd-open');
+    }
+    function ccShow() {
+        var b = ccBadge(); if (!b || !ccData()) return false;
+        clearTimeout(CC.t);
+        CC.open = true; CC.hiding = false;
+        ccMount(b, true);
+        CC.t = setTimeout(function () { ccHide(false); }, CC_CFG.showMs);
+        return true;
+    }
+    function ccHide(skipFx) {
+        clearTimeout(CC.t);
+        if (!CC.open) return;
+        CC.open = false;
+        var el = ccEl();
+        if (!el) { ccUnmark(); if (!skipFx) ccAfterHide(); return; }
+        el.className = el.className.replace(/\bcc-(in)\b/, '') + ' cc-out';
+        CC.hiding = true;
+        setTimeout(function () {
+            if (el.parentNode) el.parentNode.removeChild(el);
+            CC.hiding = false;
+            if (!CC.open) ccUnmark();
+            if (!skipFx) ccAfterHide();
+        }, CC_RM ? 170 : 240);
+    }
+    function ccAfterHide() {
+        if (CC.fxDone || CC.open) return;
+        CC.fxDone = true;                       // ефект лише один раз за сесію
+        if (CC_RM) return;
+        var b = ccBadge(); if (!b) return;
+        b.classList.add('bd-press');             // «натискання»
+        setTimeout(function () {
+            b.classList.remove('bd-press');
+            var cur = ccBadge(); if (cur) ccRing(cur);   // лінія-пігулка (бейдж міг перемалюватись)
+        }, 300);
+    }
+    function ccRing(b) {
+        var w = b.offsetWidth, h = b.offsetHeight; if (!w || !h) return;
+        var pad = 3, sw = 1.6, W = w + pad * 2, H = h + pad * 2, rw = W - sw, rh = H - sw, r = rh / 2;
+        var P = 2 * (rw - 2 * r) + 2 * (rh - 2 * r) + 2 * Math.PI * r + 2;
+        var NS = 'http://www.w3.org/2000/svg';
+        var svg = document.createElementNS(NS, 'svg'), rect = document.createElementNS(NS, 'rect');
+        svg.setAttribute('class', 'bd-ring'); svg.setAttribute('width', W); svg.setAttribute('height', H);
+        svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.setAttribute('aria-hidden', 'true');
+        rect.setAttribute('x', sw / 2); rect.setAttribute('y', sw / 2); rect.setAttribute('width', rw); rect.setAttribute('height', rh);
+        rect.setAttribute('rx', r); rect.setAttribute('ry', r);
+        var col = '#fbbf24', cl = b.classList;
+        if (cl.contains('off') || cl.contains('emergency')) col = '#d9463b'; else if (cl.contains('partial')) col = '#f97316';
+        rect.style.stroke = col;
+        rect.style.strokeDasharray = P + ' ' + P;
+        rect.style.strokeDashoffset = P;
+        svg.appendChild(rect); b.appendChild(svg);
+        void rect.getBoundingClientRect();
+        rect.style.transition = 'stroke-dashoffset .6s cubic-bezier(.4, 0, .2, 1)';
+        rect.style.strokeDashoffset = '0';
+        setTimeout(function () { svg.style.transition = 'opacity .4s ease'; svg.style.opacity = '0'; }, 700);
+        setTimeout(function () { if (svg.parentNode) svg.parentNode.removeChild(svg); }, 1200);
+    }
+
+    // викликається з renderVerify після кожного перемальовування таймлайну
+    window.ccSync = function () {
+        var b = ccBadge(), ok = !!(b && ccData());
+        if (b && ok && !b.classList.contains('cc-tap')) {
+            b.classList.add('cc-tap'); b.setAttribute('role', 'button');
+            b.setAttribute('aria-label', 'Показати, скільки людей підтвердили статус');
+        }
+        if (CC.open) {
+            if (!ok) { clearTimeout(CC.t); CC.open = false; var e0 = ccEl(); if (e0 && e0.parentNode) e0.parentNode.removeChild(e0); ccUnmark(); return; }
+            var el = ccEl(), head = b.closest ? b.closest('.tl-head') : null;
+            if (!el || !head || el.parentNode !== head) ccMount(b, false);   // таймлайн перемалювався: ставимо картку на місце без анімації
+        }
+    };
+
+    // тап по бейджу: відкрити (або продовжити показ) картки
+    document.addEventListener('click', function (e) {
+        var t = e.target, b = t && t.closest ? t.closest('.tl-item.active-now .badge') : null;
+        if (!b || !ccData()) return;
+        CC.autoDone = true;
+        if (CC.open && ccEl() && !CC.hiding) { clearTimeout(CC.t); CC.t = setTimeout(function () { ccHide(false); }, CC_CFG.showMs); return; }
+        ccShow();
+    }, false);
+
+    // автопоказ: після всіх спливаючих вікон
+    function popupsBusy() {
+        if (blocked()) return true;                                   // промо, зміни в графіку, модалки, прихований застосунок
+        var vc = $v('voteCard'); if (vc && vc.style.display === 'block') return true;
+        return !!(VT.waiting || !VT.ready);                           // опитування ще може з'явитись
+    }
+    var ccSeenAt = 0, ccQuietAt = 0, ccTicks = 0;
+    var ccPoll = setInterval(function () {
+        ccTicks++;
+        if (CC.autoDone || ccTicks > 700) { clearInterval(ccPoll); return; }   // ~8 хвилин і досить
+        if (document.hidden) return;
+        var b = ccBadge();
+        if (!b || !ccData()) { ccQuietAt = 0; return; }
+        var now = Date.now();
+        if (!ccSeenAt) ccSeenAt = now;
+        if (popupsBusy()) { ccQuietAt = 0; return; }
+        if (!ccQuietAt) ccQuietAt = now;
+        if (now - ccSeenAt < CC_CFG.warmupMs || now - ccQuietAt < CC_CFG.calmMs) return;
+        var hd = document.querySelector('.sticky-header'), top = hd ? hd.getBoundingClientRect().bottom : 0, r = b.getBoundingClientRect();
+        if (r.top < top + 4 || r.bottom + 70 > window.innerHeight) return;   // бейдж має бути на екрані
+        CC.autoDone = true;
+        clearInterval(ccPoll);
+        ccShow();
+    }, 700);
 
     window.renderVerify();
 })();
@@ -2061,7 +2257,9 @@ window.toggleNoSched = function () {
        2-й  скільки годин без світла сьогодні (tap2Prefix та інші tap2…)
        3-й  результати опитування            (tap3Ms)
        4-й  «це вам не тапалка»              (tap4Text)
-       5-й і далі: просто анімація котика
+       5-й…8-й: просто анімація котика
+       9-й  котик перевертається і повертається назад (tap9Ms)
+       10-й і далі: знову просто анімація котика
      Час показу вказано в мілісекундах: 3000 = 3 секунди.
      ===================================================================== -->
 <script>
@@ -2083,7 +2281,10 @@ var CAT_CONFIG = {
 
     // 4-й клік
     tap4Text: '💬 це вам не тапалка 😾',
-    tap4Ms: 2500
+    tap4Ms: 2500,
+
+    // 9-й клік: котик перевертається догори дриґом і повертається назад
+    tap9Ms: 1500
 };
 </script>
 
@@ -2145,6 +2346,16 @@ var CAT_CONFIG = {
         } catch (e) { return CFG.tap2NoData; }
     }
 
+    function flip() {
+        try { if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) {}
+        var img = $c('mascotImg'); if (!img || img.style.display === 'none') return;
+        var ms = CFG.tap9Ms || 1500;
+        img.classList.remove('cat-flip'); void img.offsetWidth;
+        img.style.animationDuration = ms + 'ms';
+        img.classList.add('cat-flip');
+        setTimeout(function () { img.classList.remove('cat-flip'); img.style.animationDuration = ''; }, ms + 100);
+    }
+
     var cat = $c('mascotImg');
     if (cat) cat.addEventListener('click', function () {
         taps++;
@@ -2152,6 +2363,7 @@ var CAT_CONFIG = {
         else if (taps === 2) window.catToast(offText(), CFG.tap2Ms);
         else if (taps === 3) { if (window.voteShowResults) window.voteShowResults(CFG.tap3Ms); }
         else if (taps === 4) window.catToast(CFG.tap4Text, CFG.tap4Ms);
+        else if (taps === 9) flip();
         else if (window.replayCat) window.replayCat();
     });
 })();
