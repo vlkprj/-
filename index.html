@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -322,7 +323,7 @@
 
 <div id="toastInside" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: #111; border: 1px solid #333; border-radius: 20px; padding: 15px 20px; width: max-content; max-width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.5); align-items: center; gap: 12px;">
     <div style="font-size: 22px; line-height: 1;">💬</div>
-    <div id="toastText" style="color: #f4f4f5; font-size: 14px; font-weight: 700; flex-grow: 1; line-height: 1.4; letter-spacing: 0.3px;"></div>
+    <div id="toastText" style="color: #f4f4f5; font-size: 14px; font-weight: 400; flex-grow: 1; line-height: 1.4; letter-spacing: 0.3px;"></div>
     <div onclick="document.getElementById('toastInside').style.display='none'" style="color: #666; font-size: 26px; cursor: pointer; line-height: 1; padding-bottom: 2px; transition: color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">&times;</div>
 </div>
 
@@ -352,13 +353,14 @@
 
 
 
-            <div class="status-box">
+            <div class="status-box" id="statusBox">
                 <div class="status-label"><span class="live-dot"></span>Статус</div>
                 <div class="status-value" id="timerStatus">...</div>
             </div>
             <div class="timer-box">
                 <div class="timer-label" id="timerLabel">Оновлення...</div>
                 <div class="timer-time" id="timerDisplay">--:--:--</div>
+                <div class="timer-spin" id="timerSpin" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg></div>
             </div>
         </div>
     </div>
@@ -439,9 +441,39 @@
     let activeDates = []; 
     let initialScrollDone = false;
 
+    // ===== Режими «Аварійного» статусу (ставляться вручну з адмінки) =====
+    // Бекенд зберігає лише час, тому режим кодується «особливим» часом кінця аварійного відключення:
+    //   23:58 = на таймері «Уточнюємо» (спінер), 23:57 = «невідомо». Звичайний час кінця = орієнтовний кінець.
+    // Для відображення такий кінець підміняється на кінець доби (24:00).
+    const EMG_END_VERIFY = 1438, EMG_END_UNKNOWN = 1437;
+    const spinSvgInline = `<svg class="mini-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:16px;height:16px;margin:0;"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
+    function normEmgOverrides(ovs) {
+        return (ovs || []).map(ov => {
+            if (ov && ov.type === 'emergency' && (ov.endMin === EMG_END_VERIFY || ov.endMin === EMG_END_UNKNOWN)) {
+                return Object.assign({}, ov, { endMin: 1440, endStr: '24:00', emgMode: ov.endMin === EMG_END_VERIFY ? 'verify' : 'unknown' });
+            }
+            return ov;
+        });
+    }
+
     function setLoader(text, isError) {
         document.getElementById('loaderText').textContent = text;
         document.getElementById('loaderVis').style.display = isError ? 'none' : 'flex';
+    }
+
+    // спінер замість цифр таймера (окремий елемент, щоб анімація не перезапускалась щосекунди)
+    window.tmSpin = function (on, orange) {
+        const sp = document.getElementById('timerSpin'), td = document.getElementById('timerDisplay');
+        if (!sp || !td) return;
+        sp.style.display = on ? 'flex' : 'none';
+        td.style.display = on ? 'none' : '';
+        sp.style.color = orange ? 'var(--c-orange)' : 'var(--c-red)';
+    };
+
+    // адмін: тап по статусу вгорі відкриває ручне керування статусом
+    if (isAdmin) {
+        document.getElementById('statusBox').classList.add('admin-edit');
+        document.getElementById('timerStatus').addEventListener('click', function () { if (window.openStatusModal) window.openStatusModal(); });
     }
 
     function timeToMins(t) {
@@ -717,8 +749,10 @@ window.replayCat = () => {
 
 
         function buildDisplayIntervals(rawIntervals, overrides) {
+            overrides = normEmgOverrides(overrides);
             let minuteMap = new Array(1440).fill('on');
             let baseMap = new Array(1440).fill('on');
+            let modeMap = new Array(1440).fill('');
 
             rawIntervals.forEach(int => {
                 let type = int.type || int.planType || 'off';
@@ -753,6 +787,7 @@ window.replayCat = () => {
 
                 overrides.forEach(ov => {
                     for (let i = ov.startMin; i < ov.endMin; i++) {
+                        modeMap[i] = (ov.type === 'emergency' && ov.emgMode) ? ov.emgMode : '';
                         if (ov.type === 'restore') minuteMap[i] = baseMap[i];
                         else if (ov.type === 'emergency') minuteMap[i] = 'emergency';
                         else if (ov.type === 'partial') minuteMap[i] = 'partial';
@@ -765,14 +800,15 @@ window.replayCat = () => {
             let merged = [];
             let current = null;
 
-            function getMergeState(st) {
+            function getMergeState(st, idx) {
                 if (st === 'replaced_on') return 'on';
+                if (st === 'emergency') return 'emergency' + (modeMap[idx] || '');   // різні режими аварійного не склеюємо
                 return st;
             }
 
             for (let i = 0; i <= 1440; i++) {
                 let rawState = i < 1440 ? minuteMap[i] : null;
-                let mergeState = rawState ? getMergeState(rawState) : null;
+                let mergeState = rawState ? getMergeState(rawState, i) : null;
                 
                 if (i === 0) {
                     current = { startMin: i, mergeState: mergeState };
@@ -792,13 +828,11 @@ window.replayCat = () => {
                         if (effMinuteMap === 'emergency') hasEmergency = true;
                     }
                     
-                    let finalType = current.mergeState;
-                    let isEmergencyBlock = (current.mergeState === 'emergency');
-                    let isPartialBlock = (current.mergeState === 'partial');
-
-                    if (isEmergencyBlock) {
-                        finalType = 'off';
-                    }
+                    let ms = current.mergeState || '';
+                    let isEmergencyBlock = (ms.indexOf('emergency') === 0);
+                    let emgMode = isEmergencyBlock ? ms.slice(9) : '';   // '' | 'verify' | 'unknown'
+                    let isPartialBlock = (ms === 'partial');
+                    let finalType = isEmergencyBlock ? 'off' : ms;
 
                     let origStartStr = null;
                     let origEndStr = null;
@@ -852,6 +886,8 @@ window.replayCat = () => {
                         displayEndStr: minsToStr(current.endMin),
                         type: finalType,
                         isEmergencyBlock: isEmergencyBlock,
+                        emgMode: emgMode,
+                        emgOpen: isEmergencyBlock && !!emgMode && current.endMin === 1440,   // кінець невідомий / уточнюється
                         isPartialBlock: isPartialBlock,
                         isModified: isMod,
                         origStartStr: origStartStr,
@@ -886,8 +922,13 @@ window.replayCat = () => {
                     displayEnd = `<svg class="mini-spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="width:16px;height:16px;margin-bottom:-2px;"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
                 }
 
+                // кінець аварійного: невідомий / уточнюється / орієнтовний (з «~», поки він ще попереду)
+                let endHtml = displayEnd;
+                if (isEmergency && int.emgOpen) endHtml = (int.emgMode === 'verify') ? spinSvgInline : 'невідомо';
+                else if (isEmergency && !isPast && !isEmptyDay) endHtml = '~' + displayEnd;
+
                 let classes = `tl-item ${stateClass}`;
-                if (isActive) { 
+                if (isActive) {
                     classes += ' active-now';
                     if (isEmergency) classes += ' emergency-active'; 
                     if (isPartial) classes += ' partial';
@@ -949,12 +990,18 @@ window.replayCat = () => {
                     let desc = "";
                     
                     if (isEmergency || int.type === 'off') {
+                        const approxTo = (isEmergency && !isPast && !int.emgOpen) ? 'орієнтовно до' : 'до';
+                        const openTail = int.emgMode === 'verify' ? 'Час відновлення уточнюємо.' : 'Час відновлення поки невідомий.';
                         if (hasOrig) {
                             title = "Графік змінено";
-                            desc = `Замість планових ${int.origStartStr}–${int.origEndStr}<br>Відключення діє з <b>${int.startStr}</b> до <b>${displayEnd}</b>.`;
+                            desc = int.emgOpen
+                                ? `Замість планових ${int.origStartStr}–${int.origEndStr}<br>Світла немає з <b>${int.startStr}</b>. ${openTail}`
+                                : `Замість планових ${int.origStartStr}–${int.origEndStr}<br>Відключення діє з <b>${int.startStr}</b> ${approxTo} <b>${displayEnd}</b>.`;
                         } else {
                             title = "Позапланове відключення";
-                            desc = `Світла немає з <b>${int.startStr}</b> до <b>${displayEnd}</b>.`;
+                            desc = int.emgOpen
+                                ? `Світла немає з <b>${int.startStr}</b>. ${openTail}`
+                                : `Світла немає з <b>${int.startStr}</b> ${approxTo} <b>${displayEnd}</b>.`;
                         }
                     } else if (isPartial) {
                         title = "Часткове відключення";
@@ -997,7 +1044,7 @@ window.replayCat = () => {
                             ${isActive ? '<div class="crowd-line" id="crowdLine" role="button"></div>' : ''}
                             <div class="interval ${stateClass}" style="margin-top: 6px;">
                                 <div class="interval-icon">${intIcon}</div>
-                                <span class="interval-text" style="display: flex; align-items: center;">${int.startStr} – ${displayEnd}${modSuperscript}</span>
+                                <span class="interval-text" style="display: flex; align-items: center; gap: 4px;">${int.startStr} – ${endHtml}${modSuperscript}</span>
                                 ${infoIconHtml}
                             </div>
                             ${canceledHtml}
@@ -1011,7 +1058,7 @@ window.replayCat = () => {
             displayIntervals.forEach(int => {
                 if (int.canceledIntervals && int.canceledIntervals.length > 0) {
                     int.canceledIntervals.forEach(ci => {
-                        changes.push({ ...ci, newStart: int.startStr, newEnd: int.displayEndStr, reason: ci.reason });
+                        changes.push({ ...ci, newStart: int.startStr, newEnd: int.displayEndStr, newOpen: int.emgOpen ? int.emgMode : '', reason: ci.reason });
                     });
                 }
             });
@@ -1021,7 +1068,9 @@ window.replayCat = () => {
                     if (ci.reason === 'changed') {
                         return `<div style="padding: 12px 0; display: flex; align-items: flex-start; gap: 12px;">
                             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                            <div style="color: #d4d4d8; font-size: 14px; line-height: 1.45;">Відключення <b style="color:#fff;">${ci.startStr}-${ci.endStr}</b> змінено на <b style="color: #fff;">${ci.newStart}-${ci.newEnd}</b></div>
+                            <div style="color: #d4d4d8; font-size: 14px; line-height: 1.45;">Відключення <b style="color:#fff;">${ci.startStr}-${ci.endStr}</b> змінено на ${ci.newOpen
+                                ? `відключення з <b style="color: #fff;">${ci.newStart}</b> (час відновлення ${ci.newOpen === 'verify' ? 'уточнюємо' : 'невідомий'})`
+                                : `<b style="color: #fff;">${ci.newStart}-${ci.newEnd}</b>`}</div>
                         </div>`;
                     } else {
                         return `<div style="padding: 12px 0; display: flex; align-items: flex-start; gap: 12px;">
@@ -1031,12 +1080,18 @@ window.replayCat = () => {
                     }
                 }).join('<div style="height: 1px; background: rgba(255,255,255,0.08); margin: 0 4px;"></div>');
 
-                                let jsPayload = `
+                // підпис поточних змін: якщо людина їх уже бачила, поп-ап сам більше не вилазить (доки не буде нової зміни)
+                const sigSrc = (activeDates[0] || '') + '|' + changes.map(c => [c.reason, c.startStr, c.endStr, c.newStart, c.newEnd, c.newOpen].join('~')).join(';');
+                let sigHash = 0;
+                for (let si = 0; si < sigSrc.length; si++) sigHash = ((sigHash << 5) - sigHash + sigSrc.charCodeAt(si)) | 0;
+                const chSig = String(sigHash);
+
+                let jsPayload = `
+                    var SIG = '${chSig}', KEY = 'ch_seen_v1';
+                    function chSeen() { try { return localStorage.getItem(KEY) === SIG; } catch(e) { return false; } }
+                    function chMark() { try { localStorage.setItem(KEY, SIG); } catch(e) {} var d = document.getElementById('ch-dot'); if(d) d.style.display = 'none'; }
                     clearTimeout(window.changesTimer);
                     clearTimeout(window.chCloseTimer);
-                    window.changesTimer = setTimeout(function() {
-                        window.openCh(true);
-                    }, 2500);
                     window.closeCh = function(e) {
                         if(e) e.stopPropagation();
                         var m = document.getElementById('ch-mod');
@@ -1052,14 +1107,23 @@ window.replayCat = () => {
                         var f = document.getElementById('ch-fab');
                         var o = document.getElementById('ch-overlay');
                         clearTimeout(window.chCloseTimer);
+                        chMark();
                         if(f) { f.style.opacity='0'; f.style.pointerEvents='none'; f.style.transform='scale(0.5)'; }
                         if(o) { o.style.opacity='1'; o.style.pointerEvents='auto'; }
-                        if(m) { 
+                        if(m) {
                             void m.offsetWidth;
-                            setTimeout(function(){ m.style.opacity='1'; m.style.pointerEvents='auto'; m.style.transform='translateX(-50%) translateY(0) scale(1)'; }, 10); 
+                            setTimeout(function(){ m.style.opacity='1'; m.style.pointerEvents='auto'; m.style.transform='translateX(-50%) translateY(0) scale(1)'; }, 10);
                         }
                         if(isAuto === true) { window.chCloseTimer = setTimeout(window.closeCh, 5000); }
                     };
+                    if(!chSeen()) {
+                        window.changesTimer = setTimeout(function() { window.openCh(true); }, 2500);
+                    } else {
+                        var f0 = document.getElementById('ch-fab');
+                        var d0 = document.getElementById('ch-dot');
+                        if(d0) d0.style.display = 'none';
+                        if(f0) { f0.style.opacity='1'; f0.style.pointerEvents='auto'; f0.style.transform='scale(1)'; }
+                    }
                 `.replace(/\n/g, ' ').replace(/"/g, '&quot;');
 
 
@@ -1083,7 +1147,7 @@ window.replayCat = () => {
                 </div>
 
                 <div id="ch-fab" onclick="window.openCh()" style="opacity: 0; pointer-events: none; position: fixed; bottom: 32px; right: 24px; background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.15); border-radius: 50%; width: 56px; height: 56px; display: flex; justify-content: center; align-items: center; box-shadow: 0 12px 32px rgba(0,0,0,0.5); z-index: 9997; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: scale(0.5); cursor: pointer;">
-                    <div style="position: absolute; top: 12px; right: 12px; width: 10px; height: 10px; background: #f97316; border-radius: 50%; box-shadow: 0 0 12px #f97316; animation: digestPulse 2s infinite;"></div>
+                    <div id="ch-dot" style="position: absolute; top: 12px; right: 12px; width: 10px; height: 10px; background: #f97316; border-radius: 50%; box-shadow: 0 0 12px #f97316; animation: digestPulse 2s infinite;"></div>
                     <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline><path d="M12 7v5l4 2"></path></svg>
                 </div>
                 <style>@keyframes digestPulse { 0% { transform: scale(0.95); opacity: 1; } 50% { transform: scale(1.15); opacity: 0.5; } 100% { transform: scale(0.95); opacity: 1; } }</style>
@@ -1097,6 +1161,12 @@ window.replayCat = () => {
 
 
 
+
+        function fmtOffTotal(offMins) {
+            let hOff = Math.floor(offMins / 60);
+            let mOff = offMins % 60;
+            return `${hOff} год. ${mOff > 0 ? mOff + ' хв' : ''}`.trim();
+        }
 
         function renderAllDays(currentMins) {
         const container = document.getElementById('timelineContainer');
@@ -1147,12 +1217,12 @@ window.replayCat = () => {
                     realState = 'off';
                 }
                 
-                if (realState === 'off') offMins += (int.endMin - int.startMin);
+                // блок з невідомим кінцем рахуємо лише до цього моменту, а не до кінця доби
+                const endEff = (isToday && int.emgOpen) ? Math.max(int.startMin, Math.min(int.endMin, currentMins)) : int.endMin;
+                if (realState === 'off') offMins += (endEff - int.startMin);
             });
-            
-            let hOff = Math.floor(offMins / 60);
-            let mOff = offMins % 60;
-            let totalOffText = `${hOff} год. ${mOff > 0 ? mOff + ' хв' : ''}`.trim();
+
+            let totalOffText = fmtOffTotal(offMins);
 
            
 
@@ -1178,7 +1248,7 @@ window.replayCat = () => {
             fullHtml += `
                 <div style="text-align: center; margin-bottom: 20px;">
                     <span style="background: rgba(217, 70, 59, 0.1); border: 1px solid rgba(217, 70, 59, 0.2); color: var(--c-red); padding: 4px 10px; border-radius: 8px; font-size: 12px; font-weight: 800;">
-                        Всього без світла: ${totalOffText}
+                        Всього без світла: <span id="offTotal${index}">${totalOffText}</span>
                     </span>
                     ${globalEditBtn}
                 </div>`;
@@ -1246,6 +1316,7 @@ window.replayCat = () => {
                 timerLabel.textContent = "Очікування";
                 timerStatus.innerHTML = `${iconBulb} Немає даних`;
                 timerStatus.style.color = '#888';
+                window.tmSpin(false);
                 return;
             }
 
@@ -1269,14 +1340,34 @@ window.replayCat = () => {
                     combinedIntervals.push({
                         startMinAbs: int.startMin + offset,
                         endMinAbs: int.endMin + offset,
-                        realState: realState
+                        realState: realState,
+                        isEmg: !!int.isEmergencyBlock,
+                        emgMode: int.emgMode || '',
+                        emgOpen: !!int.emgOpen
                     });
                 });
+
+                // «Всього без світла» оновлюємо наживо (блок з невідомим кінцем росте з часом)
+                if (dayIndex === 0) {
+                    let om = 0;
+                    displayInts.forEach(int => {
+                        if (int.isEmergencyBlock || int.type === 'off') {
+                            const eff = int.emgOpen ? Math.max(int.startMin, Math.min(int.endMin, currentMins)) : int.endMin;
+                            om += (eff - int.startMin);
+                        }
+                    });
+                    const otEl = document.getElementById('offTotal0');
+                    const ot = fmtOffTotal(om);
+                    if (otEl && otEl.textContent !== ot) otEl.textContent = ot;
+                }
             });
 
                         let currentIntIndex = combinedIntervals.findIndex(int => currentMins >= int.startMinAbs && currentMins < int.endMinAbs);
             let currentState = 'on';
             let nextEventMinsAbs = null;
+            const curInt = currentIntIndex !== -1 ? combinedIntervals[currentIntIndex] : null;
+            const manualMode = (curInt && curInt.realState === 'off' && curInt.emgOpen) ? curInt.emgMode : '';   // 'verify' | 'unknown' | ''
+            const curIsEmg = !!(curInt && curInt.isEmg && curInt.realState === 'off');
 
             if (currentIntIndex !== -1) {
                 currentState = combinedIntervals[currentIntIndex].realState;
@@ -1324,7 +1415,7 @@ window.replayCat = () => {
                     
                     const randomSrc = offMascots[Math.floor(Math.random() * offMascots.length)];
                     mascotImg.src = randomSrc + '?v=' + Date.now();
-                    mascotImg.style.filter = 'drop-shadow(0 0 15px rgba(217, 70, 59, 0.3))';
+                    mascotImg.style.setProperty('--cat-glow', 'rgba(217, 70, 59, 0.3)'); mascotImg.style.setProperty('--cat-r', '15px');
                     currentMascotState = 'off';
                 }
 
@@ -1344,7 +1435,7 @@ window.replayCat = () => {
                     mascotImg.onload = () => { mascotLoader.style.display = 'none'; mascotImg.style.display = 'block'; };
                     
                     mascotImg.src = './catOnlight.webp?v=' + Date.now();
-                    mascotImg.style.filter = 'drop-shadow(0 0 20px rgba(251, 191, 36, 0.35))';
+                    mascotImg.style.setProperty('--cat-glow', 'rgba(251, 191, 36, 0.35)'); mascotImg.style.setProperty('--cat-r', '20px');
                     currentMascotState = 'on';
                 }
 
@@ -1373,8 +1464,19 @@ window.replayCat = () => {
             if (isNoSched) {   // режим «Графіків немає»: статус «Світло є» стабільно, замість таймера напис
                 timerLabel.textContent = 'Графіків немає';
                 timerDisplay.textContent = '—';
+            } else if (!isPlaceholderDay && currentState === 'off') {
+                // ручне «Аварійне»: що показувати замість відліку
+                if (manualMode === 'verify') {
+                    timerLabel.textContent = 'Уточнюємо:';             // сам спінер вмикає applyVerifyTop
+                } else if (manualMode === 'unknown') {
+                    timerLabel.textContent = 'До включення:';
+                    timerDisplay.className = 'timer-time off small';
+                    timerDisplay.textContent = 'невідомо';
+                } else if (curIsEmg && nextEventMinsAbs !== null) {
+                    timerDisplay.innerHTML = '<span class="tilde">~</span>' + timerDisplay.textContent;   // орієнтовний час до включення
+                }
             }
-            if (window.applyVerifyTop) window.applyVerifyTop(isNoSched || isPlaceholderDay);   // «Уточнюємо» поверх статусу
+            if (window.applyVerifyTop) window.applyVerifyTop(isNoSched || isPlaceholderDay, manualMode);   // «Уточнюємо» поверх статусу
         }, 1000);
     }
 
@@ -1435,6 +1537,129 @@ window.replayCat = () => {
 
 
 
+
+<!-- ===== АДМІН: ручне керування статусом (тап по статусу вгорі) ===== -->
+<div id="statusModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box;">
+    <div style="background: #111; border: 1px solid #333; border-radius: 20px; padding: 22px 20px 18px; width: 100%; max-width: 380px; max-height: 94vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.5); box-sizing: border-box;">
+        <h3 style="margin: 0 0 14px 0; font-weight: 900; font-size: 18px; text-align: center;">Статус вручну</h3>
+
+        <div class="nchips" id="smSeg" style="margin: 0 0 12px;">
+            <div class="nchip" data-k="on" style="min-width: 0;">💡 Світло є</div>
+            <div class="nchip" data-k="off" style="min-width: 0;">🔌 Відключення</div>
+            <div class="nchip" data-k="emg" style="min-width: 0;">⚠️ Аварійне</div>
+        </div>
+        <div id="smHint" style="font-size: 13px; color: #888; line-height: 1.45; text-align: center; margin-bottom: 14px; min-height: 36px;"></div>
+
+        <div class="sm-row"><span id="smStartLbl">З якого часу</span><input type="time" id="smStart" class="sm-time"></div>
+
+        <div id="smEmgBox" style="display: none;">
+            <div style="font-size: 13px; font-weight: 800; color: #aaa; margin: 14px 0 0;">Що показувати в таймері:</div>
+            <div class="nchips" id="smEmg" style="margin: 8px 0 0;">
+                <div class="nchip" data-m="verify" style="min-width: 0;">⟳ Уточнюємо</div>
+                <div class="nchip" data-m="unknown" style="min-width: 0;">Невідомо</div>
+                <div class="nchip" data-m="eta" style="min-width: 0;">Кінець о…</div>
+            </div>
+        </div>
+
+        <div class="sm-row" id="smEndRow" style="display: none;"><span id="smEndLbl">До якого часу</span><input type="time" id="smEnd" class="sm-time"></div>
+
+        <button class="gbtn" id="smApply" onclick="applyStatusPick()" style="margin-top: 18px;">Застосувати</button>
+        <div style="color: #666; font-size: 14px; font-weight: 800; text-transform: uppercase; cursor: pointer; letter-spacing: 1px; text-align: center; margin-top: 16px;" onclick="document.getElementById('statusModal').style.display='none'">Закрити</div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var SM = { k: 'on', m: 'verify' };
+    function $s(id) { return document.getElementById(id); }
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function hm(mins) { mins = Math.max(0, Math.min(mins, 1439)); return pad(Math.floor(mins / 60)) + ':' + pad(mins % 60); }
+    function nowMins() { var d = new Date(); return d.getHours() * 60 + d.getMinutes(); }
+
+    // поточний проміжок на сьогодні (з урахуванням ручних змін)
+    function curBlock() {
+        try {
+            var d = dbDays[activeDates[0]]; if (!d) return null;
+            var m = nowMins(), ints = buildDisplayIntervals(d.intervals || [], d.overrides || []);
+            for (var i = 0; i < ints.length; i++) if (m >= ints[i].startMin && m < ints[i].endMin) return ints[i];
+        } catch (e) {}
+        return null;
+    }
+
+    var HINTS = {
+        on: 'Скасує відключення з вказаного часу до кінця поточного проміжку. Світло знову «є».',
+        off: 'Звичайне відключення з відомим часом включення (в таймері піде відлік).',
+        emg: 'Коли інформації майже нема або час включення лише орієнтовний.'
+    };
+
+    function defaults() {
+        var b = curBlock(), now = nowMins(), inOff = !!(b && b.type === 'off');
+        if (SM.k === 'on') $s('smStart').value = hm(now);
+        else $s('smStart').value = inOff ? hm(b.startMin) : hm(now);   // змінюємо поточне відключення, а не починаємо нове
+        var end = (SM.k === 'off' && inOff && b.endMin < 1440 && !b.emgOpen) ? b.endMin : Math.min(now + 120, 1439);
+        $s('smEnd').value = hm(end);
+    }
+    function render() {
+        document.querySelectorAll('#smSeg .nchip').forEach(function (c) { c.classList.toggle('on', c.getAttribute('data-k') === SM.k); });
+        document.querySelectorAll('#smEmg .nchip').forEach(function (c) { c.classList.toggle('on', c.getAttribute('data-m') === SM.m); });
+        $s('smHint').textContent = HINTS[SM.k];
+        $s('smStartLbl').textContent = SM.k === 'on' ? 'Світло зʼявилось о' : 'Відключення з';
+        $s('smEmgBox').style.display = SM.k === 'emg' ? 'block' : 'none';
+        var needEnd = SM.k === 'off' || (SM.k === 'emg' && SM.m === 'eta');
+        $s('smEndRow').style.display = needEnd ? 'flex' : 'none';
+        $s('smEndLbl').textContent = SM.k === 'emg' ? 'Орієнтовно до' : 'Включать о';
+    }
+
+    document.querySelectorAll('#smSeg .nchip').forEach(function (c) {
+        c.addEventListener('click', function () { SM.k = c.getAttribute('data-k'); defaults(); render(); });
+    });
+    document.querySelectorAll('#smEmg .nchip').forEach(function (c) {
+        c.addEventListener('click', function () { SM.m = c.getAttribute('data-m'); render(); });
+    });
+
+    window.openStatusModal = function () {
+        if (typeof isAdmin === 'undefined' || !isAdmin || !activeDates.length) return;
+        var b = curBlock();
+        SM.k = (b && b.type === 'off') ? (b.isEmergencyBlock ? 'emg' : 'off') : 'on';
+        SM.m = (b && b.emgMode) ? b.emgMode : 'verify';
+        if (SM.k === 'emg' && b && !b.emgMode) SM.m = 'eta';
+        defaults(); render();
+        $s('statusModal').style.display = 'flex';
+    };
+
+    window.applyStatusPick = async function () {
+        var s = $s('smStart').value, e = $s('smEnd').value, type, end;
+        if (!s) return alert('Вкажи час');
+        var sm = timeToMins(s);
+        if (SM.k === 'on') {
+            var b = curBlock();
+            if (!b || b.type !== 'off') return alert('Зараз і так світло: скасовувати нічого.');
+            type = 'cancel'; end = b.endMin >= 1440 ? '24:00' : minsToStr(b.endMin);
+        } else if (SM.k === 'off') {
+            type = 'off'; end = e;
+        } else {
+            type = 'emergency';
+            if (SM.m === 'verify') end = minsToStr(EMG_END_VERIFY);        // 23:58 = «Уточнюємо» в таймері
+            else if (SM.m === 'unknown') end = minsToStr(EMG_END_UNKNOWN); // 23:57 = «невідомо»
+            else end = e;
+        }
+        if (!end) return alert('Вкажи час закінчення');
+        if (end === '23:59') end = '24:00';
+        if (SM.k === 'emg' && SM.m !== 'eta' && sm >= EMG_END_UNKNOWN) return alert('Занадто пізній старт для цього режиму. Вкажи час раніше 23:57.');
+        if (sm >= timeToMins(end)) return alert('Час початку має бути раніше за час закінчення');
+
+        $s('statusModal').style.display = 'none';
+        document.getElementById('app').style.display = 'none';
+        document.getElementById('loader').style.display = 'block';
+        setLoader('Оновлюємо статус... ⚡');
+        var payload = { source: 'miniapp', initData: tg.initData, date: activeDates[0], action: 'add_override', type: type, interval: { start: s, end: end } };
+        try {
+            await fetch(GAS_WEB_APP_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
+            setTimeout(fetchData, 1500);
+        } catch (err) { alert('❌ Помилка: ' + err.message); fetchData(); }
+    };
+})();
+</script>
 
     <div id="pointsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
     <style>
@@ -1900,6 +2125,7 @@ function onAppReady() {
 
 <div id="catToast"></div>
 <div id="emojiRain"></div>
+<div id="fxLayer"></div>
 
 <script>
 (function () {
@@ -1964,7 +2190,7 @@ function onAppReady() {
         var app = $v('app'); if (!app || app.style.display === 'none') return true;
         var promo = $v('notifPromo'); if (promo && promo.style.display === 'block') return true;
         var ch = $v('ch-mod'); if (ch && ch.style.opacity === '1') return true;
-        return open('notifModal') || open('genModal') || open('editModal') || open('pointsModal') || open('infoAlertModal');
+        return open('notifModal') || open('genModal') || open('editModal') || open('statusModal') || open('pointsModal') || open('infoAlertModal');
     }
     function waitAndShow() {
         clearInterval(VT.timer);
@@ -2221,7 +2447,7 @@ function onAppReady() {
     // автопоказ: щойно додаток відкрився і бейдж стоїть на екрані (вікна опитування/новин не чекаємо)
     function ccModalOpen() {
         var app = $v('app'); if (!app || app.style.display === 'none') return true;
-        var ids = ['notifModal', 'genModal', 'editModal', 'pointsModal', 'infoAlertModal'];
+        var ids = ['notifModal', 'genModal', 'editModal', 'statusModal', 'pointsModal', 'infoAlertModal'];
         for (var i = 0; i < ids.length; i++) { var e = $v(ids[i]); if (e && e.style.display === 'flex') return true; }
         return false;                                                 // повноекранна модалка закриває бейдж: чекаємо
     }
@@ -2249,14 +2475,19 @@ function onAppReady() {
     // ===== «Уточнюємо» у верхньому статусі (замість «Світло є» / «Світла немає») =====
     // Викликається щосекунди з таймера шапки, одразу після того як він виставив звичайний статус.
     var SVG_LUPA = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--c-orange)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></svg>';
-    window.applyVerifyTop = function (skip) {
+    window.applyVerifyTop = function (skip, manual) {
         var st = $v('timerStatus'), td = $v('timerDisplay'), box = st ? st.parentNode : null;
-        var on = !!(window.verifyInfo && !skip);
+        var on = !!(window.verifyInfo && !skip);                  // «Уточнюємо» від користувачів (з сервера)
+        var man = !!(!skip && manual === 'verify');               // «Уточнюємо» в таймері, виставлене адміном вручну
         if (box && box.classList) { if (on) box.classList.add('verify'); else box.classList.remove('verify'); }
+        if (window.tmSpin) window.tmSpin(on || man, on);          // замість цифр: спінер
+        var cat = $v('mascotImg');
+        if (cat && cat.classList) { if (on || man) cat.classList.add('cat-flicker'); else cat.classList.remove('cat-flicker'); }   // котик «моргає» як нестабільне світло
         if (!on || !st) return;
         st.innerHTML = SVG_LUPA + ' Уточнюємо';
         st.style.color = 'var(--c-orange)';
         if (td) { td.className = 'timer-time verify'; td.style.color = ''; td.style.textShadow = ''; }
+        var tl = $v('timerLabel'); if (tl) tl.textContent = 'Перевіряємо:';
     };
 
     window.renderVerify();
@@ -2279,48 +2510,193 @@ window.toggleNoSched = function () {
 };
 </script>
 
+<style>
+/* ===== котик: свічення через змінні (щоб анімація блимання його не губила) ===== */
+.mascot-header { filter: drop-shadow(0 0 var(--cat-r, 18px) var(--cat-glow, rgba(251, 191, 36, 0.35))); }
+
+/* «Уточнюємо»: котик блимає, ніби електрика нестабільна (світло вимикається/вмикається) */
+.mascot-header.cat-flicker { animation: catFlicker 5.2s linear infinite; }
+.mascot-header.cat-flicker.cat-flip { animation: catFlip 1.5s ease-in-out both; }   /* переворот важливіший за блимання */
+@keyframes catFlicker {
+    0%, 4%, 9.5%, 38%, 41.5%, 62%, 74%, 100% { filter: brightness(1) drop-shadow(0 0 var(--cat-r, 18px) var(--cat-glow, rgba(251, 191, 36, 0.35))); opacity: 1; }
+    5%    { filter: brightness(.3) saturate(.6) drop-shadow(0 0 0 rgba(0, 0, 0, 0)); opacity: .8; }
+    6.5%  { filter: brightness(1.3) drop-shadow(0 0 26px var(--cat-glow, rgba(251, 191, 36, 0.6))); opacity: 1; }
+    8%    { filter: brightness(.5) saturate(.8) drop-shadow(0 0 4px var(--cat-glow, rgba(251, 191, 36, 0.2))); opacity: .9; }
+    40%   { filter: brightness(.25) saturate(.5) drop-shadow(0 0 0 rgba(0, 0, 0, 0)); opacity: .75; }
+    63%, 70% { filter: brightness(.2) saturate(.4) drop-shadow(0 0 0 rgba(0, 0, 0, 0)); opacity: .7; }
+    71%   { filter: brightness(1.25) drop-shadow(0 0 24px var(--cat-glow, rgba(251, 191, 36, 0.6))); opacity: 1; }
+    72.5% { filter: brightness(.4) saturate(.7) drop-shadow(0 0 2px var(--cat-glow, rgba(251, 191, 36, 0.2))); opacity: .85; }
+}
+@media (prefers-reduced-motion: reduce) { .mascot-header.cat-flicker { animation: none; } }
+
+/* адмін: статус вгорі тапається */
+.status-box.admin-edit #timerStatus { pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; padding: 6px 0; margin: -6px 0; }
+.status-box.admin-edit .status-value::after { content: ''; width: 12px; height: 12px; margin-left: 2px; opacity: .55; background: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); }
+
+/* таймер: спінер, «невідомо», «~» */
+.timer-spin { display: none; justify-content: flex-end; align-items: center; height: 34px; color: var(--c-orange); }
+.timer-spin svg { width: 30px; height: 30px; animation: miniSpin 1.2s linear infinite; }
+.timer-time.small { font-size: 22px; letter-spacing: 0; line-height: 34px; }
+.timer-time .tilde { font-size: 20px; opacity: .7; margin-right: 2px; letter-spacing: 0; vertical-align: 2px; }
+
+/* вікно ручного статусу */
+#smSeg .nchip, #smEmg .nchip { font-size: 12px; padding: 12px 2px; white-space: nowrap; }
+.sm-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; font-size: 14px; font-weight: 800; color: #ccc; }
+.sm-time { background: #222; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 8px; font-size: 16px; font-weight: bold; width: 110px; text-align: center; font-family: inherit; }
+
+/* ===== ЕФЕКТИ КОТИКА ===== */
+#fxLayer { position: fixed; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 945; }
+#fxLayer > * { pointer-events: none; }
+
+/* метеорити: маленькі світлові «кружечки» з хвостом, по діагоналі */
+.fx-met { position: absolute; height: 3px; border-radius: 3px; background: linear-gradient(90deg, rgba(251, 191, 36, 0), rgba(251, 191, 36, .85)); opacity: 0; animation: fxMet var(--dur) linear var(--del) both; will-change: transform, opacity; }
+.fx-met::after { content: ''; position: absolute; right: -3px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: #fff6d6; box-shadow: 0 0 8px 2px rgba(251, 191, 36, .9); }
+@keyframes fxMet {
+    0%   { opacity: 0; transform: translate3d(0, 0, 0) rotate(var(--a)); }
+    8%   { opacity: 1; }
+    88%  { opacity: 1; }
+    100% { opacity: 0; transform: translate3d(var(--dx), var(--dy), 0) rotate(var(--a)); }
+}
+
+/* кільця-імпульс */
+.fx-ring { position: absolute; width: 700px; height: 700px; margin: -350px 0 0 -350px; border-radius: 50%; opacity: 0; background: radial-gradient(circle, rgba(251, 191, 36, 0) 55%, rgba(251, 191, 36, .55) 61%, rgba(251, 191, 36, 0) 68%); animation: fxRing 1.5s cubic-bezier(.15, .6, .3, 1) var(--d) both; will-change: transform, opacity; }
+@keyframes fxRing { 0% { opacity: .95; transform: scale(.04); } 100% { opacity: 0; transform: scale(1); } }
+
+/* іскри */
+.fx-sp { position: absolute; border-radius: 50%; animation: fxSp var(--dur) cubic-bezier(.15, .7, .35, 1) both; will-change: transform, opacity; }
+@keyframes fxSp { 0% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); } 100% { opacity: 0; transform: translate3d(var(--dx), var(--dy), 0) scale(.3); } }
+
+/* блискавка */
+.fx-flash { position: absolute; inset: 0; background: #fff7d6; opacity: 0; animation: fxFlash .8s ease-out both; }
+@keyframes fxFlash { 0% { opacity: 0; } 4% { opacity: .5; } 14% { opacity: .08; } 22% { opacity: .32; } 100% { opacity: 0; } }
+.fx-bolt { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 0 6px rgba(251, 191, 36, .95)) drop-shadow(0 0 16px rgba(251, 191, 36, .6)); }
+.fx-bolt path { fill: none; stroke: #fffbe6; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: fxBolt .2s ease-out forwards, fxBoltOut .5s ease-in .35s forwards; }
+@keyframes fxBolt { to { stroke-dashoffset: 0; } }
+@keyframes fxBoltOut { to { opacity: 0; } }
+
+/* батарейка */
+.fx-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.fx-batt { display: flex; flex-direction: column; align-items: center; gap: 6px; filter: drop-shadow(0 0 18px rgba(251, 191, 36, .35)); animation: fxPop 3s ease both; }
+.fx-batt .fx-fill { transform-box: fill-box; transform-origin: left center; transform: scaleX(0); animation: fxCharge 1.9s cubic-bezier(.35, 0, .2, 1) .25s both; }
+.fx-batt .fx-pct { font-size: 22px; font-weight: 900; color: var(--c-yellow); font-variant-numeric: tabular-nums; letter-spacing: .5px; }
+@keyframes fxPop { 0% { opacity: 0; transform: scale(.8); } 10% { opacity: 1; transform: scale(1); } 85% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.05); } }
+@keyframes fxCharge { 0% { transform: scaleX(.02); fill: #d9463b; } 50% { fill: #f97316; } 100% { transform: scaleX(1); fill: #fbbf24; } }
+
+/* світлячки */
+.fx-ff { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #fde68a; box-shadow: 0 0 10px 3px rgba(251, 191, 36, .8); opacity: 0; animation: fxFF var(--dur) ease-in-out var(--del) both; will-change: transform, opacity; }
+@keyframes fxFF {
+    0%   { opacity: 0; transform: translate3d(0, 0, 0); }
+    15%  { opacity: 1; }
+    50%  { opacity: .35; transform: translate3d(var(--sx), calc(var(--rise) * -.5), 0); }
+    70%  { opacity: 1; }
+    100% { opacity: 0; transform: translate3d(calc(var(--sx) * -.6), calc(var(--rise) * -1), 0); }
+}
+
+/* гірлянда */
+.fx-garland { position: absolute; left: 0; top: 0; width: 100%; height: 70px; animation: fxGarland 3.4s ease both; }
+.fx-garland svg { position: absolute; left: 0; top: 0; }
+.fx-bulb { position: absolute; width: 10px; height: 14px; margin: 0 0 0 -5px; border-radius: 50% 50% 45% 45%; background: currentColor; color: #fbbf24; opacity: .25; animation: fxBulb 1.1s ease-in-out infinite; }
+.fx-bulb::before { content: ''; position: absolute; left: 50%; top: -5px; width: 6px; height: 5px; margin-left: -3px; background: #3f3f46; border-radius: 1px; }
+.fx-bulb.c1 { color: #f97316; } .fx-bulb.c2 { color: #d9463b; }
+@keyframes fxBulb { 0%, 100% { opacity: .25; box-shadow: none; } 40%, 60% { opacity: 1; box-shadow: 0 0 12px 3px currentColor; } }
+@keyframes fxGarland { 0% { transform: translateY(-80px); } 10% { transform: translateY(0); } 88% { transform: translateY(0); } 100% { transform: translateY(-80px); } }
+
+/* свічка */
+.fx-candle { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 100%, rgba(249, 115, 22, .3) 0, rgba(249, 115, 22, 0) 55%), radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0) 30%, rgba(8, 3, 0, .74) 100%); animation: fxCandle 3.6s ease-in-out both; }
+@keyframes fxCandle { 0% { opacity: 0; } 12% { opacity: .9; } 24% { opacity: .72; } 36% { opacity: 1; } 50% { opacity: .78; } 64% { opacity: .98; } 78% { opacity: .82; } 90% { opacity: .9; } 100% { opacity: 0; } }
+.fx-flame { position: absolute; left: 50%; bottom: calc(26px + env(safe-area-inset-bottom, 0px)); width: 14px; height: 26px; margin-left: -7px; border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%; background: radial-gradient(ellipse at 50% 70%, #fff7d6 0, #fbbf24 45%, #f97316 78%, rgba(249, 115, 22, 0) 100%); box-shadow: 0 0 26px 10px rgba(249, 115, 22, .45); transform-origin: 50% 100%; animation: fxFlame .7s ease-in-out infinite alternate, fxFlameLife 3.6s ease both; }
+@keyframes fxFlame { 0% { transform: scale(1, 1) skewX(-2deg); } 50% { transform: scale(.92, 1.1) skewX(3deg); } 100% { transform: scale(1.06, .94) skewX(-3deg); } }
+@keyframes fxFlameLife { 0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+
+/* блекаут */
+.fx-dark { position: absolute; inset: 0; background: rgba(0, 0, 0, .94); animation: fxBlackout 3s linear both; }
+@keyframes fxBlackout { 0% { opacity: 0; } 8% { opacity: 1; } 50% { opacity: 1; } 52% { opacity: .4; } 56% { opacity: 1; } 70% { opacity: 1; } 72% { opacity: .3; } 100% { opacity: 0; } }
+
+/* ліхтарик */
+.fx-torch { position: absolute; inset: 0; opacity: 0; transition: opacity .35s ease; background: radial-gradient(circle 115px at var(--x, 50%) var(--y, 50%), rgba(255, 235, 170, .1) 0, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, .94) 100%); }
+
+/* коротке замикання (м'яке: кілька слабких спалахів) */
+.fx-sc { position: absolute; inset: 0; background: #fff; opacity: 0; animation: fxSc 1.1s linear both; }
+@keyframes fxSc { 0% { opacity: 0; } 5% { opacity: .16; } 12% { opacity: 0; } 38% { opacity: 0; } 43% { opacity: .12; } 50% { opacity: 0; } 75% { opacity: 0; } 80% { opacity: .18; } 88% { opacity: 0; } 100% { opacity: 0; } }
+.fx-gl { position: absolute; left: 0; width: 100%; height: 2px; background: rgba(251, 191, 36, .55); box-shadow: 0 0 8px rgba(251, 191, 36, .7); opacity: 0; animation: fxGl .5s steps(2, end) var(--d) both; }
+@keyframes fxGl { 0% { opacity: 0; } 30% { opacity: 1; } 60% { opacity: 0; } 80% { opacity: .8; } 100% { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) { #fxLayer { display: none; } }
+</style>
+
 <!-- =====================================================================
      КОТИК: НАЛАШТУВАННЯ. Тут можна змінювати тексти, емодзі і час показу.
-     Кліки по котику за одну сесію (поки апка відкрита):
-       1-й  емодзі розлітаються і падають   (tap1Emojis, tap1Count)
-       2-й  скільки годин без світла сьогодні (tap2Prefix та інші tap2…)
-       3-й  результати опитування            (tap3Ms)
-       4-й  «це вам не тапалка»              (tap4Text)
-       5-й…8-й: просто анімація котика
-       9-й  котик перевертається і повертається назад (tap9Ms)
-       10-й і далі: знову просто анімація котика
+
+     Ефект з емодзі (світло/блискавки розлітаються і падають) тепер запускається САМ
+     один раз за сесію, щойно додаток відкрився і котик на екрані (autoRainDelayMs).
+
+     Кліки по котику за одну сесію (поки апка відкрита), по порядку:
+       1-й  скільки годин без світла сьогодні (tap2…)
+            (якщо клікнути раніше, ніж спрацював авто-ефект, то першим піде він, а це буде 2-й клік)
+       2-й  результати опитування            (tap3Ms)
+       3-й  «це вам не тапалка»              (tapNoTapalka…)
+       4-й  метеоритний дощ
+       5-й  міні-землетрус
+       6-й…15-й  тематичні ефекти: імпульс, іскри, блискавка, батарейка, світлячки,
+            гірлянда, ліхтарик, свічка, коротке замикання, блекаут
+       16-й  котик перевертається і повертається назад (tap9Ms)
+       17-й і далі: випадковий ефект із усіх (без повтору підряд)
      Час показу вказано в мілісекундах: 3000 = 3 секунди.
      ===================================================================== -->
 <script>
 var CAT_CONFIG = {
-    // 1-й клік
+    // авто-ефект при відкритті (раніше був 1-й клік)
     tap1Emojis: ['💡', '⚡️', '🔦'],
     tap1Count: 16,
+    autoRainDelayMs: 1200,       // скільки чекати після появи котика
 
-    // 2-й клік
+    // скільки годин без світла
     tap2Prefix: '💬 Всього без світла сьогодні: ',
     tap2None: '💬 Сьогодні без відключень 🎉',
     tap2NoData: '💬 Графіка на сьогодні ще нема',
     tap2NoSched: '💬 Графіків немає, світло є ☀️',
     tap2Ms: 3000,
 
-    // 3-й клік
+    // «це вам не тапалка» (без емодзі)
+    tapNoTapalkaText: 'це вам не тапалка',
+    tapNoTapalkaMs: 2500,
+
+    // результати опитування (3-й клік)
     tap3Ms: 3000,
+
+    // повідомлення, коли опитування зараз немає (використовується при тапі по картці «підтвердили»)
     tap3NoPoll: '📊 Опитування зараз немає',
 
-    // 4-й клік
-    tap4Text: '💬 це вам не тапалка 😾',
-    tap4Ms: 2500,
-
-    // 9-й клік: котик перевертається догори дриґом і повертається назад
+    // переворот котика
     tap9Ms: 1500
 };
 </script>
 
 <script>
 (function () {
-    var CFG = window.CAT_CONFIG, taps = 0, toastT = null;
+    var CFG = window.CAT_CONFIG, toastT = null, step = 0, lastTap = 0, lastRand = -1, autoDone = false;
+    var RM = false, LITE = false;
+    try { RM = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+    try { LITE = !!((navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || (navigator.deviceMemory && navigator.deviceMemory <= 2)); } catch (e) {}
+
     function $c(id) { return document.getElementById(id); }
+    function rnd(a, b) { return a + Math.random() * (b - a); }
+    function cnt(n) { return LITE ? Math.max(3, Math.round(n * 0.6)) : n; }   // слабші телефони: менше частинок
+    function haptic(kind) { try { window.Telegram.WebApp.HapticFeedback.impactOccurred(kind || 'medium'); } catch (e) {} }
+
+    // ---- спільні хелпери для ефектів ----
+    function mk(cls, css) { var e = document.createElement('div'); e.className = cls; if (css) e.style.cssText = css; return e; }
+    function fx(el, life) {
+        var L = $c('fxLayer'); if (!L) return el;
+        L.appendChild(el);
+        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, life);
+        return el;
+    }
+    function catPos() {
+        var img = $c('mascotImg'), r = img ? img.getBoundingClientRect() : null;
+        if (!r || !r.width) return { x: window.innerWidth / 2, y: 90 };
+        return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    }
 
     window.catToast = function (text, ms) {
         var t = $c('catToast'); if (!t) return;
@@ -2335,13 +2711,33 @@ var CAT_CONFIG = {
         }, ms || 3000);
     };
 
+    // ======================= ТЕКСТОВІ =======================
+    function offText() {
+        try {
+            if (window.noSchedule) return CFG.tap2NoSched;
+            var d = dbDays[activeDates[0]];
+            if (!d || (!(d.intervals && d.intervals.length) && !(d.overrides && d.overrides.length))) return CFG.tap2NoData;
+            var ints = buildDisplayIntervals(d.intervals || [], d.overrides || []), mins = 0, now = new Date().getHours() * 60 + new Date().getMinutes();
+            ints.forEach(function (i) {
+                if (i.isEmergencyBlock || i.type === 'off') mins += (i.emgOpen ? Math.max(i.startMin, Math.min(i.endMin, now)) : i.endMin) - i.startMin;
+            });
+            if (!mins) return CFG.tap2None;
+            var h = Math.floor(mins / 60), m = mins % 60;
+            return CFG.tap2Prefix + h + ' год.' + (m ? ' ' + m + ' хв' : '');
+        } catch (e) { return CFG.tap2NoData; }
+    }
+    function hoursFx() { window.catToast(offText(), CFG.tap2Ms); }
+    function pollFx() { if (window.voteShowResults) window.voteShowResults(CFG.tap3Ms); }   // результати опитування
+    function noTapalkaFx() { window.catToast(CFG.tapNoTapalkaText, CFG.tapNoTapalkaMs); }
+
+    // ======================= 1. ЕМОДЗІ-ДОЩ (авто) =======================
     function rain() {
-        try { if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) {}
+        if (RM) return;
         var host = $c('emojiRain'), img = $c('mascotImg'); if (!host || !img) return;
         var r = img.getBoundingClientRect(), W = window.innerWidth, H = window.innerHeight;
         var sx = r.left + r.width / 2, sy = r.top + r.height / 2;
         var n = CFG.tap1Count || 16;
-        if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) n = Math.round(n * 0.6);   // слабші телефони: менше емодзі
+        if (LITE) n = Math.round(n * 0.6);
         var list = CFG.tap1Emojis && CFG.tap1Emojis.length ? CFG.tap1Emojis : ['💡'];
         for (var i = 0; i < n; i++) {
             var el = document.createElement('span');
@@ -2362,21 +2758,9 @@ var CAT_CONFIG = {
         }
     }
 
-    function offText() {
-        try {
-            if (window.noSchedule) return CFG.tap2NoSched;
-            var d = dbDays[activeDates[0]];
-            if (!d || (!(d.intervals && d.intervals.length) && !(d.overrides && d.overrides.length))) return CFG.tap2NoData;
-            var ints = buildDisplayIntervals(d.intervals || [], d.overrides || []), mins = 0;
-            ints.forEach(function (i) { if (i.isEmergencyBlock || i.type === 'off') mins += i.endMin - i.startMin; });
-            if (!mins) return CFG.tap2None;
-            var h = Math.floor(mins / 60), m = mins % 60;
-            return CFG.tap2Prefix + h + ' год.' + (m ? ' ' + m + ' хв' : '');
-        } catch (e) { return CFG.tap2NoData; }
-    }
-
+    // ======================= ПЕРЕВОРОТ (було 9-м кліком) =======================
     function flip() {
-        try { if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) {}
+        if (RM) return;
         var img = $c('mascotImg'); if (!img || img.style.display === 'none') return;
         var ms = CFG.tap9Ms || 1500;
         img.classList.remove('cat-flip'); void img.offsetWidth;
@@ -2385,16 +2769,225 @@ var CAT_CONFIG = {
         setTimeout(function () { img.classList.remove('cat-flip'); img.style.animationDuration = ''; }, ms + 100);
     }
 
+    // ======================= 4. МЕТЕОРИТНИЙ ДОЩ =======================
+    // маленькі світлові «кружечки» з хвостом пролітають по діагоналі екрана
+    function meteors() {
+        if (RM) return;
+        var W = window.innerWidth, H = window.innerHeight, n = cnt(12);
+        var dir = Math.random() < 0.5 ? 1 : -1, base = 30 + rnd(0, 8);
+        var dist = Math.sqrt(W * W + H * H) * 1.15;
+        for (var i = 0; i < n; i++) {
+            var ang = base + rnd(-4, 4), a = dir === 1 ? ang : 180 - ang, rad = a * Math.PI / 180;
+            var dur = rnd(900, 1400), del = i * rnd(90, 170) + rnd(0, 120);
+            var sx = dir === 1 ? rnd(-0.35 * W, 0.85 * W) : rnd(0.15 * W, 1.35 * W);
+            var m = mk('fx-met', 'left:' + sx + 'px;top:' + (-20 - rnd(0, 60)) + 'px;width:' + rnd(50, 110) + 'px;');
+            m.style.setProperty('--a', a + 'deg');
+            m.style.setProperty('--dx', (Math.cos(rad) * dist) + 'px');
+            m.style.setProperty('--dy', (Math.sin(rad) * dist) + 'px');
+            m.style.setProperty('--dur', dur + 'ms');
+            m.style.setProperty('--del', del + 'ms');
+            fx(m, dur + del + 200);
+        }
+    }
+
+    // ======================= 5. МІНІ-ЗЕМЛЕТРУС =======================
+    // тремтить інтерфейс (шапка, таймлайн, футер) ~1 секунду; сам по собі не чіпає вікна, що висять поверх
+    function shake(amp0, dur, hap) {
+        if (RM) return;
+        var list = Array.prototype.slice.call(document.querySelectorAll('.sticky-header, .tl-item, .disclaimer-box, .app-footer, .nosched-block, .waiting-block, .fade-dots, .section-divider'));
+        if (!list.length) return;
+        list.forEach(function (e) { e.style.transition = 'none'; });
+        if (hap) haptic(hap);
+        var t0 = Date.now(), last = 0;
+        (function f() {
+            var now = Date.now(), k = (now - t0) / dur;
+            if (k >= 1) { list.forEach(function (e) { e.style.transform = ''; e.style.transition = ''; }); return; }
+            if (now - last >= 32) {
+                last = now;
+                var amp = amp0 * (1 - k) * (1 - k * 0.3);
+                var v = 'translate(' + ((Math.random() * 2 - 1) * amp).toFixed(1) + 'px,' + ((Math.random() * 2 - 1) * amp * 0.7).toFixed(1) + 'px)';
+                list.forEach(function (e) { e.style.transform = v; });
+            }
+            requestAnimationFrame(f);
+        })();
+    }
+    function quake() { shake(5, 1000, 'heavy'); }
+
+    // ======================= ТЕМАТИЧНІ ЕФЕКТИ =======================
+
+    // імпульс: кільця струму розходяться від котика
+    function pulse() {
+        if (RM) return;
+        var c = catPos();
+        for (var i = 0; i < 3; i++) {
+            var r = mk('fx-ring', 'left:' + c.x + 'px;top:' + c.y + 'px;');
+            r.style.setProperty('--d', (i * 260) + 'ms');
+            fx(r, 1500 + i * 260 + 100);
+        }
+    }
+
+    // іскри: як від зварювання / короткого замикання
+    function sparks() {
+        if (RM) return;
+        var c = catPos(), n = cnt(28), cols = ['#fbbf24', '#f97316', '#fff6d6', '#fde68a'];
+        for (var i = 0; i < n; i++) {
+            var ang = rnd(0, Math.PI * 2), d = rnd(50, 150), sz = rnd(2.5, 5), dur = rnd(600, 1100), col = cols[Math.floor(Math.random() * cols.length)];
+            var s = mk('fx-sp', 'left:' + c.x + 'px;top:' + c.y + 'px;width:' + sz + 'px;height:' + sz + 'px;background:' + col + ';box-shadow:0 0 6px 1px ' + col + ';');
+            s.style.setProperty('--dx', (Math.cos(ang) * d) + 'px');
+            s.style.setProperty('--dy', (Math.sin(ang) * d + 70) + 'px');   // +вниз: «гравітація»
+            s.style.setProperty('--dur', dur + 'ms');
+            fx(s, dur + 100);
+        }
+    }
+
+    // блискавка: зигзаг згори + м'який спалах
+    function lightning() {
+        if (RM) return;
+        var W = window.innerWidth, H = window.innerHeight, NS = 'http://www.w3.org/2000/svg';
+        var x = rnd(W * 0.2, W * 0.8), y = 0, pts = [[x, y]], endY = H * rnd(0.5, 0.7);
+        while (y < endY) { y += rnd(30, 60); x += rnd(-32, 32); pts.push([x, y]); }
+        function pathOf(p) { return 'M' + p.map(function (q) { return q[0].toFixed(0) + ' ' + q[1].toFixed(0); }).join(' L'); }
+        var svg = document.createElementNS(NS, 'svg');
+        svg.setAttribute('class', 'fx-bolt'); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+        var p = document.createElementNS(NS, 'path'); p.setAttribute('d', pathOf(pts)); p.setAttribute('pathLength', '1'); p.setAttribute('stroke-width', '3');
+        svg.appendChild(p);
+        var bi = 2 + Math.floor(Math.random() * Math.max(1, pts.length - 4)), b = [pts[bi]], bx = pts[bi][0], by = pts[bi][1], dirx = Math.random() < 0.5 ? -1 : 1;
+        for (var k = 0; k < 3; k++) { bx += dirx * rnd(14, 34); by += rnd(22, 40); b.push([bx, by]); }
+        var p2 = document.createElementNS(NS, 'path'); p2.setAttribute('d', pathOf(b)); p2.setAttribute('pathLength', '1'); p2.setAttribute('stroke-width', '2'); p2.style.animationDelay = '.08s, .35s';
+        svg.appendChild(p2);
+        fx(mk('fx-flash'), 900);
+        fx(svg, 1000);
+        haptic('rigid');
+    }
+
+    // батарейка: заряджається від 0 до 100%
+    function battery() {
+        if (RM) return;
+        var box = mk('fx-center');
+        box.innerHTML = '<div class="fx-batt"><svg viewBox="0 0 110 54" width="150" height="74"><rect x="2" y="4" width="94" height="46" rx="9" fill="none" stroke="#e4e4e7" stroke-width="3"/><rect x="99" y="18" width="8" height="18" rx="3" fill="#e4e4e7"/><rect class="fx-fill" x="8" y="10" width="82" height="34" rx="5" fill="#fbbf24"/><path d="M54 13 L38 32 H49 L45 43 L63 23 H52 Z" fill="#060606" opacity=".75"/></svg><div class="fx-pct">0%</div></div>';
+        fx(box, 3100);
+        var pct = box.querySelector('.fx-pct'), t0 = Date.now() + 250, dur = 1900;
+        (function f() {
+            if (!box.parentNode) return;
+            var k = Math.max(0, Math.min(1, (Date.now() - t0) / dur)), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+            pct.textContent = Math.round(e * 100) + '%';
+            if (k < 1) requestAnimationFrame(f);
+        })();
+    }
+
+    // світлячки: повільно підіймаються і мерехтять
+    function fireflies() {
+        if (RM) return;
+        var W = window.innerWidth, H = window.innerHeight, n = cnt(20);
+        for (var i = 0; i < n; i++) {
+            var dur = rnd(3000, 5000), del = rnd(0, 1500), sz = rnd(3, 6);
+            var f = mk('fx-ff', 'left:' + rnd(0.05 * W, 0.95 * W) + 'px;top:' + rnd(0.45 * H, 0.95 * H) + 'px;width:' + sz + 'px;height:' + sz + 'px;');
+            f.style.setProperty('--sx', rnd(-40, 40) + 'px');
+            f.style.setProperty('--rise', rnd(140, 280) + 'px');
+            f.style.setProperty('--dur', dur + 'ms');
+            f.style.setProperty('--del', del + 'ms');
+            fx(f, dur + del + 200);
+        }
+    }
+
+    // гірлянда: лампочки вгорі загораються по черзі
+    function garland() {
+        if (RM) return;
+        var W = window.innerWidth, n = Math.max(7, Math.round(W / 46)), g = mk('fx-garland');
+        g.innerHTML = '<svg width="' + W + '" height="70" viewBox="0 0 ' + W + ' 70"><path d="M-10 6 Q ' + (W / 2) + ' 54 ' + (W + 10) + ' 6" fill="none" stroke="#3f3f46" stroke-width="2"/></svg>';
+        for (var i = 0; i < n; i++) {
+            var t = (i + 0.5) / n, u = 1 - t;
+            var x = u * u * -10 + 2 * u * t * (W / 2) + t * t * (W + 10), y = u * u * 6 + 2 * u * t * 54 + t * t * 6;
+            var b = mk('fx-bulb c' + (i % 3), 'left:' + x.toFixed(1) + 'px;top:' + (y + 3).toFixed(1) + 'px;animation-delay:' + (i * 0.11).toFixed(2) + 's;');
+            g.appendChild(b);
+        }
+        fx(g, 3500);
+    }
+
+    // ліхтарик: темний екран і промінь, що блукає по ньому
+    function flashlight() {
+        if (RM) return;
+        var W = window.innerWidth, H = window.innerHeight, o = mk('fx-torch'), t0 = Date.now(), dur = 2700, ph = rnd(0, 6);
+        fx(o, dur + 600);
+        requestAnimationFrame(function () { o.style.opacity = '1'; });
+        setTimeout(function () { o.style.opacity = '0'; }, dur - 300);
+        (function f() {
+            if (!o.parentNode) return;
+            var k = (Date.now() - t0) / dur; if (k > 1.05) return;
+            o.style.setProperty('--x', (W * (0.5 + 0.38 * Math.sin(k * 5.2 + ph))).toFixed(0) + 'px');
+            o.style.setProperty('--y', (H * (0.45 + 0.3 * Math.sin(k * 3.7 + ph * 1.7))).toFixed(0) + 'px');
+            requestAnimationFrame(f);
+        })();
+    }
+
+    // свічка: тепле мерехтливе світло по краях і полум'я знизу
+    function candle() {
+        if (RM) return;
+        fx(mk('fx-candle'), 3700);
+        fx(mk('fx-flame'), 3700);
+    }
+
+    // коротке замикання: слабкі спалахи, лінії і дрібне тремтіння
+    function shortCircuit() {
+        if (RM) return;
+        fx(mk('fx-sc'), 1200);
+        var H = window.innerHeight;
+        for (var i = 0; i < 4; i++) {
+            var l = mk('fx-gl', 'top:' + rnd(0.1 * H, 0.9 * H).toFixed(0) + 'px;');
+            l.style.setProperty('--d', (i * 180 + rnd(0, 120)).toFixed(0) + 'ms');
+            fx(l, 1100);
+        }
+        shake(2.5, 700, 'light');
+    }
+
+    // блекаут: все гасне, світло вертається з миготінням
+    function blackout() {
+        if (RM) return;
+        fx(mk('fx-dark'), 3100);
+        haptic('soft');
+    }
+
+    // ======================= ПОСЛІДОВНІСТЬ =======================
+    // [0] емодзі-дощ — авто (або першим кліком, якщо клікнули раніше за авто-запуск)
+    var SEQ = [rain, hoursFx, pollFx, noTapalkaFx, meteors, quake, pulse, sparks, lightning, battery, fireflies, garland, flashlight, candle, shortCircuit, blackout, flip];
+    var POOL = [rain, meteors, quake, flip, pulse, sparks, lightning, battery, fireflies, garland, flashlight, candle, shortCircuit, blackout];
+
+    function runNext() {
+        var fn;
+        if (step < SEQ.length) { fn = SEQ[step++]; }
+        else {
+            var i; do { i = Math.floor(Math.random() * POOL.length); } while (POOL.length > 1 && i === lastRand);
+            lastRand = i; fn = POOL[i];
+        }
+        autoDone = true;
+        fn();
+    }
+
     var cat = $c('mascotImg');
     if (cat) cat.addEventListener('click', function () {
-        taps++;
-        if (taps === 1) rain();
-        else if (taps === 2) window.catToast(offText(), CFG.tap2Ms);
-        else if (taps === 3) { if (window.voteShowResults) window.voteShowResults(CFG.tap3Ms); }
-        else if (taps === 4) window.catToast(CFG.tap4Text, CFG.tap4Ms);
-        else if (taps === 9) flip();
-        else if (window.replayCat) window.replayCat();
+        var now = Date.now();
+        if (now - lastTap < 250) return;   // від випадкових подвійних тапів
+        lastTap = now;
+        runNext();
     });
+
+    // ---- авто-запуск емодзі-дощу: один раз за сесію ----
+    function modalOpen() {
+        var ids = ['notifModal', 'genModal', 'editModal', 'statusModal', 'pointsModal', 'infoAlertModal'];
+        for (var i = 0; i < ids.length; i++) { var e = $c(ids[i]); if (e && e.style.display === 'flex') return true; }
+        return false;
+    }
+    var autoTicks = 0, visibleSince = 0;
+    var autoT = setInterval(function () {
+        autoTicks++;
+        if (autoDone || autoTicks > 240) { clearInterval(autoT); return; }   // ~2 хвилини і досить
+        var app = $c('app'), img = $c('mascotImg');
+        if (!app || app.style.display === 'none' || document.hidden || modalOpen() || !img || img.style.display === 'none' || !img.offsetWidth) { visibleSince = 0; return; }
+        if (!visibleSince) visibleSince = Date.now();
+        if (Date.now() - visibleSince < (CFG.autoRainDelayMs || 1200)) return;
+        clearInterval(autoT);
+        if (step === 0) { step = 1; autoDone = true; rain(); }
+    }, 400);
 })();
 </script>
 
