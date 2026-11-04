@@ -319,6 +319,14 @@
     if (Math.random() < 0.5) v.innerHTML = '<img src="./catOnlight.webp" alt="" class="loader-cat" onerror="this.parentNode.innerHTML=window.loaderDots">';
     else v.innerHTML = window.loaderDots;
 })();
+// слабкий телефон? (мало ядер/пам'яті або раніше виявили низький FPS) → полегшені ефекти і без важких фільтрів
+(function () {
+    var lite = false;
+    try { lite = !!((navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || (navigator.deviceMemory && navigator.deviceMemory <= 2)); } catch (e) {}
+    try { if (localStorage.getItem('cat_lite') === '1') lite = true; } catch (e) {}
+    window.IS_LITE = lite;
+    if (lite) document.documentElement.classList.add('lite-device');
+})();
 </script>
 
 <div id="toastInside" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; background: #111; border: 1px solid #333; border-radius: 20px; padding: 15px 20px; width: max-content; max-width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.5); align-items: center; gap: 12px;">
@@ -550,6 +558,94 @@ allMascots.forEach(src => {
     img.src = src;
 });
 
+// ---- додаткові маскоти (анімовані webp). Запобіжник: якщо файлу нема / не відкрився, все працює як без них ----
+//   cathauntingvid.webp  - ТІЛЬКИ на тапі по котику: випадково підміняє поточного на кілька секунд і повертає назад
+//   catconfusedvid.webp  - на тапі (випадково) + замість основного під час «Уточнюємо» та «Аварійного»
+const MASCOT_EXTRA = { confused: './catconfusedvid.webp', haunt: './cathauntingvid.webp' };
+const mascotExtra = { confused: null, haunt: null };      // null = ще не перевіряли, true = файл є, false = нема / зламаний
+const _probeCbs = {};
+let mascotBase = '', mascotSwapping = false;
+function probeExtra(kind, cb) {
+    if (mascotExtra[kind] === true || mascotExtra[kind] === false) { if (cb) cb(mascotExtra[kind]); return; }
+    const first = !_probeCbs[kind];
+    (_probeCbs[kind] = _probeCbs[kind] || []).push(cb || function () {});
+    if (!first) return;
+    const done = ok => {
+        if (mascotExtra[kind] !== null) return;
+        mascotExtra[kind] = ok;
+        (_probeCbs[kind] || []).forEach(f => { try { f(ok); } catch (e) {} });
+        _probeCbs[kind] = [];
+    };
+    try {
+        const im = new Image();
+        im.onload = () => done(true);
+        im.onerror = () => done(false);
+        im.src = MASCOT_EXTRA[kind];
+    } catch (e) { done(false); }
+    setTimeout(() => done(false), 10000);                 // не дочекались: лишаємо звичайного котика
+}
+window.mascotProbeAll = () => { probeExtra('haunt'); probeExtra('confused'); };
+
+function showMascotSrc(base) {
+    const img = document.getElementById('mascotImg'), loader = document.getElementById('mascotLoader');
+    if (!img) return;
+    loader.style.display = 'block';
+    img.style.display = 'none';
+    img.onload = () => { loader.style.display = 'none'; img.style.display = 'block'; };
+    img.onerror = () => {                                  // запобіжник: додатковий маскот не відкрився → повертаємо звичайного
+        if (base === MASCOT_EXTRA.confused || base === MASCOT_EXTRA.haunt) {
+            if (base === MASCOT_EXTRA.confused) mascotExtra.confused = false; else mascotExtra.haunt = false;
+            mascotSwapping = false;
+            currentMascotState = null;                    // наступний тік таймера вибере звичайного
+        }
+    };
+    img.src = base + '?v=' + Date.now();
+}
+
+// kind: 'on' | 'off' (звичайний стан), confused: «Уточнюємо» / «Аварійне» → catconfusedvid, якщо файл справді працює
+function applyMascot(kind, confused) {
+    if (confused && mascotExtra.confused === null) probeExtra('confused');
+    const key = (confused && mascotExtra.confused === true) ? 'confused' : kind;
+    if (currentMascotState === key) return;
+    currentMascotState = key;
+    let base, glow, rad;
+    if (key === 'confused') { base = MASCOT_EXTRA.confused; glow = 'rgba(249, 115, 22, 0.35)'; rad = '18px'; }
+    else if (key === 'off') { base = offMascots[Math.floor(Math.random() * offMascots.length)]; glow = 'rgba(217, 70, 59, 0.3)'; rad = '15px'; }
+    else { base = './catOnlight.webp'; glow = 'rgba(251, 191, 36, 0.35)'; rad = '20px'; }
+    mascotBase = base;
+    const img = document.getElementById('mascotImg');
+    img.style.setProperty('--cat-glow', glow); img.style.setProperty('--cat-r', rad);
+    if (mascotSwapping) return;                           // йде тимчасова підміна на тапі: основного підставимо, коли вона закінчиться
+    showMascotSrc(base);
+}
+
+// тап по котику: випадкова підміна на haunting / confused на кілька секунд, потім одразу назад до поточного основного
+window.mascotSwapTap = () => {
+    if (mascotSwapping || window.catFxBusy || document.hidden) return false;
+    const img = document.getElementById('mascotImg');
+    if (!img || img.style.display === 'none' || !img.getAttribute('src')) return false;
+    const opts = [];
+    if (mascotExtra.haunt === true) opts.push('haunt');
+    if (mascotExtra.confused === true && currentMascotState !== 'confused') opts.push('confused');
+    if (!opts.length) return false;
+    const kind = opts[Math.floor(Math.random() * opts.length)];
+    const url = MASCOT_EXTRA[kind] + '?v=' + Date.now();
+    const ms = (window.CAT_CONFIG && window.CAT_CONFIG.mascotSwapMs) || 3200;
+    mascotSwapping = true;
+    const pre = new Image();
+    pre.onload = () => {                                   // спершу догружаємо, щоб не було миготіння
+        img.src = url;
+        setTimeout(() => {
+            mascotSwapping = false;
+            if (currentMascotState === 'placeholder' || !mascotBase) return;
+            showMascotSrc(mascotBase);
+        }, ms);
+    };
+    pre.onerror = () => { mascotSwapping = false; mascotExtra[kind] = false; };
+    pre.src = url;
+    return true;
+};
+
 let mascotCooldown = false;
 window.replayCat = () => {
     const img = document.getElementById('mascotImg');
@@ -657,6 +753,7 @@ window.replayCat = () => {
         window.allDays = data.days || {};
         window.verifyInfo = result.verify || null;
         window.crowdInfo = result.crowd || null;
+        window.cmOff = !!result.cmOff;                       // коментарі до опитування вимкнені адміном
         window.noSchedFlag = !!(data && data.noSchedule);
         if (window.renderVerify) window.renderVerify();
 
@@ -1089,7 +1186,7 @@ window.replayCat = () => {
                 let jsPayload = `
                     var SIG = '${chSig}', KEY = 'ch_seen_v1';
                     function chSeen() { try { return localStorage.getItem(KEY) === SIG; } catch(e) { return false; } }
-                    function chMark() { try { localStorage.setItem(KEY, SIG); } catch(e) {} var d = document.getElementById('ch-dot'); if(d) d.style.display = 'none'; }
+                    function chMark() { try { localStorage.setItem(KEY, SIG); } catch(e) {} }
                     clearTimeout(window.changesTimer);
                     clearTimeout(window.chCloseTimer);
                     window.closeCh = function(e) {
@@ -1120,8 +1217,6 @@ window.replayCat = () => {
                         window.changesTimer = setTimeout(function() { window.openCh(true); }, 2500);
                     } else {
                         var f0 = document.getElementById('ch-fab');
-                        var d0 = document.getElementById('ch-dot');
-                        if(d0) d0.style.display = 'none';
                         if(f0) { f0.style.opacity='1'; f0.style.pointerEvents='auto'; f0.style.transform='scale(1)'; }
                     }
                 `.replace(/\n/g, ' ').replace(/"/g, '&quot;');
@@ -1183,6 +1278,9 @@ window.replayCat = () => {
                 </button>
                 <button onclick="toggleNoSched()" style="background: rgba(251, 191, 36, 0.12); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); padding: 10px 15px; border-radius: 10px; font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer;">
                     ${window.noSchedFlag ? '☀️ Без графіків: УВІМК.' : '☀️ Без графіків'}
+                </button>
+                <button id="cmBtn" onclick="toggleComments()" style="background: rgba(96, 165, 250, 0.12); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); padding: 10px 15px; border-radius: 10px; font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer;">
+                    ${window.cmOff ? '💬 Увімкнути коментарі' : '💬 Вимкнути коментарі'}
                 </button>
             </div>`;
         }
@@ -1386,6 +1484,7 @@ window.replayCat = () => {
 
             const isNoSched = !!window.noSchedule;
             let isPlaceholderDay = dbDays[activeDates[0]] && (!dbDays[activeDates[0]].intervals || dbDays[activeDates[0]].intervals.length === 0) && (!dbDays[activeDates[0]].overrides || dbDays[activeDates[0]].overrides.length === 0);
+            const mascotConfused = !isNoSched && !isPlaceholderDay && (curIsEmg || !!window.verifyInfo);   // «Уточнюємо» (від людей чи адмін) або «Аварійне»
 
             if (isPlaceholderDay && !isNoSched) {
                 timerStatus.innerHTML = `${iconBulb} Немає даних`;
@@ -1406,18 +1505,7 @@ window.replayCat = () => {
                 timerDisplay.style.textShadow = '';
                 timerLabel.textContent = 'До включення:';
                 
-                               const mascotImg = document.getElementById('mascotImg');
-                const mascotLoader = document.getElementById('mascotLoader');
-                if (currentMascotState !== 'off') {
-                    mascotLoader.style.display = 'block';
-                    mascotImg.style.display = 'none';
-                    mascotImg.onload = () => { mascotLoader.style.display = 'none'; mascotImg.style.display = 'block'; };
-                    
-                    const randomSrc = offMascots[Math.floor(Math.random() * offMascots.length)];
-                    mascotImg.src = randomSrc + '?v=' + Date.now();
-                    mascotImg.style.setProperty('--cat-glow', 'rgba(217, 70, 59, 0.3)'); mascotImg.style.setProperty('--cat-r', '15px');
-                    currentMascotState = 'off';
-                }
+                               applyMascot('off', mascotConfused);
 
             } else {
                 timerStatus.innerHTML = `${statusIconOn} Світло є`;
@@ -1427,17 +1515,7 @@ window.replayCat = () => {
                 timerDisplay.style.textShadow = '';
                 timerLabel.textContent = 'До відключення:';
                 
-                                const mascotImg = document.getElementById('mascotImg');
-                const mascotLoader = document.getElementById('mascotLoader');
-                if (currentMascotState !== 'on') {
-                    mascotLoader.style.display = 'block';
-                    mascotImg.style.display = 'none';
-                    mascotImg.onload = () => { mascotLoader.style.display = 'none'; mascotImg.style.display = 'block'; };
-                    
-                    mascotImg.src = './catOnlight.webp?v=' + Date.now();
-                    mascotImg.style.setProperty('--cat-glow', 'rgba(251, 191, 36, 0.35)'); mascotImg.style.setProperty('--cat-r', '20px');
-                    currentMascotState = 'on';
-                }
+                                applyMascot('on', mascotConfused);
 
             }
 
@@ -2032,6 +2110,12 @@ function onAppReady() {
 .crowd-card .cc-a b { color: #fff; font-weight: 900; }
 .crowd-card .cc-b { font-size: 11px; font-weight: 700; line-height: 1.25; color: #9a9aa3; white-space: nowrap; }
 .crowd-card .cl-chev { width: 12px; height: 12px; margin-left: 9px; flex-shrink: 0; opacity: 0.55; }
+/* «Переглянути»: підказка, що картка тапається */
+.crowd-card .cc-go { color: #fff; font-weight: 800; border-bottom: 1px solid rgba(255, 255, 255, 0.45); }
+.crowd-card .cl-chev.cc-nudge { opacity: .95; color: #fff; animation: ccNudge 1.3s ease-in-out .6s 3; }
+.crowd-card:active .cc-go { border-bottom-color: #fff; }
+@keyframes ccNudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }
+.crowd-card.rm .cl-chev.cc-nudge { animation: none; }
 .crowd-card.cc-in { animation: ccIn .36s cubic-bezier(.2, .85, .3, 1.15) both; }
 .crowd-card.cc-out { animation: ccOut .22s ease-in both; }
 @keyframes ccIn { 0% { opacity: 0; transform: scale(.15); } 55% { opacity: 1; } 100% { opacity: 1; transform: scale(1); } }
@@ -2081,6 +2165,29 @@ function onAppReady() {
 .vc-note { margin-top: 14px; font-size: 13px; color: #ccc; line-height: 1.45; text-align: center; font-weight: 600; }
 .vc-total { margin-top: 4px; font-size: 12px; color: #777; text-align: center; }
 
+/* коментарі до опитування: напівпрозорі «хмарки», що вилітають із картки і лопаються */
+#vcCm { position: absolute; left: 14px; right: 14px; top: 0; height: 0; pointer-events: none; z-index: 3; }
+.vc-bub { position: absolute; bottom: 4px; max-width: 96%; box-sizing: border-box; padding: 6px 12px; border-radius: 16px 16px 16px 5px; background: rgba(255, 255, 255, 0.13); border: 1px solid rgba(255, 255, 255, 0.22); color: rgba(255, 255, 255, 0.92); font-size: 13px; font-weight: 700; line-height: 1.25; white-space: nowrap; opacity: 0; pointer-events: none; animation: vcBub 3.4s ease-out both; will-change: transform, opacity; -webkit-user-select: none; user-select: none; }
+.vc-bub::after { content: ''; position: absolute; left: -3px; right: -3px; top: -3px; bottom: -3px; border-radius: inherit; border: 2px solid rgba(255, 255, 255, 0.55); opacity: 0; animation: vcBubRing 3.4s ease-out both; }
+@keyframes vcBub {
+    0%   { opacity: 0; transform: translateY(14px) scale(.7); }
+    12%  { opacity: .95; transform: translateY(-6px) scale(1); }
+    72%  { opacity: .95; transform: translateY(-62px) scale(1); }
+    80%  { opacity: .95; transform: translateY(-66px) scale(1.12); }
+    100% { opacity: 0; transform: translateY(-72px) scale(1.5); }
+}
+@keyframes vcBubRing { 0%, 76% { opacity: 0; transform: scale(1); } 80% { opacity: .8; } 100% { opacity: 0; transform: scale(1.5); } }
+@media (prefers-reduced-motion: reduce) { #vcCm { display: none; } }
+.vc-cm-row { margin-top: 12px; text-align: center; }
+.vc-cm-open { background: none; border: 1px dashed rgba(255, 255, 255, 0.25); color: #bbb; font-family: inherit; font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.vc-cm-open:active { background: rgba(255, 255, 255, 0.08); }
+.vc-cm-form { display: none; align-items: center; }
+.vc-cm-in { -webkit-box-flex: 1; flex: 1 1 0; min-width: 0; box-sizing: border-box; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(255, 255, 255, 0.18); color: #fff; border-radius: 12px; padding: 10px 12px; font-size: 16px; font-family: inherit; outline: none; }
+.vc-cm-in:focus { border-color: rgba(251, 191, 36, 0.55); }
+.vc-cm-cnt { width: 24px; margin: 0 6px; text-align: right; font-size: 12px; color: #777; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.vc-cm-send { width: 42px; height: 42px; flex-shrink: 0; border-radius: 12px; border: 1px solid rgba(251, 191, 36, 0.45); background: rgba(251, 191, 36, 0.1); color: var(--c-yellow); font-size: 16px; cursor: pointer; font-family: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.vc-cm-msg { min-height: 0; margin-top: 6px; font-size: 12px; color: #f0867d; }
+
 /* режим «Графіків немає» */
 .nosched-block { text-align: center; padding: 34px 20px 20px; }
 .nosched-ico { display: flex; justify-content: center; margin-bottom: 14px; color: var(--c-yellow); filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.4)); }
@@ -2102,6 +2209,7 @@ function onAppReady() {
 </style>
 
 <div id="voteCard" role="dialog">
+    <div id="vcCm" aria-hidden="true"></div>
     <div class="vc-top">
         <div>
             <div class="vc-tag">Швидке опитування</div>
@@ -2120,6 +2228,15 @@ function onAppReady() {
         <div class="vc-row" id="vcRowOff"><div class="vc-lbl">🔌 Немає</div><div class="vc-track"><div class="vc-fill off" id="vcFillOff"></div></div><div class="vc-pct" id="vcPctOff">0%</div></div>
         <div class="vc-note" id="vcNote"></div>
         <div class="vc-total" id="vcTotal"></div>
+        <div class="vc-cm-row" id="vcCmRow" style="display:none;">
+            <button class="vc-cm-open" id="vcCmOpen" type="button">👤💬 Додати коментар</button>
+            <div class="vc-cm-form" id="vcCmForm">
+                <input class="vc-cm-in" id="vcCmIn" type="text" maxlength="25" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Коротко, до 25 символів" aria-label="Коментар">
+                <span class="vc-cm-cnt" id="vcCmCnt">25</span>
+                <button class="vc-cm-send" id="vcCmSend" type="button" aria-label="Надіслати">➤</button>
+            </div>
+            <div class="vc-cm-msg" id="vcCmMsg"></div>
+        </div>
     </div>
 </div>
 
@@ -2208,9 +2325,71 @@ function onAppReady() {
         el.setAttribute('data-v', o.v);
         el.className = 'vc-btn ' + (o.v === 1 ? 'on' : 'off');
     }
+    // ---- коментарі до опитування: анонімні хмарки, що вилітають із картки й лопаються ----
+    var CM = { list: [], on: false, i: 0, timer: null, live: 0 }, CM_LITE = !!window.IS_LITE, CM_RM = false;
+    try { CM_RM = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+    function cmDone(slot) { try { return localStorage.getItem('vt_cm') === slot; } catch (e) { return false; } }
+    function cmMarkDone(slot) { try { localStorage.setItem('vt_cm', slot); } catch (e) {} }
+    function cmSet(cm) {
+        if (!cm) return;
+        CM.on = !!cm.on; CM.list = (cm.list || []).slice(0, 5);
+        if (CM.i >= CM.list.length) CM.i = 0;
+        if (!CM.on) cmStop();
+    }
+    function cmPop(text) {
+        var h = $v('vcCm'); if (!h || CM_RM) return;
+        var b = document.createElement('div'); b.className = 'vc-bub';
+        b.textContent = '👤💬 ' + text;
+        h.appendChild(b); CM.live++;
+        var w = h.clientWidth || 240, bw = b.offsetWidth || 160;
+        b.style.left = Math.round(Math.random() * Math.max(0, w - bw)) + 'px';
+        setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); CM.live = Math.max(0, CM.live - 1); }, 3500);
+    }
+    function cmRun() {
+        if (CM.timer || CM_RM || !CM.on) return;
+        function tick() {
+            var c = $v('voteCard');
+            if (!c || c.className.indexOf('show') < 0 || document.hidden || !CM.on || !CM.list.length) return;
+            if (CM.live >= (CM_LITE ? 1 : 2)) return;
+            cmPop(CM.list[CM.i % CM.list.length]); CM.i++;
+        }
+        setTimeout(tick, 600);
+        CM.timer = setInterval(tick, CM_LITE ? 2600 : 1800);
+    }
+    function cmStop() {
+        clearInterval(CM.timer); CM.timer = null; CM.live = 0;
+        var h = $v('vcCm'); if (h) h.innerHTML = '';
+    }
+    function cmCount() { $v('vcCmCnt').textContent = String(25 - Array.from($v('vcCmIn').value).length); }
+    function cmCollapse() {
+        $v('vcCmForm').style.display = 'none'; $v('vcCmOpen').style.display = 'inline-block';
+        $v('vcCmIn').value = ''; $v('vcCmMsg').textContent = '';
+    }
+    function cmSend() {
+        var txt = $v('vcCmIn').value.replace(/\s+/g, ' ').trim(), slot = VT.cmSlot;
+        if (!txt || !slot || VT.cmBusy) return;
+        VT.cmBusy = true; $v('vcCmMsg').textContent = '';
+        gasCall({ action: 'comment', slot: slot, text: txt }).then(function (r) {
+            VT.cmBusy = false;
+            if (r && r.ok && r.active !== false && !r.stale) {
+                cmMarkDone(slot); cmSet(r.cm);
+                $v('vcCmRow').style.display = 'none';
+                cmRun(); cmPop(txt);                                   // свою хмарку показуємо одразу
+                clearTimeout(VT.hideT); VT.hideT = setTimeout(hideCard, 5000);
+                return;
+            }
+            var e = r && r.error;
+            if (e === 'dup') cmMarkDone(slot);
+            if (e === 'dup' || e === 'off' || (r && r.stale)) { $v('vcCmRow').style.display = 'none'; }
+            var map = { long: 'Максимум 25 символів', link: 'Без посилань і @', empty: 'Напиши щось', dup: 'Ти вже залишив(ла) коментар', off: 'Коментарі вимкнені', novote: 'Спочатку проголосуй' };
+            $v('vcCmMsg').textContent = map[e] || (r && r.stale ? 'Опитування вже змінилося' : 'Не вийшло, спробуй ще раз');
+        }).catch(function () { VT.cmBusy = false; $v('vcCmMsg').textContent = 'Не вийшло, спробуй ще раз'; });
+    }
+
     function present() {
         var c = $v('voteCard'); if (!c) return;
         clearInterval(VT.timer); VT.waiting = false;
+        cmRun();
         if (c.style.display === 'block' && c.className.indexOf('show') >= 0) return;
         c.className = $v('ch-fab') ? 'lift' : '';
         c.style.display = 'block';
@@ -2220,6 +2399,7 @@ function onAppReady() {
     function showCard() {
         var st = VT.st; if (!st) return;
         clearTimeout(VT.hideT);
+        cmSet(st.cm);
         $v('vcCtx').style.display = 'block';
         $v('vcCtx').textContent = st.expect === 'off' ? 'За графіком зараз відключення' : 'За графіком зараз має бути світло';
         $v('vcQ').textContent = 'Світло зараз є?';
@@ -2233,6 +2413,7 @@ function onAppReady() {
     function hideCard() {
         var c = $v('voteCard'); if (!c) return;
         clearTimeout(VT.hideT);
+        cmStop();
         c.className = c.className.replace(/\bshow\b/, '');
         setTimeout(function () { if (c.className.indexOf('show') < 0) c.style.display = 'none'; }, 400);
     }
@@ -2260,6 +2441,11 @@ function onAppReady() {
         $v('vcRes').style.display = 'block';
         setTimeout(function () { $v('vcFillOn').style.width = pOn + '%'; $v('vcFillOff').style.width = pOff + '%'; }, 60);
         markDismissed(r.slot);
+        cmSet(r.cm);
+        // поле коментаря: лише після голосу, поки опитування відкрите, 1 раз на проміжок
+        VT.cmSlot = r.slot;
+        cmCollapse();
+        $v('vcCmRow').style.display = (CM.on && r.mine != null && r.slot && !cmDone(r.slot)) ? 'block' : 'none';
         clearTimeout(VT.hideT);
         VT.hideT = setTimeout(hideCard, ms || RESULT_MS);
         present();
@@ -2304,6 +2490,20 @@ function onAppReady() {
     $v('vcA').onclick = function () { sendVote(+this.getAttribute('data-v')); };
     $v('vcB').onclick = function () { sendVote(+this.getAttribute('data-v')); };
     $v('vcX').onclick = function () { if (VT.st) markDismissed(VT.st.slot); hideCard(); };
+    $v('vcCmOpen').onclick = function () {
+        clearTimeout(VT.hideT);                                        // поки людина пише, картка не зникає
+        this.style.display = 'none'; $v('vcCmForm').style.display = 'flex'; cmCount();
+        setTimeout(function () { try { $v('vcCmIn').focus(); } catch (e) {} }, 60);
+    };
+    $v('vcCmIn').oninput = cmCount;
+    $v('vcCmIn').onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); cmSend(); } };
+    $v('vcCmIn').onblur = function () {
+        setTimeout(function () {                                       // порожнє поле і фокус пішов: згортаємо і даємо картці зникнути
+            if (VT.cmBusy || $v('vcCmIn').value.trim()) return;
+            cmCollapse(); clearTimeout(VT.hideT); VT.hideT = setTimeout(hideCard, 4000);
+        }, 200);
+    };
+    $v('vcCmSend').onclick = cmSend;
 
     // ===== МІНІ-КАРТКА «підтвердили» з бейджа «Світло є / Відключення» в таймлайні =====
     // Послідовність при відкритті додатку (без жодного тапу, один раз за сесію):
@@ -2338,7 +2538,8 @@ function onAppReady() {
         el.id = 'crowdCard';
         el.className = 'crowd-card' + (CC_LITE ? ' lite' : '') + (CC_RM ? ' rm' : '') + (animate ? ' cc-in' : '');
         el.setAttribute('role', 'button');
-        el.innerHTML = SVG_OK.replace('cl-ico', 'cc-ico') + '<span class="cc-t"><span class="cc-a">підтвердили <b>' + n + '</b> ' + plural(n) + '</span><span class="cc-b">' + agoText(c.last) + '</span></span>' + SVG_CHEV;
+        el.innerHTML = SVG_OK.replace('cl-ico', 'cc-ico') + '<span class="cc-t"><span class="cc-a">підтвердили <b>' + n + '</b> ' + plural(n) + '</span><span class="cc-b">' + agoText(c.last) + ' · <span class="cc-go">Переглянути</span></span></span>' + SVG_CHEV.replace('cl-chev', 'cl-chev cc-nudge');
+        el.setAttribute('aria-label', 'Переглянути результати опитування');
         el.onclick = function () { ccHide(true); if (window.crowdTap) window.crowdTap(); };   // тап по картці: результати опитування
         head.appendChild(el);
         // позиція під бейджем і хвостик, що вказує на нього
@@ -2493,6 +2694,17 @@ function onAppReady() {
     window.renderVerify();
 })();
 
+// ---- адмін: увімкнути / вимкнути коментарі до опитування ----
+window.toggleComments = function () {
+    var turnOn = !!window.cmOff;
+    if (!confirm(turnOn ? 'Увімкнути коментарі до опитування?' : 'Вимкнути коментарі до опитування?\n\nПоле «додати коментар» і хмарки зникнуть у всіх користувачів (протягом хвилини).')) return;
+    var b = document.getElementById('cmBtn'); if (b) b.disabled = true;
+    gasCall({ action: 'set_comments', on: turnOn ? 1 : 0 }).then(function (r) {
+        if (r && r.ok) window.cmOff = !turnOn; else alert('❌ Помилка: ' + ((r && r.error) || 'невідома'));
+        if (b) { b.disabled = false; b.textContent = window.cmOff ? '💬 Увімкнути коментарі' : '💬 Вимкнути коментарі'; }
+    }).catch(function (e) { alert('❌ Помилка: ' + e.message); if (b) b.disabled = false; });
+};
+
 // ---- адмін: режим «Графіків немає» (стабільно «Світло є», без таймера) ----
 window.toggleNoSched = function () {
     var on = !window.noSchedFlag;
@@ -2621,6 +2833,91 @@ window.toggleNoSched = function () {
 .fx-gl { position: absolute; left: 0; width: 100%; height: 2px; background: rgba(251, 191, 36, .55); box-shadow: 0 0 8px rgba(251, 191, 36, .7); opacity: 0; animation: fxGl .5s steps(2, end) var(--d) both; }
 @keyframes fxGl { 0% { opacity: 0; } 30% { opacity: 1; } 60% { opacity: 0; } 80% { opacity: .8; } 100% { opacity: 0; } }
 
+/* ===== нові ефекти на котику ===== */
+@keyframes catHole {
+    0%   { transform: translateX(-50%) rotate(0deg) scale(1); opacity: 1; }
+    22%  { transform: translateX(-50%) rotate(0deg) scale(1.06); opacity: 1; }
+    58%  { transform: translateX(-50%) rotate(720deg) scale(.03); opacity: .6; }
+    72%  { transform: translateX(-50%) rotate(720deg) scale(0); opacity: 0; }
+    84%  { transform: translateX(-50%) rotate(360deg) scale(1.15); opacity: 1; }
+    100% { transform: translateX(-50%) rotate(0deg) scale(1); opacity: 1; }
+}
+.fx-hole { position: absolute; border-radius: 50%; opacity: 0; animation: fxHole 2.6s ease-in-out both; will-change: transform, opacity; }
+.fx-hole-ring { position: absolute; left: 0; top: 0; right: 0; bottom: 0; border-radius: 50%; border: 4px solid transparent; border-top-color: #fbbf24; border-right-color: #a855f7; border-bottom-color: rgba(168, 85, 247, .25); box-shadow: 0 0 26px 4px rgba(168, 85, 247, .45); animation: fxSpin .9s linear infinite; }
+.fx-hole-ring::after { content: ''; position: absolute; left: 14px; top: 14px; right: 14px; bottom: 14px; border-radius: 50%; border: 3px solid transparent; border-left-color: #f97316; border-bottom-color: #a855f7; animation: fxSpin 1.3s linear infinite reverse; }
+.fx-hole-core { position: absolute; left: 30%; top: 30%; right: 30%; bottom: 30%; border-radius: 50%; background: radial-gradient(circle, #000 55%, #1a0b2e 100%); box-shadow: 0 0 22px 8px rgba(0, 0, 0, .9); }
+@keyframes fxHole { 0% { opacity: 0; transform: scale(0) rotate(0deg); } 12% { opacity: 1; transform: scale(.5); } 30% { opacity: 1; transform: scale(1); } 70% { opacity: 1; transform: scale(1.05); } 90% { opacity: 1; transform: scale(.3); } 100% { opacity: 0; transform: scale(0); } }
+@keyframes fxSpin { to { transform: rotate(360deg); } }
+.fx-suck { position: absolute; width: 5px; height: 5px; margin: -2px 0 0 -2px; border-radius: 50%; background: #fde68a; box-shadow: 0 0 6px 1px rgba(251, 191, 36, .8); opacity: 0; animation: fxSuck 1.2s cubic-bezier(.5, 0, .9, .6) var(--del) both; will-change: transform, opacity; }
+@keyframes fxSuck { 0% { opacity: 0; transform: translate3d(var(--sx), var(--sy), 0) scale(1); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate3d(0, 0, 0) scale(.1); } }
+
+@keyframes catTv {
+    0%   { transform: translateX(-50%) scale(1, 1); opacity: 1; }
+    25%  { transform: translateX(-50%) scale(1.15, .03); opacity: 1; }
+    42%  { transform: translateX(-50%) scale(.02, .02); opacity: 1; }
+    55%  { transform: translateX(-50%) scale(0, 0); opacity: 0; }
+    75%  { transform: translateX(-50%) scale(0, 0); opacity: 0; }
+    86%  { transform: translateX(-50%) scale(1.1, .04); opacity: 1; }
+    100% { transform: translateX(-50%) scale(1, 1); opacity: 1; }
+}
+.fx-tv { position: absolute; width: 0; height: 0; }
+.fx-tv::before { content: ''; position: absolute; left: -55px; top: -1.5px; width: 110px; height: 3px; border-radius: 2px; background: #fff; box-shadow: 0 0 10px 2px rgba(255, 255, 255, .8); opacity: 0; animation: fxTvLine 2s ease-in-out both; }
+.fx-tv::after { content: ''; position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 50%; background: #fff; box-shadow: 0 0 14px 5px rgba(255, 255, 255, .9); opacity: 0; animation: fxTvDot 2s ease-in-out both; }
+@keyframes fxTvLine { 0%, 18% { opacity: 0; transform: scaleX(1); } 25% { opacity: 1; transform: scaleX(1); } 42% { opacity: 1; transform: scaleX(.05); } 46%, 100% { opacity: 0; transform: scaleX(.05); } }
+@keyframes fxTvDot { 0%, 40% { opacity: 0; transform: scale(1); } 44% { opacity: 1; transform: scale(1); } 56% { opacity: .8; transform: scale(.6); } 66%, 100% { opacity: 0; transform: scale(0); } }
+
+@keyframes catShock {
+    0%, 100% { transform: translateX(-50%) translate(0, 0) rotate(0deg); }
+    8%  { transform: translateX(-50%) translate(-4px, 2px) rotate(-4deg); }
+    16% { transform: translateX(-50%) translate(4px, -2px) rotate(4deg); }
+    24% { transform: translateX(-50%) translate(-3px, -3px) rotate(-3deg); }
+    32% { transform: translateX(-50%) translate(3px, 3px) rotate(3deg); }
+    40% { transform: translateX(-50%) translate(-5px, 0) rotate(-5deg); }
+    48% { transform: translateX(-50%) translate(5px, 1px) rotate(5deg); }
+    56% { transform: translateX(-50%) translate(-3px, 2px) rotate(-3deg); }
+    64% { transform: translateX(-50%) translate(3px, -2px) rotate(3deg); }
+    72% { transform: translateX(-50%) translate(-2px, 1px) rotate(-2deg); }
+    82% { transform: translateX(-50%) translate(2px, -1px) rotate(2deg); }
+    92% { transform: translateX(-50%) translate(-1px, 0) rotate(-1deg); }
+}
+.fx-arcs { position: absolute; width: 200px; height: 200px; overflow: visible; animation: fxArcsLife 1.4s linear both; }
+.fx-arcs path { fill: none; stroke: #fffbe6; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; opacity: 0; animation: fxArc .16s steps(2, end) infinite; }
+.fx-arcs:not(.lite) path { filter: drop-shadow(0 0 4px rgba(251, 191, 36, .9)); }
+@keyframes fxArc { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes fxArcsLife { 0% { opacity: 0; } 8% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+
+@keyframes catFloat {
+    0%   { transform: translateX(-50%) translateY(0) scale(1); }
+    20%  { transform: translateX(-50%) translateY(-10px) scale(1.06); }
+    50%  { transform: translateX(-50%) translateY(-14px) scale(1.08); }
+    80%  { transform: translateX(-50%) translateY(-8px) scale(1.04); }
+    100% { transform: translateX(-50%) translateY(0) scale(1); }
+}
+.fx-orbit { position: absolute; width: 0; height: 0; animation: fxOrbit 2.8s linear both; will-change: transform, opacity; }
+.fx-orb { position: absolute; left: -11px; top: -11px; font-size: 20px; line-height: 22px; width: 22px; text-align: center; transform: rotate(var(--a)) translateX(62px); }
+@keyframes fxOrbit { 0% { opacity: 0; transform: rotate(0deg) scale(.5); } 12% { opacity: 1; transform: rotate(80deg) scale(1); } 86% { opacity: 1; transform: rotate(480deg) scale(1); } 100% { opacity: 0; transform: rotate(560deg) scale(.7); } }
+
+/* ===== слабкі телефони (.lite-device ставиться за кількістю ядер/пам'яті або коли FPS просідає під час ефектів) ===== */
+.lite-device [style*="backdrop-filter"] { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.lite-device #ch-mod { background: rgba(24, 24, 24, .97) !important; }
+.lite-device #ch-fab { background: rgba(30, 30, 30, .97) !important; }
+.lite-device .mascot-header { filter: none; }
+.lite-device .mascot-header.cat-flicker { animation-name: catFlickerLite; }
+.lite-device .mascot-header.cat-flicker.cat-flip { animation-name: catFlip; }
+@keyframes catFlickerLite {
+    0%, 4%, 9.5%, 38%, 41.5%, 62%, 74%, 100% { opacity: 1; }
+    5% { opacity: .55; } 6.5% { opacity: 1; } 8% { opacity: .65; }
+    40% { opacity: .45; } 63%, 70% { opacity: .4; } 71% { opacity: 1; } 72.5% { opacity: .6; }
+}
+.lite-device .fx-bolt { filter: none; }
+.lite-device .fx-sp, .lite-device .fx-ff, .lite-device .fx-suck { box-shadow: none; }
+.lite-device .fx-hole-ring { box-shadow: none; }
+.lite-device .fx-hole-core { box-shadow: none; }
+.lite-device .fx-hole-ring::after { display: none; }
+.lite-device .fx-arcs path { filter: none; }
+.lite-device .fx-bulb { box-shadow: none; }
+.lite-device .fx-batt { filter: none; }
+
 @media (prefers-reduced-motion: reduce) { #fxLayer { display: none; } }
 </style>
 
@@ -2637,10 +2934,13 @@ window.toggleNoSched = function () {
        3-й  «це вам не тапалка»              (tapNoTapalka…)
        4-й  метеоритний дощ
        5-й  міні-землетрус
-       6-й…15-й  тематичні ефекти: імпульс, іскри, блискавка, батарейка, світлячки,
-            гірлянда, ліхтарик, свічка, коротке замикання, блекаут
-       16-й  котик перевертається і повертається назад (tap9Ms)
-       17-й і далі: випадковий ефект із усіх (без повтору підряд)
+       6-й…20-й  тематичні ефекти: чорна діра (котика засмоктує), імпульс, іскри, удар струму,
+            блискавка, батарейка, орбіта (котик левітує), світлячки, гірлянда,
+            «вимкнули світло» (котик гасне як телевізор), ліхтарик, свічка, коротке замикання, блекаут
+       21-й  котик перевертається і повертається назад (tap9Ms)
+       22-й і далі: випадковий ефект із усіх (без повтору підряд)
+     Окремо від цього, на кожному тапі є шанс (mascotSwapChance), що котик на кілька секунд
+     підміниться на cathauntingvid.webp / catconfusedvid.webp (якщо файлів нема, нічого не відбувається).
      Час показу вказано в мілісекундах: 3000 = 3 секунди.
      ===================================================================== -->
 <script>
@@ -2668,16 +2968,41 @@ var CAT_CONFIG = {
     tap3NoPoll: '📊 Опитування зараз немає',
 
     // переворот котика
-    tap9Ms: 1500
+    tap9Ms: 1500,
+
+    // підміна котика на тапі (cathauntingvid / catconfusedvid): шанс на кожен тап і скільки секунд тримається
+    mascotSwapChance: 0.35,
+    mascotSwapMs: 3200
 };
 </script>
 
 <script>
 (function () {
     var CFG = window.CAT_CONFIG, toastT = null, step = 0, lastTap = 0, lastRand = -1, autoDone = false;
-    var RM = false, LITE = false;
+    var RM = false, LITE = !!window.IS_LITE;
     try { RM = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
-    try { LITE = !!((navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || (navigator.deviceMemory && navigator.deviceMemory <= 2)); } catch (e) {}
+
+    // ---- адаптація під слабкі телефони: якщо під час ефектів FPS просідає двічі поспіль, вмикаємо «легкий» режим (і запам'ятовуємо) ----
+    function goLite() {
+        if (LITE) return;
+        LITE = true; window.IS_LITE = true;
+        try { document.documentElement.classList.add('lite-device'); localStorage.setItem('cat_lite', '1'); } catch (e) {}
+    }
+    var lowFps = 0, fpsBusy = false;
+    function fpsWatch(ms) {
+        if (LITE || RM || fpsBusy || !window.requestAnimationFrame) return;
+        fpsBusy = true;
+        var n = 0, t0 = 0;
+        (function f(t) {
+            if (!t0) t0 = t;
+            n++;
+            if (t - t0 < ms) { requestAnimationFrame(f); return; }
+            fpsBusy = false;
+            if (document.hidden) return;
+            var fps = (n - 1) * 1000 / (t - t0);
+            if (fps < 34) { if (++lowFps >= 2) goLite(); } else lowFps = 0;
+        })(performance.now());
+    }
 
     function $c(id) { return document.getElementById(id); }
     function rnd(a, b) { return a + Math.random() * (b - a); }
@@ -2794,15 +3119,19 @@ var CAT_CONFIG = {
     // тремтить інтерфейс (шапка, таймлайн, футер) ~1 секунду; сам по собі не чіпає вікна, що висять поверх
     function shake(amp0, dur, hap) {
         if (RM) return;
-        var list = Array.prototype.slice.call(document.querySelectorAll('.sticky-header, .tl-item, .disclaimer-box, .app-footer, .nosched-block, .waiting-block, .fade-dots, .section-divider'));
+        var vh = window.innerHeight;
+        var list = Array.prototype.slice.call(document.querySelectorAll('.sticky-header, .tl-item, .disclaimer-box, .app-footer, .nosched-block, .waiting-block, .fade-dots, .section-divider'))
+            .filter(function (e) { var r = e.getBoundingClientRect(); return r.bottom > -20 && r.top < vh + 20; });   // тремтимо лише тим, що на екрані
         if (!list.length) return;
+        var gap = LITE ? 64 : 32;
+        if (LITE) amp0 = amp0 * 0.6;
         list.forEach(function (e) { e.style.transition = 'none'; });
         if (hap) haptic(hap);
         var t0 = Date.now(), last = 0;
         (function f() {
             var now = Date.now(), k = (now - t0) / dur;
             if (k >= 1) { list.forEach(function (e) { e.style.transform = ''; e.style.transition = ''; }); return; }
-            if (now - last >= 32) {
+            if (now - last >= gap) {
                 last = now;
                 var amp = amp0 * (1 - k) * (1 - k * 0.3);
                 var v = 'translate(' + ((Math.random() * 2 - 1) * amp).toFixed(1) + 'px,' + ((Math.random() * 2 - 1) * amp * 0.7).toFixed(1) + 'px)';
@@ -2866,9 +3195,10 @@ var CAT_CONFIG = {
         var box = mk('fx-center');
         box.innerHTML = '<div class="fx-batt"><svg viewBox="0 0 110 54" width="150" height="74"><rect x="2" y="4" width="94" height="46" rx="9" fill="none" stroke="#e4e4e7" stroke-width="3"/><rect x="99" y="18" width="8" height="18" rx="3" fill="#e4e4e7"/><rect class="fx-fill" x="8" y="10" width="82" height="34" rx="5" fill="#fbbf24"/><path d="M54 13 L38 32 H49 L45 43 L63 23 H52 Z" fill="#060606" opacity=".75"/></svg><div class="fx-pct">0%</div></div>';
         fx(box, 3100);
-        var pct = box.querySelector('.fx-pct'), t0 = Date.now() + 250, dur = 1900;
+        var pct = box.querySelector('.fx-pct'), t0 = Date.now() + 250, dur = 1900, bc = 0;
         (function f() {
             if (!box.parentNode) return;
+            if (LITE && (bc++ % 3)) { requestAnimationFrame(f); return; }
             var k = Math.max(0, Math.min(1, (Date.now() - t0) / dur)), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
             pct.textContent = Math.round(e * 100) + '%';
             if (k < 1) requestAnimationFrame(f);
@@ -2907,13 +3237,14 @@ var CAT_CONFIG = {
     // ліхтарик: темний екран і промінь, що блукає по ньому
     function flashlight() {
         if (RM) return;
-        var W = window.innerWidth, H = window.innerHeight, o = mk('fx-torch'), t0 = Date.now(), dur = 2700, ph = rnd(0, 6);
+        var W = window.innerWidth, H = window.innerHeight, o = mk('fx-torch'), t0 = Date.now(), dur = LITE ? 2200 : 2700, ph = rnd(0, 6), fc = 0;
         fx(o, dur + 600);
         requestAnimationFrame(function () { o.style.opacity = '1'; });
         setTimeout(function () { o.style.opacity = '0'; }, dur - 300);
         (function f() {
             if (!o.parentNode) return;
             var k = (Date.now() - t0) / dur; if (k > 1.05) return;
+            if (LITE && (fc++ % 3)) { requestAnimationFrame(f); return; }   // слабкі телефони: ~20 кадрів/с замість перемальовування градієнта щокадру
             o.style.setProperty('--x', (W * (0.5 + 0.38 * Math.sin(k * 5.2 + ph))).toFixed(0) + 'px');
             o.style.setProperty('--y', (H * (0.45 + 0.3 * Math.sin(k * 3.7 + ph * 1.7))).toFixed(0) + 'px');
             requestAnimationFrame(f);
@@ -2947,10 +3278,89 @@ var CAT_CONFIG = {
         haptic('soft');
     }
 
+
+    // ======================= ЕФЕКТИ НА САМОМУ КОТИКУ =======================
+    // котик трансформується (анімація на самому <img>), а поверх/навколо нього щось з'являється в fxLayer
+    function bodyFx(name, ms, ease) {
+        var img = $c('mascotImg');
+        if (!img || img.style.display === 'none' || RM || window.catFxBusy) return false;
+        window.catFxBusy = true;
+        img.style.transformOrigin = '50% 55%';
+        img.style.animation = name + ' ' + ms + 'ms ' + (ease || 'ease-in-out') + ' both';
+        setTimeout(function () { img.style.animation = ''; img.style.transformOrigin = ''; window.catFxBusy = false; }, ms + 80);
+        return true;
+    }
+
+    // чорна діра: котика закручує і засмоктує, потім виплюнуло назад
+    function blackHole() {
+        if (RM) return;
+        var c = catPos(), D = LITE ? 120 : 150;
+        if (!bodyFx('catHole', 2600)) return;
+        var h = mk('fx-hole', 'left:' + c.x + 'px;top:' + c.y + 'px;width:' + D + 'px;height:' + D + 'px;margin:' + (-D / 2) + 'px 0 0 ' + (-D / 2) + 'px;');
+        h.innerHTML = '<i class="fx-hole-ring"></i><i class="fx-hole-core"></i>';
+        fx(h, 2700);
+        var n = cnt(10);
+        for (var i = 0; i < n; i++) {
+            var ang = rnd(0, Math.PI * 2), r = rnd(70, 140), p = mk('fx-suck', 'left:' + c.x + 'px;top:' + c.y + 'px;');
+            p.style.setProperty('--sx', (Math.cos(ang) * r).toFixed(0) + 'px');
+            p.style.setProperty('--sy', (Math.sin(ang) * r).toFixed(0) + 'px');
+            p.style.setProperty('--del', (300 + i * 90 + rnd(0, 120)).toFixed(0) + 'ms');
+            fx(p, 2000);
+        }
+        haptic('medium');
+    }
+
+    // «вимкнули світло»: котика гасить як старий телевізор (лінія → точка → темрява), потім вмикає
+    function tvOff() {
+        if (RM) return;
+        var c = catPos();
+        if (!bodyFx('catTv', 2000)) return;
+        fx(mk('fx-tv', 'left:' + c.x + 'px;top:' + c.y + 'px;'), 2100);
+        haptic('soft');
+    }
+
+    // удар струму: котик тремтить, навколо стрибають дуги
+    function shock() {
+        if (RM) return;
+        var c = catPos(), NS = 'http://www.w3.org/2000/svg';
+        if (!bodyFx('catShock', 1400, 'linear')) return;
+        var svg = document.createElementNS(NS, 'svg'), n = LITE ? 3 : 6;
+        svg.setAttribute('class', 'fx-arcs'); svg.setAttribute('width', 200); svg.setAttribute('height', 200); svg.setAttribute('viewBox', '-100 -100 200 200');
+        svg.style.left = (c.x - 100) + 'px'; svg.style.top = (c.y - 100) + 'px';
+        for (var i = 0; i < n; i++) {
+            var a = (i / n) * Math.PI * 2 + rnd(-0.3, 0.3), pts = [], r = 30;
+            while (r < 84) { var da = rnd(-0.22, 0.22); pts.push((Math.cos(a + da) * r).toFixed(0) + ' ' + (Math.sin(a + da) * r).toFixed(0)); r += rnd(10, 18); }
+            var p = document.createElementNS(NS, 'path');
+            p.setAttribute('d', 'M' + pts.join(' L'));
+            p.style.animationDelay = (rnd(0, 0.25)).toFixed(2) + 's';
+            svg.appendChild(p);
+        }
+        fx(svg, 1450);
+        if (!LITE) sparks();
+        haptic('rigid');
+    }
+
+    // орбіта: котик левітує, навколо кружляють лампочки й блискавки
+    function orbit() {
+        if (RM) return;
+        var c = catPos(), icons = ['💡', '⚡️', '🔦', '🔌', '✨'], n = LITE ? 3 : 5;
+        if (!bodyFx('catFloat', 2800)) return;
+        var o = mk('fx-orbit', 'left:' + c.x + 'px;top:' + c.y + 'px;');
+        for (var i = 0; i < n; i++) {
+            var e = document.createElement('span');
+            e.className = 'fx-orb';
+            e.textContent = icons[i % icons.length];
+            e.style.setProperty('--a', Math.round(360 / n * i) + 'deg');
+            o.appendChild(e);
+        }
+        fx(o, 2900);
+        haptic('light');
+    }
+
     // ======================= ПОСЛІДОВНІСТЬ =======================
     // [0] емодзі-дощ — авто (або першим кліком, якщо клікнули раніше за авто-запуск)
-    var SEQ = [rain, hoursFx, pollFx, noTapalkaFx, meteors, quake, pulse, sparks, lightning, battery, fireflies, garland, flashlight, candle, shortCircuit, blackout, flip];
-    var POOL = [rain, meteors, quake, flip, pulse, sparks, lightning, battery, fireflies, garland, flashlight, candle, shortCircuit, blackout];
+    var SEQ = [rain, hoursFx, pollFx, noTapalkaFx, meteors, quake, blackHole, pulse, sparks, shock, lightning, battery, orbit, fireflies, garland, tvOff, flashlight, candle, shortCircuit, blackout, flip];
+    var POOL = [rain, meteors, quake, flip, pulse, sparks, lightning, battery, fireflies, garland, flashlight, candle, shortCircuit, blackout, blackHole, tvOff, shock, orbit];
 
     function runNext() {
         var fn;
@@ -2961,6 +3371,7 @@ var CAT_CONFIG = {
         }
         autoDone = true;
         fn();
+        fpsWatch(1800);                       // міряємо плавність під час ефекту: на слабкому телефоні далі буде легший режим
     }
 
     var cat = $c('mascotImg');
@@ -2969,6 +3380,11 @@ var CAT_CONFIG = {
         if (now - lastTap < 250) return;   // від випадкових подвійних тапів
         lastTap = now;
         runNext();
+        // додаткові маскоти: перший тап лише перевіряє, що файли існують; далі випадкова підміна на кілька секунд
+        try {
+            if (window.mascotProbeAll) window.mascotProbeAll();
+            if (Math.random() < (CFG.mascotSwapChance == null ? 0.35 : CFG.mascotSwapChance) && window.mascotSwapTap) window.mascotSwapTap();
+        } catch (e) {}
     });
 
     // ---- авто-запуск емодзі-дощу: один раз за сесію ----
