@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -380,6 +379,7 @@
 
     
   <div id="timelineContainer"></div>
+<div class="rx-bar" id="rxBar"></div>
 <div class="app-footer">
     
     <div class="source-text" style="font-size: 13px; color: #888; margin-bottom: 25px; line-height: 1.4; padding: 0 10px;">
@@ -416,11 +416,13 @@
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         Базарчик
     </a>
+    <div class="f-link" onclick="document.getElementById('wxModal').style.display='flex'" style="cursor: pointer;">🌦 Погода</div>
     <a href="https://donatello.to/valkyshotam" class="f-link f-link-support" target="_blank">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         Підтримати
     </a>
 </div>
+<div onclick="document.getElementById('infoModal').style.display='flex'" style="margin-top:6px;font-size:12px;color:#777;cursor:pointer;">ℹ️ Інформація</div>
 
 </div>
 
@@ -620,6 +622,14 @@ function applyMascot(kind, confused) {
 }
 
 // тап по котику: випадкова підміна на haunting / confused на кілька секунд, потім одразу назад до поточного основного
+function hauntLaser(ms) {
+    var d = document.createElement('div'), im = document.getElementById('mascotImg');
+    d.style.cssText = 'position:fixed;z-index:946;width:7px;height:7px;border-radius:50%;background:#ff2a2a;box-shadow:0 0 8px 3px rgba(255,40,40,.85);pointer-events:none;transition:left .13s linear,top .13s linear;';
+    document.body.appendChild(d);
+    function mv() { var r = im.getBoundingClientRect(); d.style.left = (r.left + r.width * (.15 + Math.random() * .7)) + 'px'; d.style.top = (r.bottom - 22 + Math.random() * 16) + 'px'; }
+    mv(); var iv = setInterval(mv, 130);
+    setTimeout(function () { clearInterval(iv); d.remove(); }, ms);
+}
 window.mascotSwapTap = () => {
     if (mascotSwapping || window.catFxBusy || document.hidden) return false;
     const img = document.getElementById('mascotImg');
@@ -633,8 +643,9 @@ window.mascotSwapTap = () => {
     const ms = (window.CAT_CONFIG && window.CAT_CONFIG.mascotSwapMs) || 3200;
     mascotSwapping = true;
     const pre = new Image();
-    pre.onload = () => {                                   // спершу догружаємо, щоб не було миготіння
+    pre.onload = () => {
         img.src = url;
+        if (kind === 'haunt') hauntLaser(ms);
         setTimeout(() => {
             mascotSwapping = false;
             if (currentMascotState === 'placeholder' || !mascotBase) return;
@@ -1160,7 +1171,7 @@ window.replayCat = () => {
                 }
             });
 
-            if (changes.length > 0 && isToday) {
+            if (isToday) {
                 let digestLines = changes.map(ci => {
                     if (ci.reason === 'changed') {
                         return `<div style="padding: 12px 0; display: flex; align-items: flex-start; gap: 12px;">
@@ -1177,6 +1188,7 @@ window.replayCat = () => {
                     }
                 }).join('<div style="height: 1px; background: rgba(255,255,255,0.08); margin: 0 4px;"></div>');
 
+                if (!changes.length) digestLines = '<div style="padding:10px 0;color:#888;font-size:14px;">Змін у графіку поки немає</div>';
                 // підпис поточних змін: якщо людина їх уже бачила, поп-ап сам більше не вилазить (доки не буде нової зміни)
                 const sigSrc = (activeDates[0] || '') + '|' + changes.map(c => [c.reason, c.startStr, c.endStr, c.newStart, c.newEnd, c.newOpen].join('~')).join(';');
                 let sigHash = 0;
@@ -1184,7 +1196,7 @@ window.replayCat = () => {
                 const chSig = String(sigHash);
 
                 let jsPayload = `
-                    var SIG = '${chSig}', KEY = 'ch_seen_v1';
+                    var SIG = '${chSig}', KEY = 'ch_seen_v1'; var CHN = ${changes.length};
                     function chSeen() { try { return localStorage.getItem(KEY) === SIG; } catch(e) { return false; } }
                     function chMark() { try { localStorage.setItem(KEY, SIG); } catch(e) {} }
                     clearTimeout(window.changesTimer);
@@ -1204,7 +1216,7 @@ window.replayCat = () => {
                         var f = document.getElementById('ch-fab');
                         var o = document.getElementById('ch-overlay');
                         clearTimeout(window.chCloseTimer);
-                        chMark();
+                        chMark(); if(window.chPollRender) window.chPollRender();
                         if(f) { f.style.opacity='0'; f.style.pointerEvents='none'; f.style.transform='scale(0.5)'; }
                         if(o) { o.style.opacity='1'; o.style.pointerEvents='auto'; }
                         if(m) {
@@ -1213,7 +1225,7 @@ window.replayCat = () => {
                         }
                         if(isAuto === true) { window.chCloseTimer = setTimeout(window.closeCh, 5000); }
                     };
-                    if(!chSeen()) {
+                    if(CHN && !chSeen()) {
                         window.changesTimer = setTimeout(function() { window.openCh(true); }, 2500);
                     } else {
                         var f0 = document.getElementById('ch-fab');
@@ -1239,6 +1251,7 @@ window.replayCat = () => {
                     <div style="display: flex; flex-direction: column;">
                         ${digestLines}
                     </div>
+                    <div id="chPoll" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1);"></div>
                 </div>
 
                 <div id="ch-fab" onclick="window.openCh()" style="opacity: 0; pointer-events: none; position: fixed; bottom: 32px; right: 24px; background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.15); border-radius: 50%; width: 56px; height: 56px; display: flex; justify-content: center; align-items: center; box-shadow: 0 12px 32px rgba(0,0,0,0.5); z-index: 9997; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: scale(0.5); cursor: pointer;">
@@ -2208,6 +2221,38 @@ function onAppReady() {
 @media (prefers-reduced-motion: reduce) { .rain-emoji { display: none; } }
 </style>
 
+<style>
+.vc-bub { border-radius: 999px; padding: 9px 16px; border: 1px solid rgba(255,255,255,.35);
+  background: radial-gradient(120% 140% at 25% 15%, rgba(255,255,255,.38), rgba(255,255,255,.08) 45%, rgba(255,255,255,.14));
+  box-shadow: inset 0 1px 2px rgba(255,255,255,.6), inset 0 -6px 12px rgba(255,255,255,.08), 0 6px 18px rgba(0,0,0,.35);
+  -webkit-backdrop-filter: blur(8px) saturate(160%); backdrop-filter: blur(8px) saturate(160%); animation: vcBub2 4.6s ease-out both; }
+.vc-bub::after { border-radius: inherit; animation: vcRing2 4.6s ease-out both; }
+.lite-device .vc-bub { -webkit-backdrop-filter: none; backdrop-filter: none; }
+@keyframes vcBub2 { 0% { opacity:0; transform: translateY(10px) scale(.6); } 12% { opacity:1; transform: translateY(-8px) scale(1); }
+  76% { opacity:1; transform: translateY(-150px) scale(1); } 82% { opacity:1; transform: translateY(-156px) scale(1.14); } 100% { opacity:0; transform: translateY(-165px) scale(1.6); } }
+@keyframes vcRing2 { 0%,78% { opacity:0; transform: scale(1); } 82% { opacity:.8; } 100% { opacity:0; transform: scale(1.6); } }
+.vc-cm-note { margin-top: 8px; font-size: 11px; color: #888; line-height: 1.4; }
+.vc-cm-open { position: relative; overflow: hidden; border: 1.5px solid #fbbf24; color: #fde68a; background: rgba(251,191,36,.08); border-radius: 14px; animation: cmPulse 1.6s ease-in-out infinite; }
+.vc-cm-open::after { content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); transform: skewX(-20deg); animation: shineSweep 2.4s infinite; }
+@keyframes cmPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(251,191,36,.55), 0 0 6px rgba(251,191,36,.3); } 50% { box-shadow: 0 0 0 5px rgba(251,191,36,0), 0 0 16px rgba(251,191,36,.7); } }
+#vcCmDone .zen-container { transform: scale(1.4); }
+#chPoll .crowd-card::before { display: none; }
+.rx-bar { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:6px 20px 14px; }
+.rx-btn { min-width:46px; height:46px; padding:0 10px; border-radius:23px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); font-size:22px; color:#fff; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+.rx-btn:active { transform:scale(.9); background:rgba(255,255,255,.14); }
+.rx-sym { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; border:2px solid; font-size:20px; font-weight:900; line-height:1; }
+.rx-fl { position:absolute; margin:-14px 0 0 -14px; font-size:28px; pointer-events:none; animation: rxUp 2.2s ease-out both; }
+@keyframes rxUp { 0% { opacity:0; transform: translate(0,0) scale(.5); } 12% { opacity:1; } 50% { transform: translate(var(--dx),-120px) scale(1.1); } 100% { opacity:0; transform: translate(calc(var(--dx)*-.6),-260px) scale(.9); } }
+.wx-gust { animation: wxGust .7s ease-in-out; }
+@keyframes wxGust { 0%,100% { transform: translateX(0); } 35% { transform: translateX(22px) skewX(-3deg); } 65% { transform: translateX(10px); } }
+#wxLayer { position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:944; opacity:0; transition:opacity .8s; }
+.wx-i { position:absolute; will-change:transform; }
+@keyframes wxFall { from { transform: translate3d(0,-30px,0); } to { transform: translate3d(var(--sx,0),110vh,0); } }
+@keyframes wxDrift { from { transform: translateX(-40vw); } to { transform: translateX(140vw); } }
+@keyframes wxBounce { 0%,100% { transform: translate(var(--x1),var(--y1)); } 50% { transform: translate(var(--x2),var(--y2)); } }
+@keyframes wxSpin { to { transform: rotate(360deg); } }
+@keyframes wxWind { from { transform: translateX(-120px); opacity:0; } 20% { opacity:.8; } to { transform: translateX(110vw); opacity:0; } }
+</style>
 <div id="voteCard" role="dialog">
     <div id="vcCm" aria-hidden="true"></div>
     <div class="vc-top">
@@ -2228,6 +2273,7 @@ function onAppReady() {
         <div class="vc-row" id="vcRowOff"><div class="vc-lbl">🔌 Немає</div><div class="vc-track"><div class="vc-fill off" id="vcFillOff"></div></div><div class="vc-pct" id="vcPctOff">0%</div></div>
         <div class="vc-note" id="vcNote"></div>
         <div class="vc-total" id="vcTotal"></div>
+        <div id="vcCmDone" style="display:none;justify-content:center;margin-top:8px;"></div>
         <div class="vc-cm-row" id="vcCmRow" style="display:none;">
             <button class="vc-cm-open" id="vcCmOpen" type="button">👤💬 Додати коментар</button>
             <div class="vc-cm-form" id="vcCmForm">
@@ -2235,6 +2281,7 @@ function onAppReady() {
                 <span class="vc-cm-cnt" id="vcCmCnt">25</span>
                 <button class="vc-cm-send" id="vcCmSend" type="button" aria-label="Надіслати">➤</button>
             </div>
+            <div class="vc-cm-note">Коментар живе лише 2 хвилини. Ви можете залишити лише 1 коментар. Будьте чемними.</div>
             <div class="vc-cm-msg" id="vcCmMsg"></div>
         </div>
     </div>
@@ -2246,7 +2293,7 @@ function onAppReady() {
 
 <script>
 (function () {
-    var RESULT_MS = 10000;   // скільки висить картка з результатами опитування (мс)
+    var RESULT_MS = 20000;   // скільки висить картка з результатами опитування (мс)
     var VT = { st: null, timer: null, hideT: null, restarts: 0, busy: false, peek: false, t0: Date.now(), waiting: false, ready: false };
     function $v(id) { return document.getElementById(id); }
 
@@ -2271,7 +2318,15 @@ function onAppReady() {
     var SVG_OK = '<svg class="cl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="8 12.5 11 15.5 16 9"/></svg>';
     var SVG_WARN = '<svg class="cl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.2" y2="16.2"/></svg>';
     var SVG_CHEV = '<svg class="cl-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 6 15 12 9 18"/></svg>';
+    window.chPollRender = function () {
+        var el = $v('chPoll'); if (!el) return;
+        var c = window.crowdInfo, ok = c && c.n >= 3 && c.last && !window.verifyInfo;
+        el.innerHTML = '<div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#fff;opacity:.7;margin-bottom:8px;">Що кажуть люди</div>'
+          + '<div class="crowd-card" style="position:relative;display:flex;cursor:pointer;" onclick="window.closeCh&&closeCh();window.crowdTap()">'
+          + SVG_OK.replace('cl-ico', 'cc-ico') + '<span class="cc-t"><span class="cc-a">' + (ok ? 'підтвердили <b>' + c.n + '</b> ' + plural(c.n) : 'Поки що замало відповідей') + '</span><span class="cc-b">' + (ok ? agoText(c.last) + ' · ' : '') + '<span class="cc-go">Переглянути</span></span></span>' + SVG_CHEV + '</div>';
+    };
     window.renderVerify = function () {
+        if (window.chPollRender) window.chPollRender();
         if (window.ccSync) window.ccSync();               // після кожного перемальовування таймлайну: поновити картку/бейдж
         var el = $v('crowdLine'); if (!el) return;       // рядок є лише під пілюлею поточного проміжку
         var v = window.verifyInfo, c = window.crowdInfo;
@@ -2307,7 +2362,7 @@ function onAppReady() {
         var app = $v('app'); if (!app || app.style.display === 'none') return true;
         var promo = $v('notifPromo'); if (promo && promo.style.display === 'block') return true;
         var ch = $v('ch-mod'); if (ch && ch.style.opacity === '1') return true;
-        return open('notifModal') || open('genModal') || open('editModal') || open('statusModal') || open('pointsModal') || open('infoAlertModal');
+        return open('notifModal') || open('genModal') || open('editModal') || open('statusModal') || open('pointsModal') || open('infoAlertModal') || open('infoModal') || open('wxModal');
     }
     function waitAndShow() {
         clearInterval(VT.timer);
@@ -2326,35 +2381,42 @@ function onAppReady() {
         el.className = 'vc-btn ' + (o.v === 1 ? 'on' : 'off');
     }
     // ---- коментарі до опитування: анонімні хмарки, що вилітають із картки й лопаються ----
-    var CM = { list: [], on: false, i: 0, timer: null, live: 0 }, CM_LITE = !!window.IS_LITE, CM_RM = false;
+    var CM = { list: [], ts: [], on: false, i: 0, timer: null, live: 0 }, CM_LITE = !!window.IS_LITE, CM_RM = false;
     try { CM_RM = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
     function cmDone(slot) { try { return localStorage.getItem('vt_cm') === slot; } catch (e) { return false; } }
     function cmMarkDone(slot) { try { localStorage.setItem('vt_cm', slot); } catch (e) {} }
     function cmSet(cm) {
         if (!cm) return;
-        CM.on = !!cm.on; CM.list = (cm.list || []).slice(0, 5);
+        CM.on = !!cm.on; CM.list = (cm.list || []).slice(0, 12); CM.ts = (cm.ts || []).slice(0, 12);
         if (CM.i >= CM.list.length) CM.i = 0;
         if (!CM.on) cmStop();
     }
-    function cmPop(text) {
+    function cmPop(text, ts) {
         var h = $v('vcCm'); if (!h || CM_RM) return;
-        var b = document.createElement('div'); b.className = 'vc-bub';
-        b.textContent = '👤💬 ' + text;
+        var b = document.createElement('div'); b.className = 'vc-bub'; b.textContent = text;
+        if (isAdmin && ts) {            // адмін: тап по бульбашці = приховати коментар
+            b.style.pointerEvents = 'auto';
+            b.onclick = function () {
+                if (!confirm('Приховати коментар «' + text + '»?')) return;
+                var k = CM.ts.indexOf(ts); if (k >= 0) { CM.list.splice(k, 1); CM.ts.splice(k, 1); }
+                b.remove(); gasCall({ action: 'cm_del', slot: VT.cmSlot || (VT.st && VT.st.slot), ts: ts });
+            };
+        }
         h.appendChild(b); CM.live++;
         var w = h.clientWidth || 240, bw = b.offsetWidth || 160;
         b.style.left = Math.round(Math.random() * Math.max(0, w - bw)) + 'px';
-        setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); CM.live = Math.max(0, CM.live - 1); }, 3500);
+        setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); CM.live = Math.max(0, CM.live - 1); }, 4700);
     }
     function cmRun() {
         if (CM.timer || CM_RM || !CM.on) return;
         function tick() {
             var c = $v('voteCard');
             if (!c || c.className.indexOf('show') < 0 || document.hidden || !CM.on || !CM.list.length) return;
-            if (CM.live >= (CM_LITE ? 1 : 2)) return;
-            cmPop(CM.list[CM.i % CM.list.length]); CM.i++;
+            if (CM.live >= (CM_LITE ? 2 : 4)) return;
+            var k = CM.i % CM.list.length; cmPop(CM.list[k], CM.ts[k]); CM.i++;
         }
-        setTimeout(tick, 600);
-        CM.timer = setInterval(tick, CM_LITE ? 2600 : 1800);
+        setTimeout(tick, 300);
+        CM.timer = setInterval(tick, CM_LITE ? 1500 : 900);
     }
     function cmStop() {
         clearInterval(CM.timer); CM.timer = null; CM.live = 0;
@@ -2374,8 +2436,10 @@ function onAppReady() {
             if (r && r.ok && r.active !== false && !r.stale) {
                 cmMarkDone(slot); cmSet(r.cm);
                 $v('vcCmRow').style.display = 'none';
-                cmRun(); cmPop(txt);                                   // свою хмарку показуємо одразу
-                clearTimeout(VT.hideT); VT.hideT = setTimeout(hideCard, 5000);
+                var dn = $v('vcCmDone'); dn.innerHTML = window.loaderDots; dn.style.display = 'flex';   // дві крапки, що зливаються
+                setTimeout(function () { dn.style.display = 'none'; dn.innerHTML = ''; }, 2600);
+                cmRun(); cmPop(txt, null);
+                clearTimeout(VT.hideT); VT.hideT = setTimeout(hideCard, 8000);
                 return;
             }
             var e = r && r.error;
@@ -2475,16 +2539,19 @@ function onAppReady() {
 
     // показати результати (тап по пілюлі або по котику); хто ще не голосував, побачить саме опитування
     window.voteShowResults = function (ms) {
-        if (VT.peek || typeof gasCall !== 'function') return;
-        VT.peek = true;
-        function fail() { VT.peek = false; if (window.catToast) window.catToast('⚠️ Не вдалося завантажити, спробуй ще раз', 2500); }
+        if (typeof gasCall !== 'function') return;
+        if (VT.peek && Date.now() - VT.peekT < 8000) return;
+        VT.peek = true; VT.peekT = Date.now();
+        var done = false;
+        function fail() { if (done) return; done = true; VT.peek = false; if (window.catToast) window.catToast('⚠️ Не вдалося завантажити, спробуй ще раз', 2500); }
+        var tm = setTimeout(fail, 8000);
         gasCall({ action: 'vote_get' }).then(function (r) {
-            VT.peek = false;
-            if (!r || !r.ok) { fail(); return; }
-            if (!r.active) { if (window.catToast) window.catToast((window.CAT_CONFIG && window.CAT_CONFIG.tap3NoPoll) || '📊 Опитування зараз немає', 2500); return; }
+            if (done) return; done = true; clearTimeout(tm); VT.peek = false;
+            if (!r || !r.ok) { done = false; fail(); return; }
+            if (!r.active) { if (window.catToast) window.catToast('📊 Опитування зараз немає', 2500); return; }
             if (r.mine != null) { showResult(r, ms, 'Світло зараз є? Ось що кажуть люди:'); return; }
             VT.st = r; showCard();
-        }).catch(fail);
+        }).catch(function () { clearTimeout(tm); done = false; fail(); });
     };
 
     $v('vcA').onclick = function () { sendVote(+this.getAttribute('data-v')); };
@@ -2648,7 +2715,7 @@ function onAppReady() {
     // автопоказ: щойно додаток відкрився і бейдж стоїть на екрані (вікна опитування/новин не чекаємо)
     function ccModalOpen() {
         var app = $v('app'); if (!app || app.style.display === 'none') return true;
-        var ids = ['notifModal', 'genModal', 'editModal', 'statusModal', 'pointsModal', 'infoAlertModal'];
+        var ids = ['notifModal', 'genModal', 'editModal', 'statusModal', 'pointsModal', 'infoAlertModal', 'infoModal', 'wxModal'];
         for (var i = 0; i < ids.length; i++) { var e = $v(ids[i]); if (e && e.style.display === 'flex') return true; }
         return false;                                                 // повноекранна модалка закриває бейдж: чекаємо
     }
@@ -3026,6 +3093,7 @@ var CAT_CONFIG = {
     window.catToast = function (text, ms) {
         var t = $c('catToast'); if (!t) return;
         t.textContent = text;
+        var hd = document.querySelector('.sticky-header'); t.style.top = (hd ? hd.getBoundingClientRect().bottom + 10 : 70) + 'px';
         t.style.display = 'block';
         void t.offsetWidth;
         t.style.opacity = '1';
@@ -3053,7 +3121,16 @@ var CAT_CONFIG = {
     }
     function hoursFx() { window.catToast(offText(), CFG.tap2Ms); }
     function pollFx() { if (window.voteShowResults) window.voteShowResults(CFG.tap3Ms); }   // результати опитування
-    function noTapalkaFx() { window.catToast(CFG.tapNoTapalkaText, CFG.tapNoTapalkaMs); }
+    var PH = {
+        on: ['світло є, а ти все ще тут?','в тебе світло є, а зайнятися нічим?','ти робиш вигляд, що дуже зайнятий?','закривай додаток, всьо','краще заряджай телефон'],
+        off: ['натискання не впливає на появу світла','шанс появи світла збільшився на 0%','ти так світло не наклікаєш','телефон ще не сів? шкода','я відчуваю, як сідає твій телефон','світла немає, а у тебе досі є інтернет. розкіш','сусіди вже запустили генератор?'],
+        any: ['мені теж не дуже подобається графік, шо поробиш','та шо?','ваш ентузіазм зафіксовано','дякую за безглузду взаємодію','ой та всьо, погрались і досить']
+    };
+    function noTapalkaFx() {
+        var st = (document.getElementById('timerStatus') || {}).textContent || '', pool = PH.any.slice();
+        if (/Світла немає/.test(st)) pool = pool.concat(PH.off); else if (/Світло є/.test(st)) pool = pool.concat(PH.on);
+        window.catToast(pool[Math.floor(Math.random() * pool.length)], 2600);
+    }
 
     // ======================= 1. ЕМОДЗІ-ДОЩ (авто) =======================
     function rain() {
@@ -3359,7 +3436,7 @@ var CAT_CONFIG = {
 
     // ======================= ПОСЛІДОВНІСТЬ =======================
     // [0] емодзі-дощ — авто (або першим кліком, якщо клікнули раніше за авто-запуск)
-    var SEQ = [rain, hoursFx, pollFx, noTapalkaFx, meteors, quake, blackHole, pulse, sparks, shock, lightning, battery, orbit, fireflies, garland, tvOff, flashlight, candle, shortCircuit, blackout, flip];
+    var SEQ = [rain, hoursFx, noTapalkaFx, noTapalkaFx, meteors, quake, blackHole, pulse, sparks, shock, lightning, battery, orbit, fireflies, garland, tvOff, flashlight, candle, shortCircuit, blackout, flip];
     var POOL = [rain, meteors, quake, flip, pulse, sparks, lightning, battery, fireflies, garland, flashlight, candle, shortCircuit, blackout, blackHole, tvOff, shock, orbit];
 
     function runNext() {
@@ -3380,6 +3457,7 @@ var CAT_CONFIG = {
         if (now - lastTap < 250) return;   // від випадкових подвійних тапів
         lastTap = now;
         runNext();
+        if (step > 4 && Math.random() < 0.4) setTimeout(noTapalkaFx, 350);
         // додаткові маскоти: перший тап лише перевіряє, що файли існують; далі випадкова підміна на кілька секунд
         try {
             if (window.mascotProbeAll) window.mascotProbeAll();
@@ -3389,7 +3467,7 @@ var CAT_CONFIG = {
 
     // ---- авто-запуск емодзі-дощу: один раз за сесію ----
     function modalOpen() {
-        var ids = ['notifModal', 'genModal', 'editModal', 'statusModal', 'pointsModal', 'infoAlertModal'];
+        var ids = ['notifModal', 'genModal', 'editModal', 'statusModal', 'pointsModal', 'infoAlertModal', 'infoModal', 'wxModal'];
         for (var i = 0; i < ids.length; i++) { var e = $c(ids[i]); if (e && e.style.display === 'flex') return true; }
         return false;
     }
@@ -3407,5 +3485,106 @@ var CAT_CONFIG = {
 })();
 </script>
 
+
+<div id="infoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:10000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)this.style.display='none'">
+ <div style="background:#111;border:1px solid #333;border-radius:20px;width:100%;max-width:450px;max-height:85vh;overflow-y:auto;padding:20px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+   <h3 style="margin:0;font-weight:900;font-size:18px;color:var(--c-yellow);">ℹ️ Інформація</h3>
+   <div onclick="document.getElementById('infoModal').style.display='none'" style="color:#666;font-size:32px;cursor:pointer;line-height:1;">&times;</div>
+  </div>
+  <div style="font-size:13px;color:#ccc;line-height:1.5;">
+   <p style="margin:0 0 10px;">«Валки Світло • Графік» — не є офіційним ресурсом АТ «Харківобленерго», Валківської міської ради чи інших державних або комунальних установ.</p>
+   <p style="margin:0 0 10px;">Ми не є представниками енергетичних компаній, не здійснюємо керування електромережею та не впливаємо на графіки й тривалість відключень.</p>
+   <p style="margin:0 0 10px;">Уся інформація в додатку публікується виключно з інформаційною метою на основі відкритих джерел та повідомлень учасників місцевої спільноти.</p>
+   <p style="margin:0;">Графіки, час відключень та інші дані можуть змінюватися, оновлюватися із затримкою або не відповідати фактичній ситуації. За офіційною інформацією та актуальними повідомленнями рекомендуємо звертатися до першоджерел.</p>
+  </div>
+ </div></div>
+<div id="wxModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:10000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)this.style.display='none'">
+ <div style="background:#111;border:1px solid #333;border-radius:20px;padding:20px;width:100%;max-width:360px;">
+  <h3 style="margin:0 0 6px;font-weight:900;">Погода в додатку</h3>
+  <div style="font-size:12px;color:#888;">Ефект триває 10 секунд</div>
+  <div class="nchips" id="wxChips"></div>
+ </div></div>
+<div id="wxLayer"></div>
+<script>
+(function () {
+  var live = 0, lastSend = 0, vis = false, rxBarEl = document.getElementById('rxBar');
+  var B = ['<span class="rx-sym" style="color:#22c55e;border-color:#22c55e">+</span>','<span class="rx-sym" style="color:#ef4444;border-color:#ef4444">−</span>','👍🏻','👎🏻','⁉️','🪫','🔦','⚡️','💡'];
+  function spawn(i, x, y) {
+    if (live > 30) return;
+    var f = document.createElement('div'); f.className = 'rx-fl'; f.innerHTML = B[i];
+    f.style.left = x + 'px'; f.style.top = y + 'px'; f.style.setProperty('--dx', (Math.random() * 60 - 30) + 'px');
+    document.getElementById('fxLayer').appendChild(f); live++;
+    setTimeout(function () { f.remove(); live--; }, 2300);
+  }
+  function build(host) {
+    if (!host) return;
+    B.forEach(function (b, i) {
+      var e = document.createElement('button'); e.className = 'rx-btn'; e.innerHTML = b;
+      e.onclick = function () {
+        var r = e.getBoundingClientRect(); spawn(i, r.left + r.width / 2, r.top);
+        var n = Date.now();
+        if (n - lastSend > 600) { lastSend = n; gasCall({ action: 'react', k: i }).catch(function () {}); }
+      };
+      host.appendChild(e);
+    });
+  }
+  build(rxBarEl);
+  try { new IntersectionObserver(function (en) { vis = en[0].isIntersecting; }).observe(rxBarEl); } catch (e) { vis = true; }
+  var pool = {}, order = [], pi = 0;
+  function poll() {   // питаємо сервер лише коли блок реакцій на екрані (економія квот)
+    if (document.hidden || !vis || typeof gasCall !== 'function') return;
+    gasCall({ action: 'react_get' }).then(function (r) {
+      if (!r || !r.ok) return;
+      var now = Date.now();
+      (r.ev || []).forEach(function (v) {
+        if (v[2]) return;                       // свої вже показали одразу
+        var t0 = now - v[1] * 1000, key = v[0] + '_' + Math.round(t0 / 1500);
+        if (!pool[key]) pool[key] = { k: v[0], t0: t0 };
+      });
+    }).catch(function () {});
+  }
+  function stream() {   // реакції живуть 2 хвилини: поки не минули, крутимо їх потоком угору (як коментарі)
+    if (document.hidden || !vis) return;
+    var now = Date.now();
+    Object.keys(pool).forEach(function (k) { if (now - pool[k].t0 > 120000) delete pool[k]; });
+    order = Object.keys(pool); if (!order.length) return;
+    var p = pool[order[pi++ % order.length]];
+    spawn(p.k, window.innerWidth * (.1 + Math.random() * .8), window.innerHeight - 90);
+  }
+  poll(); setInterval(poll, 5000); setInterval(stream, 750);
+
+  var T = [['off','✖️ Вимкнути'],['cloud','☁️ Хмарки'],['rain','🌧 Дощ'],['snow','❄️ Сніг'],['bunny','✨ Зайчики'],['sunc','⛅ Сонце з хмарками'],['wind','💨 Вітер']];
+  var L = document.getElementById('wxLayer'), tm = [];
+  function lite() { return !!window.IS_LITE; }
+  function R(a, b) { return a + Math.random() * (b - a); }
+  function el(css, html) { var d = document.createElement('div'); d.className = 'wx-i'; d.style.cssText = css; if (html) d.innerHTML = html; L.appendChild(d); return d; }
+  var CL = '<svg viewBox="0 0 64 40" width="100%"><path d="M16 36a12 12 0 0 1-1-24 16 16 0 0 1 30 4 10 10 0 0 1 2 20z" fill="rgba(255,255,255,.55)"/></svg>';
+  function clouds(n) { for (var i = 0; i < n; i++) el('top:' + R(5, 80) + 'vh;width:' + R(90, 170) + 'px;animation:wxDrift ' + R(7, 10) + 's linear ' + (-R(0, 6)) + 's both', CL); }
+  function stop() {
+    tm.forEach(clearTimeout); tm = []; L.style.opacity = '0';
+    setTimeout(function () { if (L.style.opacity === '0') L.innerHTML = ''; }, 800);
+    document.querySelectorAll('.wx-gust').forEach(function (e) { e.classList.remove('wx-gust'); });
+  }
+  function gust() {
+    document.querySelectorAll('.sticky-header,.tl-item,.disclaimer-box,.app-footer').forEach(function (e) { e.classList.remove('wx-gust'); void e.offsetWidth; e.classList.add('wx-gust'); });
+  }
+  var FX = {
+    cloud: function () { clouds(lite() ? 4 : 7); },
+    rain: function () { for (var i = 0; i < (lite() ? 35 : 70); i++) el('left:' + R(0, 100) + 'vw;width:2px;height:' + R(14, 26) + 'px;background:linear-gradient(transparent,rgba(147,197,253,.8));--sx:-40px;animation:wxFall ' + R(.5, .9) + 's linear ' + (-R(0, 1)) + 's infinite'); clouds(3); },
+    snow: function () { for (var i = 0; i < (lite() ? 30 : 60); i++) { var s = R(3, 7); el('left:' + R(0, 100) + 'vw;width:' + s + 'px;height:' + s + 'px;border-radius:50%;background:#fff;opacity:.85;--sx:' + R(-60, 60) + 'px;animation:wxFall ' + R(4, 7) + 's linear ' + (-R(0, 5)) + 's infinite'); } },
+    bunny: function () { for (var i = 0; i < 8; i++) { var s = R(30, 70); el('left:0;top:0;width:' + s + 'px;height:' + s + 'px;border-radius:50%;background:radial-gradient(circle,rgba(255,236,150,.95),rgba(251,191,36,.35) 55%,transparent 70%);mix-blend-mode:screen;--x1:' + R(0, 80) + 'vw;--y1:' + R(5, 85) + 'vh;--x2:' + R(0, 80) + 'vw;--y2:' + R(5, 85) + 'vh;animation:wxBounce ' + R(1.2, 2.2) + 's ease-in-out ' + (-R(0, 2)) + 's infinite'); } },
+    sunc: function () { el('right:-30px;top:-30px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,#fff6d6 25%,#fbbf24 45%,rgba(251,191,36,0) 70%);'); el('right:-60px;top:-60px;width:210px;height:210px;border-radius:50%;background:repeating-conic-gradient(rgba(251,191,36,.35) 0 6deg,transparent 6deg 20deg);animation:wxSpin 12s linear infinite'); clouds(4); },
+    wind: function () { for (var i = 0; i < 14; i++) el('left:0;top:' + R(5, 95) + 'vh;width:' + R(60, 140) + 'px;height:2px;border-radius:2px;background:rgba(255,255,255,.55);animation:wxWind ' + R(.7, 1.3) + 's linear ' + (-R(0, 1)) + 's infinite'); tm.push(setTimeout(gust, 2500), setTimeout(gust, 6500)); }
+  };
+  window.wxStart = function (k) {
+    document.getElementById('wxModal').style.display = 'none';
+    stop(); if (k === 'off') return;
+    try { if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) {}
+    tm.push(setTimeout(function () { L.innerHTML = ''; FX[k](); L.style.opacity = '1'; tm.push(setTimeout(stop, 10000)); }, 850));
+  };
+  document.getElementById('wxChips').innerHTML = T.map(function (t) { return '<div class="nchip" style="flex:1 1 45%" onclick="wxStart(\'' + t[0] + '\')">' + t[1] + '</div>'; }).join('');
+})();
+</script>
 </body>
 </html>
