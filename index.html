@@ -2287,7 +2287,7 @@ function onAppReady() {
                 <span class="vc-cm-cnt" id="vcCmCnt">40</span>
                 <button class="vc-cm-send" id="vcCmSend" type="button" aria-label="Надіслати">➤</button>
             </div>
-            <div class="vc-cm-note">Ваш коментар живе лише 2 хвилини. Писати можна раз на 5 хвилин. Будьте чемними.</div>
+            <div class="vc-cm-note">Коментар живе лише 2 хвилини. Писати можна раз на 5 хвилин. Будьте чемними.</div>
             <div class="vc-cm-msg" id="vcCmMsg"></div>
         </div>
     </div>
@@ -2455,8 +2455,8 @@ function onAppReady() {
             if (e === 'cool') { try { localStorage.setItem('vt_cm_t', String(Date.now() - (300 - ((r && r.wait) || 300)) * 1000)); } catch (x) {} }
             if (e === 'cool' || e === 'off' || (r && r.stale)) { $v('vcCmRow').style.display = 'none'; }
             var map = { long: 'Максимум 40 символів', link: 'Без посилань і @', empty: 'Напиши щось', cool: 'Наступний коментар через ' + Math.max(1, Math.ceil(((r && r.wait) || 60) / 60)) + ' хв', off: 'Коментарі вимкнені', novote: 'Спочатку проголосуй' };
-            $v('vcCmMsg').textContent = map[e] || (r && r.stale ? 'Опитування вже змінилося' : 'Не вийшло, спробуй ще раз');
-        }).catch(function () { VT.cmBusy = false; $v('vcCmMsg').textContent = 'Не вийшло, спробуй ще раз'; });
+            $v('vcCmMsg').textContent = map[e] || (r && r.stale ? 'Опитування вже змінилося' : 'Не вийшло, спробуй ще раз' + (isAdmin ? ' [' + (e || 'no response') + ']' : ''));
+        }).catch(function (er) { VT.cmBusy = false; $v('vcCmMsg').textContent = 'Не вийшло, спробуй ще раз' + (isAdmin ? ' [' + ((er && er.message) || 'network') + ']' : ''); });
     }
 
     function present() {
@@ -3467,10 +3467,50 @@ var CAT_CONFIG = {
     }
 
     var cat = $c('mascotImg');
+    var lastReplay = 0, tapEl = null, tapRaf = 0, tapT0 = 0, tapS = 1;
+    function tapHaptic() { try { window.Telegram.WebApp.HapticFeedback.impactOccurred('light'); } catch (e) { try { if (navigator.vibrate) navigator.vibrate(12); } catch (x) {} } }
+    function replayIfConfused() {   // «аварійне» / «уточнюємо»: тап просто запускає анімацію котика ще раз
+        var img = $c('mascotImg');
+        if (!img || img.style.display === 'none' || !img.getAttribute('src')) return;
+        if (typeof currentMascotState === 'undefined' || currentMascotState !== 'confused') return;
+        if (typeof mascotSwapping !== 'undefined' && mascotSwapping) return;
+        var n = Date.now(); if (n - lastReplay < 700) return; lastReplay = n;
+        img.src = img.src.split('?')[0] + '?v=' + n;
+    }
+    function tapGrow() {
+        if (!tapEl) return;
+        var k = Math.max(0, Math.min(1, (Date.now() - tapT0) / 1200)); tapS = 1 + k * 0.9;
+        tapEl.style.transform = 'translate(-50%,-50%) scale(' + tapS.toFixed(2) + ')';
+        tapRaf = requestAnimationFrame(tapGrow);
+    }
+    function tapRelease() {
+        if (!tapEl) return;
+        cancelAnimationFrame(tapRaf);
+        var el = tapEl, s = tapS, dx = (Math.random() < 0.5 ? -1 : 1) * (70 + Math.random() * 40);
+        tapEl = null;
+        el.style.transition = 'transform .7s ease-out, opacity .7s ease-out';
+        void el.offsetWidth;
+        el.style.transform = 'translate(calc(-50% + ' + dx + 'px), calc(-50% - 24px)) scale(' + s.toFixed(2) + ') rotate(' + (dx > 0 ? 25 : -25) + 'deg)';
+        el.style.opacity = '0';
+        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 800);
+    }
+    if (cat) {
+        cat.addEventListener('pointerdown', function (e) {
+            tapHaptic();
+            if (RM) return;
+            var L = $c('fxLayer'); if (!L) return;
+            if (tapEl) tapRelease();
+            var el = mk('', 'position:absolute;left:' + e.clientX + 'px;top:' + (e.clientY - 18) + 'px;font-size:22px;line-height:1;pointer-events:none;opacity:1;transform:translate(-50%,-50%) scale(1);will-change:transform,opacity;');
+            el.textContent = '⚡️'; L.appendChild(el); tapEl = el; tapS = 1; tapT0 = Date.now() + 250;   // росте, лише якщо тримати довше ~0.25 с
+            cancelAnimationFrame(tapRaf); tapRaf = requestAnimationFrame(tapGrow);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach(function (n) { cat.addEventListener(n, tapRelease); });
+    }
     if (cat) cat.addEventListener('click', function () {
         var now = Date.now();
         if (now - lastTap < 250) return;   // від випадкових подвійних тапів
         lastTap = now;
+        replayIfConfused();
         var fire = (tapsSince >= 1 && Math.random() < 0.45);   // ≈3 ефекти на 10 тапів, і ніколи два поспіль
         if (fire) { tapsSince = 0; runNext(); } else tapsSince++;
         // додаткові маскоти: перший тап лише перевіряє, що файли існують; далі випадкова підміна на кілька секунд
