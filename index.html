@@ -2235,15 +2235,11 @@ function onAppReady() {
 .vc-cm-open::after { content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); transform: skewX(-20deg); animation: shineSweep 2.4s infinite; }
 @keyframes cmPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(251,191,36,.55), 0 0 6px rgba(251,191,36,.3); } 50% { box-shadow: 0 0 0 5px rgba(251,191,36,0), 0 0 16px rgba(251,191,36,.7); } }
 #vcCmDone .zen-container { transform: scale(1.4); }
-#chPoll .crowd-card::before { display: none; }
+#chPoll .chp-row { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+#chPoll .chp-btn { font-family: inherit; font-size: 14px; font-weight: 800; color: #fff; padding: 7px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.1); cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+#chPoll .chp-btn:active { background: rgba(255,255,255,.2); }
+#chPoll .chp-sub { margin-top: 5px; font-size: 12px; color: #999; line-height: 1.3; }
 #chPoll > div:first-child { font-size: 12px !important; letter-spacing: .5px; opacity: .8 !important; margin-bottom: 10px !important; }
-#chPoll .crowd-card { padding: 14px 16px; border-radius: 16px; width: 100%; }
-#chPoll .crowd-card .cc-ico { width: 24px; height: 24px; margin-right: 12px; }
-#chPoll .crowd-card .cc-a { font-size: 15px; line-height: 1.3; white-space: normal; }
-#chPoll .crowd-card .cc-b { font-size: 13px; line-height: 1.3; margin-top: 4px; white-space: normal; }
-#chPoll .crowd-card .cc-t { flex: 1; }
-#chPoll .crowd-card .cc-go { display: inline-block; font-size: 14px; padding: 5px 14px; margin-top: 4px; border: 1px solid rgba(255,255,255,.3); border-radius: 10px; background: rgba(255,255,255,.12); }
-#chPoll .crowd-card .cl-chev { width: 18px; height: 18px; margin-left: 10px; }
 .rx-bar { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:6px 20px 14px; }
 .rx-btn { display:inline-flex; align-items:center; justify-content:center; min-width:46px; height:46px; padding:0 10px; border-radius:23px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); font-size:22px; color:#fff; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
 .rx-btn:disabled { cursor: default; }
@@ -2287,11 +2283,11 @@ function onAppReady() {
         <div class="vc-cm-row" id="vcCmRow" style="display:none;">
             <button class="vc-cm-open" id="vcCmOpen" type="button">👤💬 Додати коментар</button>
             <div class="vc-cm-form" id="vcCmForm">
-                <input class="vc-cm-in" id="vcCmIn" type="text" maxlength="25" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Коротко, до 25 символів" aria-label="Коментар">
-                <span class="vc-cm-cnt" id="vcCmCnt">25</span>
+                <input class="vc-cm-in" id="vcCmIn" type="text" maxlength="40" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Коротко, до 40 символів" aria-label="Коментар">
+                <span class="vc-cm-cnt" id="vcCmCnt">40</span>
                 <button class="vc-cm-send" id="vcCmSend" type="button" aria-label="Надіслати">➤</button>
             </div>
-            <div class="vc-cm-note">Ваш коментар живе лише 2 хвилини. Ви можете залишити лише 1 коментар. Будьте чемними.</div>
+            <div class="vc-cm-note">Ваш коментар живе лише 2 хвилини. Писати можна раз на 5 хвилин. Будьте чемними.</div>
             <div class="vc-cm-msg" id="vcCmMsg"></div>
         </div>
     </div>
@@ -2331,9 +2327,10 @@ function onAppReady() {
     window.chPollRender = function () {
         var el = $v('chPoll'); if (!el) return;
         var c = window.crowdInfo, ok = c && c.n >= 3 && c.last && !window.verifyInfo;
+        var sub = ok ? c.n + ' ' + plural(c.n) + ', ' + agoText(c.last) : 'поки що замало відповідей';
         el.innerHTML = '<div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#fff;opacity:.7;margin-bottom:8px;">Що кажуть люди</div>'
-          + '<div class="crowd-card" style="position:relative;display:flex;cursor:pointer;" onclick="window.closeCh&&closeCh();window.crowdTap()">'
-          + SVG_OK.replace('cl-ico', 'cc-ico') + '<span class="cc-t"><span class="cc-a">' + (ok ? 'підтвердили <b>' + c.n + '</b> ' + plural(c.n) : 'Поки що замало відповідей') + '</span><span class="cc-b">' + (ok ? agoText(c.last) + ' · ' : '') + '<span class="cc-go">Переглянути</span></span></span>' + SVG_CHEV + '</div>';
+          + '<div class="chp-row">' + SVG_OK.replace('class="cl-ico"', 'width="20" height="20" style="flex-shrink:0;color:#22c55e;"')
+          + '<div><button class="chp-btn" type="button" onclick="window.closeCh&&closeCh();window.crowdTap()">Переглянути</button><div class="chp-sub">' + sub + '</div></div></div>';
     };
     window.renderVerify = function () {
         if (window.chPollRender) window.chPollRender();
@@ -2393,8 +2390,9 @@ function onAppReady() {
     // ---- коментарі до опитування: анонімні хмарки, що вилітають із картки й лопаються ----
     var CM = { list: [], ts: [], on: false, i: 0, timer: null, live: 0 }, CM_LITE = !!window.IS_LITE, CM_RM = false;
     try { CM_RM = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
-    function cmDone(slot) { try { return localStorage.getItem('vt_cm') === slot; } catch (e) { return false; } }
-    function cmMarkDone(slot) { try { localStorage.setItem('vt_cm', slot); } catch (e) {} }
+    function cmWait() { try { var t = +localStorage.getItem('vt_cm_t') || 0, w = Math.ceil((300000 - (Date.now() - t)) / 1000); return w > 0 ? w : 0; } catch (e) { return 0; } }
+    function cmDone() { return cmWait() > 0; }
+    function cmMarkDone() { try { localStorage.setItem('vt_cm_t', String(Date.now())); } catch (e) {} }
     function cmSet(cm) {
         if (!cm) return;
         CM.on = !!cm.on; CM.list = (cm.list || []).slice(0, 12); CM.ts = (cm.ts || []).slice(0, 12);
@@ -2432,19 +2430,20 @@ function onAppReady() {
         clearInterval(CM.timer); CM.timer = null; CM.live = 0;
         var h = $v('vcCm'); if (h) h.innerHTML = '';
     }
-    function cmCount() { $v('vcCmCnt').textContent = String(25 - Array.from($v('vcCmIn').value).length); }
+    function cmCount() { $v('vcCmCnt').textContent = String(40 - Array.from($v('vcCmIn').value).length); }
     function cmCollapse() {
         $v('vcCmForm').style.display = 'none'; $v('vcCmOpen').style.display = 'inline-block';
         $v('vcCmIn').value = ''; $v('vcCmMsg').textContent = '';
     }
     function cmSend() {
         var txt = $v('vcCmIn').value.replace(/\s+/g, ' ').trim(), slot = VT.cmSlot;
-        if (!txt || !slot || VT.cmBusy) return;
+        if (!txt || !slot || VT.cmBusy || cmDone(slot)) return;
         VT.cmBusy = true; $v('vcCmMsg').textContent = '';
         gasCall({ action: 'comment', slot: slot, text: txt }).then(function (r) {
             VT.cmBusy = false;
             if (r && r.ok && r.active !== false && !r.stale) {
                 cmMarkDone(slot); cmSet(r.cm);
+                for (var q = CM.list.length - 1; q >= 0; q--) if (CM.list[q] === txt) { CM.list.splice(q, 1); CM.ts.splice(q, 1); break; }   // свій коментар уже показали, не крутимо його ще раз
                 $v('vcCmRow').style.display = 'none';
                 var dn = $v('vcCmDone'); dn.innerHTML = window.loaderDots; dn.style.display = 'flex';   // дві крапки, що зливаються
                 setTimeout(function () { dn.style.display = 'none'; dn.innerHTML = ''; }, 2600);
@@ -2453,9 +2452,9 @@ function onAppReady() {
                 return;
             }
             var e = r && r.error;
-            if (e === 'dup') cmMarkDone(slot);
-            if (e === 'dup' || e === 'off' || (r && r.stale)) { $v('vcCmRow').style.display = 'none'; }
-            var map = { long: 'Максимум 25 символів', link: 'Без посилань і @', empty: 'Напиши щось', dup: 'Ти вже залишив(ла) коментар', off: 'Коментарі вимкнені', novote: 'Спочатку проголосуй' };
+            if (e === 'cool') { try { localStorage.setItem('vt_cm_t', String(Date.now() - (300 - ((r && r.wait) || 300)) * 1000)); } catch (x) {} }
+            if (e === 'cool' || e === 'off' || (r && r.stale)) { $v('vcCmRow').style.display = 'none'; }
+            var map = { long: 'Максимум 40 символів', link: 'Без посилань і @', empty: 'Напиши щось', cool: 'Наступний коментар через ' + Math.max(1, Math.ceil(((r && r.wait) || 60) / 60)) + ' хв', off: 'Коментарі вимкнені', novote: 'Спочатку проголосуй' };
             $v('vcCmMsg').textContent = map[e] || (r && r.stale ? 'Опитування вже змінилося' : 'Не вийшло, спробуй ще раз');
         }).catch(function () { VT.cmBusy = false; $v('vcCmMsg').textContent = 'Не вийшло, спробуй ще раз'; });
     }
@@ -2520,7 +2519,7 @@ function onAppReady() {
         VT.cmSlot = r.slot;
         if (window.rxSync) setTimeout(window.rxSync, 50);
         cmCollapse();
-        $v('vcCmRow').style.display = (CM.on && r.mine != null && r.slot && !cmDone(r.slot)) ? 'block' : 'none';
+        $v('vcCmRow').style.display = (CM.on && r.mine != null && r.slot) ? 'block' : 'none';
         clearTimeout(VT.hideT);
         VT.hideT = setTimeout(hideCard, ms || RESULT_MS);
         present();
@@ -2571,6 +2570,7 @@ function onAppReady() {
     $v('vcB').onclick = function () { sendVote(+this.getAttribute('data-v')); };
     $v('vcX').onclick = function () { if (VT.st) markDismissed(VT.st.slot); hideCard(); };
     $v('vcCmOpen').onclick = function () {
+        var w = cmWait(); if (w > 0) { $v('vcCmMsg').textContent = 'Наступний коментар через ' + Math.ceil(w / 60) + ' хв'; return; }
         clearTimeout(VT.hideT);                                        // поки людина пише, картка не зникає
         this.style.display = 'none'; $v('vcCmForm').style.display = 'flex'; cmCount();
         setTimeout(function () { try { $v('vcCmIn').focus(); } catch (e) {} }, 60);
@@ -3058,7 +3058,7 @@ var CAT_CONFIG = {
 
 <script>
 (function () {
-    var CFG = window.CAT_CONFIG, toastT = null, step = 0, lastTap = 0, lastRand = -1, autoDone = false;
+    var CFG = window.CAT_CONFIG, toastT = null, step = 0, lastTap = 0, tapsSince = 1, lastText = false, lastRand = -1, autoDone = false;
     var RM = false, LITE = !!window.IS_LITE;
     try { RM = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
 
@@ -3449,16 +3449,18 @@ var CAT_CONFIG = {
 
     // ======================= ПОСЛІДОВНІСТЬ =======================
     // [0] емодзі-дощ — авто (або першим кліком, якщо клікнули раніше за авто-запуск)
-    var SEQ = [rain, hoursFx, noTapalkaFx, noTapalkaFx, meteors, quake, blackHole, pulse, sparks, shock, lightning, battery, orbit, fireflies, garland, tvOff, flashlight, candle, shortCircuit, blackout, flip];
-    var POOL = [rain, meteors, quake, flip, pulse, sparks, lightning, battery, fireflies, garland, flashlight, candle, shortCircuit, blackout, blackHole, tvOff, shock, orbit];
+    var SEQ = [rain, hoursFx, meteors, noTapalkaFx, quake, blackHole, pulse, noTapalkaFx, sparks, shock, lightning, noTapalkaFx, battery, orbit, fireflies, garland, noTapalkaFx, tvOff, flashlight, candle, shortCircuit, blackout, flip];
+    var POOL = [rain, meteors, quake, flip, pulse, sparks, lightning, battery, fireflies, garland, flashlight, candle, shortCircuit, blackout, blackHole, tvOff, shock, orbit, noTapalkaFx, noTapalkaFx, noTapalkaFx, hoursFx];
+    function isText(f) { return f === hoursFx || f === noTapalkaFx; }
 
     function runNext() {
         var fn;
         if (step < SEQ.length) { fn = SEQ[step++]; }
         else {
-            var i; do { i = Math.floor(Math.random() * POOL.length); } while (POOL.length > 1 && i === lastRand);
+            var i; do { i = Math.floor(Math.random() * POOL.length); } while (POOL.length > 1 && (i === lastRand || (lastText && isText(POOL[i]))));
             lastRand = i; fn = POOL[i];
         }
+        lastText = isText(fn);
         autoDone = true;
         fn();
         fpsWatch(1800);                       // міряємо плавність під час ефекту: на слабкому телефоні далі буде легший режим
@@ -3469,12 +3471,12 @@ var CAT_CONFIG = {
         var now = Date.now();
         if (now - lastTap < 250) return;   // від випадкових подвійних тапів
         lastTap = now;
-        runNext();
-        if (step > 4 && Math.random() < 0.4) setTimeout(noTapalkaFx, 350);
+        var fire = (tapsSince >= 1 && Math.random() < 0.45);   // ≈3 ефекти на 10 тапів, і ніколи два поспіль
+        if (fire) { tapsSince = 0; runNext(); } else tapsSince++;
         // додаткові маскоти: перший тап лише перевіряє, що файли існують; далі випадкова підміна на кілька секунд
         try {
             if (window.mascotProbeAll) window.mascotProbeAll();
-            if (Math.random() < (CFG.mascotSwapChance == null ? 0.35 : CFG.mascotSwapChance) && window.mascotSwapTap) window.mascotSwapTap();
+            if (fire && Math.random() < (CFG.mascotSwapChance == null ? 0.35 : CFG.mascotSwapChance) && window.mascotSwapTap) window.mascotSwapTap();
         } catch (e) {}
     });
 
@@ -3525,8 +3527,10 @@ var CAT_CONFIG = {
   var B = ['<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#22c55e" stroke-width="2.4" stroke-linecap="round" style="display:block"><circle cx="12" cy="12" r="10"/><line x1="12" y1="7.5" x2="12" y2="16.5"/><line x1="7.5" y1="12" x2="16.5" y2="12"/></svg>','<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round" style="display:block"><circle cx="12" cy="12" r="10"/><line x1="7.5" y1="12" x2="16.5" y2="12"/></svg>','👍🏻','👎🏻','⁉️','🪫','🔦','⚡️','💡'];
   var pool = {}, order = [], pi = 0, poolSlot = '';
   function curSlot() { return (window.voteSlot && window.voteSlot()) || ''; }
-  function rxDone(slot) { try { return !!slot && localStorage.getItem('vt_rx') === slot; } catch (e) { return false; } }
-  function rxMark(slot) { try { localStorage.setItem('vt_rx', slot); } catch (e) {} }
+  var unT = null;
+  function rxWait() { try { var t = +localStorage.getItem('vt_rx_t') || 0, w = Math.ceil((300000 - (Date.now() - t)) / 1000); return w > 0 ? w : 0; } catch (e) { return 0; } }
+  function rxMark() { try { localStorage.setItem('vt_rx_t', String(Date.now())); } catch (e) {} }
+  function lockFor(pick) { var w = rxWait(); lock(w > 0, pick); clearTimeout(unT); if (w > 0) unT = setTimeout(function () { lock(false); }, w * 1000 + 200); }   // після кулдауну кнопки самі оживають
   function lock(on, pick) {
     BTN.forEach(function (b, i) { b.disabled = !!on; b.style.opacity = on ? (i === pick ? '1' : '.35') : ''; });
   }
@@ -3542,14 +3546,14 @@ var CAT_CONFIG = {
     B.forEach(function (b, i) {
       var e = document.createElement('button'); e.className = 'rx-btn'; e.innerHTML = b;
       e.onclick = function () {
-        var slot = curSlot(); if (!slot || rxDone(slot)) return;   // одна реакція на проміжок
-        var r = e.getBoundingClientRect(); spawn(i, r.left + r.width / 2, r.top);
-        rxMark(slot); lock(true, i);                                // фіксуємо одразу
+        var slot = curSlot(); if (!slot || rxWait() > 0) return;   // кулдаун 5 хв
+        var r = e.getBoundingClientRect(), c0 = document.getElementById('voteCard').getBoundingClientRect(); spawn(i, r.left + r.width / 2, c0.top + 6);
+        rxMark(); lockFor(i);                                // фіксуємо одразу
         if (window.voteKeep) window.voteKeep();
         gasCall({ action: 'react', slot: slot, k: i }).then(function (res) {
-          if (res && (res.ok || res.error === 'dup' || res.stale || res.active === false)) return;
-          try { localStorage.removeItem('vt_rx'); } catch (e) {} lock(false);   // не дійшло: дозволяємо спробувати ще раз
-        }).catch(function () { try { localStorage.removeItem('vt_rx'); } catch (e) {} lock(false); });
+          if (res && (res.ok || res.error === 'cool' || res.stale || res.active === false)) return;
+          try { localStorage.removeItem('vt_rx_t'); } catch (e) {} lock(false);   // не дійшло: дозволяємо спробувати ще раз
+        }).catch(function () { try { localStorage.removeItem('vt_rx_t'); } catch (e) {} lock(false); });
       };
       BTN.push(e); host.appendChild(e);
     });
@@ -3562,7 +3566,7 @@ var CAT_CONFIG = {
     if (poolSlot !== slot) { pool = {}; poolSlot = slot; }
     gasCall({ action: 'react_get', slot: slot }).then(function (r) {
       if (!r || !r.ok || r.active === false || r.stale) return;
-      if (r.done && !rxDone(slot)) { rxMark(slot); lock(true, -1); }
+      if (r.wait > 0) { try { localStorage.setItem('vt_rx_t', String(Date.now() - (300 - r.wait) * 1000)); } catch (e) {} lockFor(-1); }
       var now = Date.now();
       (r.ev || []).forEach(function (v) {
         if (v[2]) return;                       // свою вже показали одразу
@@ -3578,9 +3582,9 @@ var CAT_CONFIG = {
     order = Object.keys(pool); if (!order.length) return;
     var p = pool[order[pi++ % order.length]];
     var cr = document.getElementById('voteCard').getBoundingClientRect();
-    spawn(p.k, cr.left + cr.width * (.1 + Math.random() * .8), cr.bottom - 60);
+    spawn(p.k, cr.left + cr.width * (.1 + Math.random() * .8), cr.top + 6);
   }
-  window.rxSync = function () { var s = curSlot(); if (!s) return; lock(rxDone(s), -1); poll(); };   // викликається при показі результатів
+  window.rxSync = function () { var s = curSlot(); if (!s) return; lockFor(-1); poll(); };   // викликається при показі результатів
   setInterval(poll, 7000); setInterval(stream, 750);
 
   var ADM = (typeof isAdmin !== 'undefined' && isAdmin);
