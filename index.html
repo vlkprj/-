@@ -2246,6 +2246,7 @@ function onAppReady() {
 #chPoll .crowd-card .cl-chev { width: 18px; height: 18px; margin-left: 10px; }
 .rx-bar { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:6px 20px 14px; }
 .rx-btn { display:inline-flex; align-items:center; justify-content:center; min-width:46px; height:46px; padding:0 10px; border-radius:23px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.06); font-size:22px; color:#fff; cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+.rx-btn:disabled { cursor: default; }
 .rx-btn:active { transform:scale(.9); background:rgba(255,255,255,.14); }
 #rxBar .rx-btn { min-width:38px; height:38px; font-size:18px; padding:0 8px; }
 .rx-sym { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; border:2px solid; font-size:20px; font-weight:900; line-height:1; }
@@ -2517,6 +2518,7 @@ function onAppReady() {
         cmSet(r.cm);
         // поле коментаря: лише після голосу, поки опитування відкрите, 1 раз на проміжок
         VT.cmSlot = r.slot;
+        if (window.rxSync) setTimeout(window.rxSync, 50);
         cmCollapse();
         $v('vcCmRow').style.display = (CM.on && r.mine != null && r.slot && !cmDone(r.slot)) ? 'block' : 'none';
         clearTimeout(VT.hideT);
@@ -2564,6 +2566,7 @@ function onAppReady() {
     };
 
     window.voteKeep = function () { var c = $v('voteCard'); if (c && c.className.indexOf('show') >= 0) { clearTimeout(VT.hideT); VT.hideT = setTimeout(hideCard, 8000); } };
+    window.voteSlot = function () { return VT.cmSlot || (VT.st && VT.st.slot) || ''; };
     $v('vcA').onclick = function () { sendVote(+this.getAttribute('data-v')); };
     $v('vcB').onclick = function () { sendVote(+this.getAttribute('data-v')); };
     $v('vcX').onclick = function () { if (VT.st) markDismissed(VT.st.slot); hideCard(); };
@@ -3518,8 +3521,15 @@ var CAT_CONFIG = {
 <div id="wxLayer"></div>
 <script>
 (function () {
-  var live = 0, lastSend = 0, cardOpen0 = 0, rxBarEl = document.getElementById('rxBar');
+  var live = 0, rxBarEl = document.getElementById('rxBar'), BTN = [];
   var B = ['<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#22c55e" stroke-width="2.4" stroke-linecap="round" style="display:block"><circle cx="12" cy="12" r="10"/><line x1="12" y1="7.5" x2="12" y2="16.5"/><line x1="7.5" y1="12" x2="16.5" y2="12"/></svg>','<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#ef4444" stroke-width="2.4" stroke-linecap="round" style="display:block"><circle cx="12" cy="12" r="10"/><line x1="7.5" y1="12" x2="16.5" y2="12"/></svg>','👍🏻','👎🏻','⁉️','🪫','🔦','⚡️','💡'];
+  var pool = {}, order = [], pi = 0, poolSlot = '';
+  function curSlot() { return (window.voteSlot && window.voteSlot()) || ''; }
+  function rxDone(slot) { try { return !!slot && localStorage.getItem('vt_rx') === slot; } catch (e) { return false; } }
+  function rxMark(slot) { try { localStorage.setItem('vt_rx', slot); } catch (e) {} }
+  function lock(on, pick) {
+    BTN.forEach(function (b, i) { b.disabled = !!on; b.style.opacity = on ? (i === pick ? '1' : '.35') : ''; });
+  }
   function spawn(i, x, y) {
     if (live > 30) return;
     var f = document.createElement('div'); f.className = 'rx-fl'; f.innerHTML = B[i];
@@ -3532,30 +3542,36 @@ var CAT_CONFIG = {
     B.forEach(function (b, i) {
       var e = document.createElement('button'); e.className = 'rx-btn'; e.innerHTML = b;
       e.onclick = function () {
+        var slot = curSlot(); if (!slot || rxDone(slot)) return;   // одна реакція на проміжок
         var r = e.getBoundingClientRect(); spawn(i, r.left + r.width / 2, r.top);
+        rxMark(slot); lock(true, i);                                // фіксуємо одразу
         if (window.voteKeep) window.voteKeep();
-        var n = Date.now();
-        if (n - lastSend > 600) { lastSend = n; gasCall({ action: 'react', k: i }).catch(function () {}); }
+        gasCall({ action: 'react', slot: slot, k: i }).then(function (res) {
+          if (res && (res.ok || res.error === 'dup' || res.stale || res.active === false)) return;
+          try { localStorage.removeItem('vt_rx'); } catch (e) {} lock(false);   // не дійшло: дозволяємо спробувати ще раз
+        }).catch(function () { try { localStorage.removeItem('vt_rx'); } catch (e) {} lock(false); });
       };
-      host.appendChild(e);
+      BTN.push(e); host.appendChild(e);
     });
   }
   build(rxBarEl);
   function cardOpen() { var c = document.getElementById('voteCard'); return !!(c && c.className.indexOf('show') >= 0); }
-  var pool = {}, order = [], pi = 0;
-  function poll() {   // питаємо сервер лише коли блок реакцій на екрані (економія квот)
-    if (document.hidden || !cardOpen() || typeof gasCall !== 'function') return;
-    gasCall({ action: 'react_get' }).then(function (r) {
-      if (!r || !r.ok) return;
+  function poll() {   // питаємо сервер лише поки відкрита картка опитування (економія квот)
+    var slot = curSlot();
+    if (document.hidden || !slot || !cardOpen() || typeof gasCall !== 'function') return;
+    if (poolSlot !== slot) { pool = {}; poolSlot = slot; }
+    gasCall({ action: 'react_get', slot: slot }).then(function (r) {
+      if (!r || !r.ok || r.active === false || r.stale) return;
+      if (r.done && !rxDone(slot)) { rxMark(slot); lock(true, -1); }
       var now = Date.now();
       (r.ev || []).forEach(function (v) {
-        if (v[2]) return;                       // свої вже показали одразу
+        if (v[2]) return;                       // свою вже показали одразу
         var t0 = now - v[1] * 1000, key = v[0] + '_' + Math.round(t0 / 1500);
         if (!pool[key]) pool[key] = { k: v[0], t0: t0 };
       });
     }).catch(function () {});
   }
-  function stream() {   // реакції живуть 2 хвилини: поки не минули, крутимо їх потоком угору (як коментарі)
+  function stream() {   // реакції живуть 2 хвилини: поки не минули, крутимо їх потоком угору
     if (document.hidden || !cardOpen()) return;
     var now = Date.now();
     Object.keys(pool).forEach(function (k) { if (now - pool[k].t0 > 120000) delete pool[k]; });
@@ -3564,7 +3580,8 @@ var CAT_CONFIG = {
     var cr = document.getElementById('voteCard').getBoundingClientRect();
     spawn(p.k, cr.left + cr.width * (.1 + Math.random() * .8), cr.bottom - 60);
   }
-  poll(); setInterval(poll, 5000); setInterval(stream, 750);
+  window.rxSync = function () { var s = curSlot(); if (!s) return; lock(rxDone(s), -1); poll(); };   // викликається при показі результатів
+  setInterval(poll, 7000); setInterval(stream, 750);
 
   var ADM = (typeof isAdmin !== 'undefined' && isAdmin);
   if (!ADM) { ['wxModal', 'wxLayer'].forEach(function (id) { var x = document.getElementById(id); if (x) x.remove(); }); return; }   // у звичайних користувачів погоди немає
