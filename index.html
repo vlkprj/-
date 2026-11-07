@@ -421,7 +421,7 @@
         Підтримати
     </a>
 </div>
-<div onclick="document.getElementById('infoModal').style.display='flex'" style="margin-top:6px;font-size:12px;color:#777;cursor:pointer;">ℹ️ Інформація</div>
+<div onclick="document.getElementById('infoModal').style.display='flex'" style="margin-top:10px;display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#777;cursor:pointer;"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>Інформація</div>
 
 </div>
 
@@ -2235,6 +2235,8 @@ function onAppReady() {
 .vc-cm-open::after { content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); transform: skewX(-20deg); animation: shineSweep 2.4s infinite; }
 @keyframes cmPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(251,191,36,.55), 0 0 6px rgba(251,191,36,.3); } 50% { box-shadow: 0 0 0 5px rgba(251,191,36,0), 0 0 16px rgba(251,191,36,.7); } }
 #vcCmDone .zen-container { transform: scale(1.4); }
+.fx-hint { position: absolute; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; border: 2px solid rgba(251,191,36,.55); background: radial-gradient(circle, rgba(251,191,36,.18), rgba(251,191,36,0) 70%); opacity: 0; animation: fxHint 1.5s ease-out 2 both; }
+@keyframes fxHint { 0% { opacity: .7; transform: scale(.5); } 100% { opacity: 0; transform: scale(1.9); } }
 #chPoll .chp-row { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
 #chPoll .chp-btn { font-family: inherit; font-size: 14px; font-weight: 800; color: #fff; padding: 7px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,.28); background: rgba(255,255,255,.1); cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 #chPoll .chp-btn:active { background: rgba(255,255,255,.2); }
@@ -2287,7 +2289,7 @@ function onAppReady() {
                 <span class="vc-cm-cnt" id="vcCmCnt">40</span>
                 <button class="vc-cm-send" id="vcCmSend" type="button" aria-label="Надіслати">➤</button>
             </div>
-            <div class="vc-cm-note">Коментар живе лише 2 хвилини. Писати можна раз на 5 хвилин. Будьте чемними.</div>
+            <div class="vc-cm-note">Ваш коментар живе лише 2 хвилини. Писати можна раз на 5 хвилин. Будьте чемними.</div>
             <div class="vc-cm-msg" id="vcCmMsg"></div>
         </div>
     </div>
@@ -2388,7 +2390,7 @@ function onAppReady() {
         el.className = 'vc-btn ' + (o.v === 1 ? 'on' : 'off');
     }
     // ---- коментарі до опитування: анонімні хмарки, що вилітають із картки й лопаються ----
-    var CM = { list: [], ts: [], on: false, i: 0, timer: null, live: 0 }, CM_LITE = !!window.IS_LITE, CM_RM = false;
+    var CM = { list: [], ts: [], shown: {}, on: false, i: 0, timer: null, live: 0 }, CM_LITE = !!window.IS_LITE, CM_RM = false;
     try { CM_RM = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
     function cmWait() { try { var t = +localStorage.getItem('vt_cm_t') || 0, w = Math.ceil((300000 - (Date.now() - t)) / 1000); return w > 0 ? w : 0; } catch (e) { return 0; } }
     function cmDone() { return cmWait() > 0; }
@@ -2421,7 +2423,10 @@ function onAppReady() {
             var c = $v('voteCard');
             if (!c || c.className.indexOf('show') < 0 || document.hidden || !CM.on || !CM.list.length) return;
             if (CM.live >= (CM_LITE ? 2 : 4)) return;
-            var k = CM.i % CM.list.length; cmPop(CM.list[k], CM.ts[k]); CM.i++;
+            var now = Date.now(), n = CM.list.length, k = -1;
+            for (var j = 0; j < n; j++) { var q = (CM.i + j) % n; if (now - (CM.shown[CM.ts[q]] || 0) > 7000) { k = q; break; } }   // той самий коментар не частіше ніж раз на 7 с
+            if (k < 0) return;
+            CM.shown[CM.ts[k]] = now; CM.i = k + 1; cmPop(CM.list[k], CM.ts[k]);
         }
         setTimeout(tick, 300);
         CM.timer = setInterval(tick, CM_LITE ? 1500 : 900);
@@ -2438,12 +2443,12 @@ function onAppReady() {
     function cmSend() {
         var txt = $v('vcCmIn').value.replace(/\s+/g, ' ').trim(), slot = VT.cmSlot;
         if (!txt || !slot || VT.cmBusy || cmDone(slot)) return;
-        VT.cmBusy = true; $v('vcCmMsg').textContent = '';
+        VT.cmBusy = true; $v('vcCmMsg').textContent = ''; $v('vcCmSend').textContent = '…';
         gasCall({ action: 'comment', slot: slot, text: txt }).then(function (r) {
-            VT.cmBusy = false;
+            VT.cmBusy = false; $v('vcCmSend').textContent = '➤';
             if (r && r.ok && r.active !== false && !r.stale) {
                 cmMarkDone(slot); cmSet(r.cm);
-                for (var q = CM.list.length - 1; q >= 0; q--) if (CM.list[q] === txt) { CM.list.splice(q, 1); CM.ts.splice(q, 1); break; }   // свій коментар уже показали, не крутимо його ще раз
+                for (var q = CM.list.length - 1; q >= 0; q--) if (CM.list[q] === txt) { CM.shown[CM.ts[q]] = Date.now(); break; }   // свій щойно показали, наступний показ не раніше ніж за 7 с
                 $v('vcCmRow').style.display = 'none';
                 var dn = $v('vcCmDone'); dn.innerHTML = window.loaderDots; dn.style.display = 'flex';   // дві крапки, що зливаються
                 setTimeout(function () { dn.style.display = 'none'; dn.innerHTML = ''; }, 2600);
@@ -2456,7 +2461,7 @@ function onAppReady() {
             if (e === 'cool' || e === 'off' || (r && r.stale)) { $v('vcCmRow').style.display = 'none'; }
             var map = { long: 'Максимум 40 символів', link: 'Без посилань і @', empty: 'Напиши щось', cool: 'Наступний коментар через ' + Math.max(1, Math.ceil(((r && r.wait) || 60) / 60)) + ' хв', off: 'Коментарі вимкнені', novote: 'Спочатку проголосуй' };
             $v('vcCmMsg').textContent = map[e] || (r && r.stale ? 'Опитування вже змінилося' : 'Не вийшло, спробуй ще раз' + (isAdmin ? ' [' + (e || 'no response') + ']' : ''));
-        }).catch(function (er) { VT.cmBusy = false; $v('vcCmMsg').textContent = 'Не вийшло, спробуй ще раз' + (isAdmin ? ' [' + ((er && er.message) || 'network') + ']' : ''); });
+        }).catch(function (er) { VT.cmBusy = false; $v('vcCmSend').textContent = '➤'; $v('vcCmMsg').textContent = 'Не вийшло, спробуй ще раз' + (isAdmin ? ' [' + ((er && er.message) || 'network') + ']' : ''); });
     }
 
     function present() {
@@ -3472,8 +3477,7 @@ var CAT_CONFIG = {
     function replayIfConfused() {   // «аварійне» / «уточнюємо»: тап просто запускає анімацію котика ще раз
         var img = $c('mascotImg');
         if (!img || img.style.display === 'none' || !img.getAttribute('src')) return;
-        if (typeof currentMascotState === 'undefined' || currentMascotState !== 'confused') return;
-        if (typeof mascotSwapping !== 'undefined' && mascotSwapping) return;
+        if (!/cat(haunting|confused)vid/.test(img.getAttribute('src') || '')) return;   // зараз на екрані confused або haunting
         var n = Date.now(); if (n - lastReplay < 700) return; lastReplay = n;
         img.src = img.src.split('?')[0] + '?v=' + n;
     }
@@ -3520,6 +3524,18 @@ var CAT_CONFIG = {
         } catch (e) {}
     });
 
+    // ---- підказка: якщо за ~10 с котика так і не торкнулись, один раз за сесію напівпрозорий пульс ----
+    var hintDone = false, tappedCat = false, hv = 0;
+    if (cat) cat.addEventListener('pointerdown', function () { tappedCat = true; });
+    var hintT = setInterval(function () {
+        if (hintDone || tappedCat || RM) { clearInterval(hintT); return; }
+        var app = $c('app'), img = $c('mascotImg');
+        if (!app || app.style.display === 'none' || document.hidden || modalOpen() || window.catFxBusy || !img || img.style.display === 'none' || !img.offsetWidth) { hv = 0; return; }
+        if (++hv < 10) return;
+        hintDone = true; clearInterval(hintT);
+        var c = catPos(); fx(mk('fx-hint', 'left:' + c.x + 'px;top:' + c.y + 'px;'), 3300);
+    }, 1000);
+
     // ---- авто-запуск емодзі-дощу: один раз за сесію ----
     function modalOpen() {
         var ids = ['notifModal', 'genModal', 'editModal', 'statusModal', 'pointsModal', 'infoAlertModal', 'infoModal', 'wxModal'];
@@ -3544,7 +3560,7 @@ var CAT_CONFIG = {
 <div id="infoModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:10000;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)this.style.display='none'">
  <div style="background:#111;border:1px solid #333;border-radius:20px;width:100%;max-width:450px;max-height:85vh;overflow-y:auto;padding:20px;">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-   <h3 style="margin:0;font-weight:900;font-size:18px;color:var(--c-yellow);">ℹ️ Інформація</h3>
+   <h3 style="margin:0;font-weight:900;font-size:18px;color:var(--c-yellow);display:flex;align-items:center;gap:8px;"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>Інформація</h3>
    <div onclick="document.getElementById('infoModal').style.display='none'" style="color:#666;font-size:32px;cursor:pointer;line-height:1;">&times;</div>
   </div>
   <div style="font-size:13px;color:#ccc;line-height:1.5;">
@@ -3620,7 +3636,9 @@ var CAT_CONFIG = {
     var now = Date.now();
     Object.keys(pool).forEach(function (k) { if (now - pool[k].t0 > 120000) delete pool[k]; });
     order = Object.keys(pool); if (!order.length) return;
-    var p = pool[order[pi++ % order.length]];
+    var p = null;
+    for (var j = 0; j < order.length; j++) { var c = pool[order[(pi + j) % order.length]]; if (now - (c.sh || 0) > 6000) { p = c; pi = pi + j + 1; break; } }   // та сама реакція не частіше ніж раз на 6 с
+    if (!p) return; p.sh = now;
     var cr = document.getElementById('voteCard').getBoundingClientRect();
     spawn(p.k, cr.left + cr.width * (.1 + Math.random() * .8), cr.top + 6);
   }
