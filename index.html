@@ -2042,7 +2042,7 @@ async function genRender(key) {
         else if (s === 'end-half') { ov.style.display = 'block'; ov.style.width = '50.5%'; ov.style.left = '0'; oc.style.left = '0'; }
     });
     const lines = offs.map(o => `${gClock(gFmt(o.startMin))} ${gFmt(o.startMin)}-${gFmt(o.endMin)}`).join('\n') || '✅ Відключень не заплановано';
-    gCaption = `⚡️💡 ГРАФІК НА ${key} від Харківобленерго\n\n${lines}\n\n👉🏻 t.me/valkyelectrifybot/electric`;
+    gCaption = `⚡️💡 ГРАФІК НА ${key} від Харківобленерго (орієнтовний)\n\n${lines}\n\nЗміни у графіку тут: 👉🏻 t.me/valkyelectrifybot/electric`;
     $g('gText').textContent = gCaption;
     try {
         await gLoadLib(); await new Promise(r => setTimeout(r, 200));
