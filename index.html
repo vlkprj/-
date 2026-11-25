@@ -375,27 +375,27 @@
     </div>
     <div style="flex-basis: 100%; height: 0; margin-top: -8px;"></div>
     <a href="https://t.me/share/url?url=t.me/valkyelectrifybot/electric&text=💡%20Актуальний%20графік%20відключень%20світла%20у%20Валках" class="f-link" target="_blank">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         Поділитися
     </a>
     <div class="f-link f-link-shine" onclick="alert('Щоб не шукати додаток кожного разу: натисни на три крапки ⋯ у правому верхньому куті і обери «Додати на домашній екран» 📱')" style="cursor: pointer;">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
         Додати
     </div>
     <a href="https://t.me/valkysho_bot" class="f-link" target="_blank">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         Написати
     </a>
     <div class="f-link" onclick="document.getElementById('pointsModal').style.display='flex'" style="cursor: pointer;">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
         Пункти незламності
     </div>
     <a href="https://t.me/valkychat" class="f-link" target="_blank">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         Чат
     </a>
     <a href="https://t.me/valkybazar" class="f-link" target="_blank">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         Базарчик
     </a>
     <a href="https://donatello.to/valkyshotam" class="f-link f-link-support" target="_blank">
@@ -722,6 +722,8 @@ async function sendResetDay(day) {
         window.allDays = data.days || {};
         window.verifyInfo = result.verify || null;
         window.crowdInfo = result.crowd || null;
+        window.voltLast = result.volt || null;
+        if (window.voltBubble) window.voltBubble(window.voltLast);
         window.cmOff = !!result.cmOff;
         window.noSchedFlag = !!(data && data.noSchedule);
         if (window.renderVerify) window.renderVerify();
@@ -1883,7 +1885,7 @@ async function nSet(k, v) {
 }
 
 const gBulb = '<svg class="g-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1.2 1.5-2.5 1.5-4a6 6 0 0 0-6-6 6 6 0 0 0-6 6c0 1.4.5 2.7 1.5 4 .7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>';
-const gZap = '<svg class="g-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="12.41 6.75 13 2 10.57 4.92"/><polyline points="18.57 12.91 21 10 15.66 10"/><polyline points="8 8 3 14 12 14 11 22 16 16"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
+const gZap = '<svg class="g-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="12.41 6.75 13 2 10.57 4.92"/><polyline points="18.57 12.91 21 10 15.66 10"/><polyline points="8 8 3 14 12 14 11 22 16 16"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
 let gCaption = '', gToken = 0;
 const gFmt = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
 function gClock(t) {
@@ -2082,11 +2084,8 @@ function onAppReady() {
 .vc-volt-row { margin-top: 8px; text-align: center; }
 .vc-volt-open { background: none; border: 1px dashed rgba(255, 255, 255, 0.25); color: #bbb; font-family: inherit; font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .vc-volt-open:active { background: rgba(255, 255, 255, 0.08); }
-.vc-volt-stat { margin-top: 12px; padding: 9px 12px; border-radius: 12px; background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.25); color: #fde68a; font-size: 13px; font-weight: 700; text-align: center; line-height: 1.4; }
-.vc-volt-stat b { font-size: 17px; font-weight: 900; color: #fff; }
-.vc-volt-stat small { display: block; font-size: 11px; font-weight: 700; color: #aaa; margin-top: 2px; }
 #voltModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; }
-.vm-card { background: #111; border: 1px solid #333; border-radius: 20px; padding: 22px 20px 18px; width: 100%; max-width: 380px; box-sizing: border-box; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
+.vm-card { max-height: 94vh; overflow-y: auto; background: #111; border: 1px solid #333; border-radius: 20px; padding: 22px 20px 18px; width: 100%; max-width: 380px; box-sizing: border-box; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); }
 .vm-head { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 18px; font-weight: 900; color: #fff; margin-bottom: 10px; }
 .vm-ico { color: #fbbf24; }
 .vm-desc { font-size: 13px; color: #999; line-height: 1.45; text-align: center; margin-bottom: 16px; }
@@ -2136,8 +2135,20 @@ function onAppReady() {
   76% { opacity:1; transform: translateY(-150px) scale(1); } 82% { opacity:1; transform: translateY(-156px) scale(1.14); } 100% { opacity:0; transform: translateY(-165px) scale(1.6); } }
 @keyframes vcRing2 { 0%,78% { opacity:0; transform: scale(1); } 82% { opacity:.8; } 100% { opacity:0; transform: scale(1.6); } }
 .vc-cm-note { margin-top: 8px; font-size: 11px; color: #888; line-height: 1.4; }
-.vc-cm-open { position: relative; overflow: hidden; border: 1.5px solid #fbbf24; color: #fde68a; background: rgba(251,191,36,.08); border-radius: 14px; animation: cmPulse 1.6s ease-in-out infinite; }
-.vc-cm-open::after { content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); transform: skewX(-20deg); animation: shineSweep 2.4s infinite; }
+.vc-cm-open, .vc-volt-open { position: relative; overflow: hidden; border: 1.5px solid #fbbf24; color: #fde68a; background: rgba(251,191,36,.08); border-radius: 14px; animation: cmPulse 1.6s ease-in-out infinite; }
+.vc-cm-open::after, .vc-volt-open::after { content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); transform: skewX(-20deg); animation: shineSweep 2.4s infinite; }
+.vc-volt-open.dis { border: 1px dashed rgba(255,255,255,.2); color: #777; background: none; animation: none; }
+.vc-volt-open.dis::after { display: none; }
+.vc-bub.volt { white-space: normal; text-align: center; border-color: rgba(251,191,36,.6); color: #fde68a; }
+#voltBub { position: fixed; left: 50%; max-width: calc(100vw - 32px); box-sizing: border-box; z-index: 900; padding: 7px 14px; border-radius: 999px; background: rgba(20,20,20,.92); border: 1px solid rgba(251,191,36,.45); color: #fde68a; font-size: 12px; font-weight: 800; text-align: center; line-height: 1.3; pointer-events: none; opacity: 0; transform: translate(-50%, 6px); transition: opacity .35s ease, transform .35s ease; }
+#voltBub.show { opacity: 1; transform: translate(-50%, 0); }
+@keyframes plPulse { 0% { transform: scale(.95); opacity: 1; } 50% { transform: scale(1.15); opacity: .5; } 100% { transform: scale(.95); opacity: 1; } }
+.vm-st-in { width: 100%; box-sizing: border-box; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.18); color: #fff; border-radius: 12px; padding: 12px; font-size: 16px; font-family: inherit; outline: none; }
+.vm-st-in:focus { border-color: rgba(251,191,36,.55); }
+.vm-sug { margin-top: 6px; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,.12); display: none; }
+.vm-sug div { padding: 11px 12px; font-size: 14px; font-weight: 700; color: #ddd; background: rgba(255,255,255,.04); border-bottom: 1px solid rgba(255,255,255,.08); cursor: pointer; }
+.vm-sug div:last-child { border-bottom: 0; }
+.vm-sug div:active { background: rgba(251,191,36,.15); }
 @keyframes cmPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(251,191,36,.55), 0 0 6px rgba(251,191,36,.3); } 50% { box-shadow: 0 0 0 5px rgba(251,191,36,0), 0 0 16px rgba(251,191,36,.7); } }
 #vcCmDone .zen-container { transform: scale(1.4); }
 .fx-hint { position: absolute; width: 90px; height: 90px; margin: -45px 0 0 -45px; border-radius: 50%; border: 2px solid rgba(251,191,36,.55); background: radial-gradient(circle, rgba(251,191,36,.18), rgba(251,191,36,0) 70%); opacity: 0; animation: fxHint 1.5s ease-out 2 both; }
@@ -2179,29 +2190,31 @@ function onAppReady() {
         <div class="rx-bar" id="rxBar" style="padding:12px 0 0;gap:6px;"></div>
         <div id="vcCmDone" style="display:none;justify-content:center;margin-top:8px;"></div>
         <div class="vc-cm-row" id="vcCmRow" style="display:none;">
-            <button class="vc-cm-open" id="vcCmOpen" type="button"><svg class="vc-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/></svg>Додати коментар</button>
+            <button class="vc-cm-open" id="vcCmOpen" type="button"><svg class="vc-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/></svg>Додати коментар</button>
             <div class="vc-cm-form" id="vcCmForm">
                 <input class="vc-cm-in" id="vcCmIn" type="text" maxlength="40" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Коротко, до 40 символів" aria-label="Коментар">
                 <span class="vc-cm-cnt" id="vcCmCnt">40</span>
                 <button class="vc-cm-send" id="vcCmSend" type="button" aria-label="Надіслати">➤</button>
             </div>
-            <div class="vc-cm-note">Ваш коментар живе лише 2 хвилини. Писати можна раз на 5 хвилин. Будьте чемними.</div>
             <div class="vc-cm-msg" id="vcCmMsg"></div>
         </div>
-        <div class="vc-volt-stat" id="vcVoltStat" style="display:none;"></div>
         <div class="vc-volt-row" id="vcVoltRow" style="display:none;">
-            <button class="vc-volt-open" id="vcVoltOpen" type="button"><svg class="vc-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 17a8.5 8.5 0 1 1 17 0"/><path d="M12 17l3.6-5"/><circle cx="12" cy="17" r="1.2"/><path d="M3 20.5h18"/></svg>Повідомити напругу</button>
+            <button class="vc-volt-open" id="vcVoltOpen" type="button"><svg class="vc-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 17a8.5 8.5 0 1 1 17 0"/><path d="M12 17l3.6-5"/><circle cx="12" cy="17" r="1.2"/><path d="M3 20.5h18"/></svg>Повідомити напругу</button>
         </div>
+        <div class="vc-cm-note" id="vcNote2" style="display:none;text-align:center;">Коментарі живуть 2 хвилини, показники напруги 10. Писати можна раз на 5 хвилин. Будьте чемними.</div>
     </div>
 </div>
 
 <div id="voltModal">
     <div class="vm-card">
-        <div class="vm-head"><svg class="vm-ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 17a8.5 8.5 0 1 1 17 0"/><path d="M12 17l3.6-5"/><circle cx="12" cy="17" r="1.2"/><path d="M3 20.5h18"/></svg><span>Напруга</span></div>
+        <div class="vm-head"><svg class="vm-ico" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 17a8.5 8.5 0 1 1 17 0"/><path d="M12 17l3.6-5"/><circle cx="12" cy="17" r="1.2"/><path d="M3 20.5h18"/></svg><span>Напруга</span></div>
         <div id="vmStep1">
             <div class="vm-desc">Маєте вольтметр або інший прилад для вимірювання напруги? Поділіться поточним показником: це допоможе іншим оцінити ситуацію в електромережі</div>
             <div class="vm-lbl">Яку напругу показує ваш прилад?</div>
             <div class="vm-disp"><input class="vm-in" id="vmIn" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="000" aria-label="Напруга у вольтах"><span class="vm-unit">В</span></div>
+            <div class="vm-lbl" style="margin-top:16px;">Де ви вимірюєте?</div>
+            <input class="vm-st-in" id="vmSt" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Почніть вводити назву вулиці" aria-label="Вулиця">
+            <div class="vm-sug" id="vmSug"></div>
             <div class="vm-msg" id="vmMsg"></div>
             <button class="gbtn" id="vmSend" type="button">Надіслати показник</button>
         </div>
@@ -2314,13 +2327,13 @@ function onAppReady() {
     function cmMarkDone() { try { localStorage.setItem('vt_cm_t', String(Date.now())); } catch (e) {} }
     function cmSet(cm) {
         if (!cm) return;
-        CM.on = !!cm.on; CM.list = (cm.list || []).slice(0, 12); CM.ts = (cm.ts || []).slice(0, 12);
+        CM.on = !!cm.on; CM.list = (cm.list || []).slice(-12); CM.ts = (cm.ts || []).slice(-12);
         if (CM.i >= CM.list.length) CM.i = 0;
         if (!CM.on) cmStop();
     }
     function cmPop(text, ts) {
         var h = $v('vcCm'); if (!h || CM_RM) return;
-        var b = document.createElement('div'); b.className = 'vc-bub'; b.textContent = text;
+        var b = document.createElement('div'); b.className = 'vc-bub'; b.textContent = text; if (text.charAt(0) === '⚡') b.className += ' volt';
         if (isAdmin && ts) {
             b.style.pointerEvents = 'auto';
             b.onclick = function () {
@@ -2442,8 +2455,10 @@ function onAppReady() {
         if (window.rxSync) setTimeout(window.rxSync, 50);
         cmCollapse();
         $v('vcCmRow').style.display = (CM.on && r.mine != null && r.slot) ? 'block' : 'none';
-        $v('vcVoltRow').style.display = (CM.on && r.mine != null && r.slot) ? 'block' : 'none';
-        voltSet(r.volt);
+        var vShow = !!(CM.on && r.mine != null && r.slot);
+        $v('vcVoltRow').style.display = vShow ? 'block' : 'none';
+        $v('vcNote2').style.display = vShow ? 'block' : 'none';
+        $v('vcVoltOpen').className = 'vc-volt-open' + ((r.expect === 'off' && !window.verifyInfo) ? ' dis' : '');
         clearTimeout(VT.hideT);
         VT.hideT = setTimeout(hideCard, ms || RESULT_MS);
         present();
@@ -2466,6 +2481,7 @@ function onAppReady() {
         VT.ready = false;
         if (typeof gasCall !== 'function') { VT.ready = true; return; }
         gasCall({ action: 'vote_get' }).then(function (r) {
+            VT.active = !!(r && r.ok && r.active);
             if (r && r.ok && r.active && r.mine == null && !dismissed(r.slot)) { VT.st = r; waitAndShow(); }
             VT.ready = true;
         }).catch(function () { VT.ready = true; });
@@ -2479,7 +2495,7 @@ function onAppReady() {
         function fail() { if (done) return; done = true; VT.peek = false; if (window.catToast) window.catToast('⚠️ Не вдалося завантажити, спробуй ще раз', 2500); }
         var tm = setTimeout(fail, 8000);
         gasCall({ action: 'vote_get' }).then(function (r) {
-            if (done) return; done = true; clearTimeout(tm); VT.peek = false;
+            if (done) return; done = true; clearTimeout(tm); VT.peek = false; VT.active = !!(r && r.ok && r.active);
             if (!r || !r.ok) { done = false; fail(); return; }
             if (!r.active) { if (window.catToast) window.catToast('📊 Опитування зараз немає', 2500); return; }
             if (r.mine != null) { showResult(r, ms, 'Світло зараз є? Ось що кажуть люди:'); return; }
@@ -2508,30 +2524,43 @@ function onAppReady() {
     };
     $v('vcCmSend').onclick = cmSend;
 
-    var VOLT = { busy: false, val: 0 };
-    function voltPl(n) {
-        var a = n % 10, b = n % 100;
-        if (a === 1 && b !== 11) return 'вимірювання';
-        if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return 'вимірювання';
-        return 'вимірювань';
+    var STREETS = ["вул. Андрія Ольховського", "пров. Благовіщенський", "вул. Буяна", "пров. Богдана Хмельницького", "пров. Богодухівський", "пров. Будівельний", "в’їзд Березовий", "в’їзд Богдана Хмельницького", "вул. Болюбашівська", "вул. Благовіщенська", "вул. Богдана Хмельницького", "вул. Байрачного академіка", "вул. Богодухівська", "вул. Виноградна", "вул. В-зд Котовського", "пров. Вишневий", "вул. Весняна", "вул. Волонтерська", "вул. Вусівська", "пров. Гоголя", "вул. Грабовського", "вул. Гнідого", "пров. Гнідого", "вул. Гоголя", "просп. Героїв Чорнобиля", "просп. Григорія Сковороди", "пров. Гончарний", "пров. Дарагана Андрія", "пров. Дахневського сотника", "вул. Дружби", "пров. Данила Іванова", "пров. Ентузіастів", "вул. Енергетична", "вул. Європейська", "пров. Затишний", "вул. Зелена", "пров. Заводський", "вул. Зоряна", "пров. Івана Бойченка", "пров. Івана Коваля", "вул. Іванська", "пров. Іванський", "вул. Івана Коваля", "пров. Коржівський", "вул. Кільцева", "пров. Козацький", "в’їзд Ков'язький", "вул. Кузнечна", "вул. Коцюбинського", "вул. Космічна", "вул. Ков'язька", "вул. Кооперативна", "вул. Курячівська", "вул. Лісна", "пров. Лесі Українки", "вул. Лугова", "пров. Манойла Миколи", "в’їзд Музейний", "пров. Медовий", "вул. Миру", "пров. Мошурівський", "вул. Музейна", "вул. Молодіжна", "вул. Минка", "вул. Миньківська", "вул. Муравська", "пров. Наріжного Дмитра", "пров. Несольоного Михайла", "пров. Новий", "пров. Нагорний", "вул. Набережна", "в’їзд Незалежності", "вул. Незалежності", "вул. Пересади-Суходольського генерала", "вул. Перлика отамана", "вул. Перекопська", "вул. Піщана", "пров. Павловський", "вул. Промислова", "вул. Перемоги", "вул. Польова", "пров. Петра Панча", "пров. Полтавський", "вул. Посуньківська", "вул. Паркова", "вул. Петра Панча", "пров. Панаса Мирного", "вул. Полтавська", "вул. Різдвяна", "вул. Річна", "вул. Свободи", "вул. Слобожанська", "пров. Слобожанський", "пров. Семикрасівський", "вул. Скіфська", "вул. Садова", "пров. Старовалківський", "вул. Стадіонна", "пров. Спортивний", "пров. Сотника Гончара", "пров. Соборний", "в’їзд Слобожанський", "вул. Торгова", "вул. Турушки", "вул. Успенська", "вул. Хліборобська", "вул. Харківська", "пл. Центральна", "вул. Шевченка", "вул. Ювілейна", "пров. Ярмарковий"];
+    var VOLT = { busy: false, val: 0, st: '' };
+    function nrm(s) { return String(s).toLowerCase().replace(/[’'ʼ`]/g, ''); }
+    function stFind(q) {
+        q = nrm(q).trim(); if (!q) return [];
+        var a = [], b = [];
+        for (var i = 0; i < STREETS.length; i++) {
+            var n = nrm(STREETS[i]), nm = n.replace(/^(вул\.|пров\.|просп\.|пл\.|вїзд)\s*/, '');
+            if (nm.indexOf(q) === 0) a.push(STREETS[i]); else if (n.indexOf(q) >= 0) b.push(STREETS[i]);
+        }
+        return a.concat(b).slice(0, 5);
     }
-    function voltWait() { try { var t = +localStorage.getItem('vt_vv_t') || 0, w = Math.ceil((300000 - (Date.now() - t)) / 1000); return w > 0 ? w : 0; } catch (e) { return 0; } }
-    function voltSet(v) {
-        var el = $v('vcVoltStat'); if (!el) return;
-        if (!v || !(v.n >= 3)) { el.style.display = 'none'; el.innerHTML = ''; el.onclick = null; return; }
-        el.innerHTML = '<b>' + v.med + ' В</b> середній показник<small>' + v.n + ' ' + voltPl(v.n) + ' · від ' + v.min + ' до ' + v.max + ' В · оновлено ' + agoText(v.ts) + '</small>';
-        el.style.display = 'block';
-        el.onclick = isAdmin ? function () {
-            if (!confirm('Скинути всі показники напруги?')) return;
-            el.style.display = 'none'; gasCall({ action: 'volt_clear' });
-        } : null;
+    function stPick(s) { VOLT.st = s; $v('vmSt').value = s; $v('vmSug').style.display = 'none'; $v('vmMsg').textContent = ''; }
+    function stRender() {
+        var q = $v('vmSt').value, list = stFind(q), box = $v('vmSug');
+        VOLT.st = '';
+        for (var i = 0; i < STREETS.length; i++) if (nrm(STREETS[i]) === nrm(q).trim() && q.trim()) VOLT.st = STREETS[i];
+        box.innerHTML = '';
+        if (!list.length || (VOLT.st && list.length === 1)) { box.style.display = 'none'; return; }
+        list.forEach(function (s) {
+            var d = document.createElement('div'); d.textContent = s;
+            d.addEventListener('click', function () { stPick(s); });
+            box.appendChild(d);
+        });
+        box.style.display = 'block';
     }
     function vmStep(n) { $v('vmStep1').style.display = n === 1 ? 'block' : 'none'; $v('vmStep2').style.display = n === 2 ? 'block' : 'none'; }
+    function voltWait() { try { var t = +localStorage.getItem('vt_vv_t') || 0, w = Math.ceil((300000 - (Date.now() - t)) / 1000); return w > 0 ? w : 0; } catch (e) { return 0; } }
     function voltOpen() {
+        if ($v('vcVoltOpen').className.indexOf('dis') >= 0) { if (window.catToast) window.catToast('🔌 Поки світла немає, показник не додати', 2800); return; }
         var w = voltWait();
         if (w > 0) { if (window.catToast) window.catToast('⏳ Наступний показник через ' + Math.ceil(w / 60) + ' хв', 2600); return; }
         clearTimeout(VT.hideT);
-        $v('vmIn').value = ''; $v('vmMsg').textContent = ''; VOLT.val = 0; vmStep(1);
+        var last = ''; try { last = localStorage.getItem('vt_vs') || ''; } catch (e) {}
+        $v('vmIn').value = ''; $v('vmMsg').textContent = ''; VOLT.val = 0; $v('vmSug').style.display = 'none';
+        if (STREETS.indexOf(last) >= 0) stPick(last); else { VOLT.st = ''; $v('vmSt').value = ''; }
+        vmStep(1);
         $v('voltModal').style.display = 'flex';
         setTimeout(function () { try { $v('vmIn').focus(); } catch (e) {} }, 80);
     }
@@ -2542,43 +2571,73 @@ function onAppReady() {
     function vmAsk() {
         var v = +$v('vmIn').value;
         if (!(v >= 120 && v <= 280)) { $v('vmMsg').textContent = 'Введіть значення від 120 до 280 В'; return; }
+        if (!VOLT.st) { $v('vmMsg').textContent = 'Оберіть вулицю зі списку'; return; }
         VOLT.val = v;
-        $v('vmConf').innerHTML = 'Ви вказали <b>' + v + ' В</b>. Це показник вашого приладу прямо зараз?';
+        $v('vmConf').innerHTML = 'Ви вказали <b>' + v + ' В</b>, ' + VOLT.st + '.<br>Це показник вашого приладу прямо зараз?';
         vmStep(2);
     }
     function vmSend() {
         var slot = VT.cmSlot;
-        if (VOLT.busy || !VOLT.val || !slot) return;
+        if (VOLT.busy || !VOLT.val || !VOLT.st || !slot) return;
         VOLT.busy = true; $v('vmYes').textContent = '…';
-        gasCall({ action: 'volt', slot: slot, v: VOLT.val }).then(function (r) {
+        gasCall({ action: 'volt', slot: slot, v: VOLT.val, st: VOLT.st }).then(function (r) {
             VOLT.busy = false; $v('vmYes').textContent = 'Так, надіслати';
             if (r && r.ok && r.active !== false && !r.stale) {
-                try { localStorage.setItem('vt_vv_t', String(Date.now())); } catch (e) {}
-                voltSet(r.volt); voltClose();
-                if (window.catToast) window.catToast(r.volt && r.volt.n >= 3 ? '⚡ Дякуємо! Показник додано' : '⚡ Дякуємо! Покажемо всім, коли набереться 3 вимірювання', 3200);
+                try { localStorage.setItem('vt_vv_t', String(Date.now())); localStorage.setItem('vt_vs', VOLT.st); } catch (e) {}
+                cmSet(r.cm);
+                for (var q = CM.list.length - 1; q >= 0; q--) if (CM.list[q].indexOf('⚡ ' + VOLT.val + ' В') === 0) { CM.shown[CM.ts[q]] = Date.now(); cmPop(CM.list[q], null); break; }
+                voltClose(); cmRun();
+                if (window.catToast) window.catToast('⚡ Дякуємо! Показник додано', 2600);
                 return;
             }
             var e = r && r.error;
             if (e === 'cool') { try { localStorage.setItem('vt_vv_t', String(Date.now() - (300 - ((r && r.wait) || 300)) * 1000)); } catch (x) {} }
-            var map = { range: 'Введіть значення від 120 до 280 В', cool: 'Наступний показник через ' + Math.max(1, Math.ceil(((r && r.wait) || 60) / 60)) + ' хв', off: 'Зараз це вимкнено', novote: 'Спочатку проголосуй в опитуванні' };
+            var map = { range: 'Введіть значення від 120 до 280 В', street: 'Оберіть вулицю зі списку', outage: 'Поки світла немає, показник не приймається', cool: 'Наступний показник через ' + Math.max(1, Math.ceil(((r && r.wait) || 60) / 60)) + ' хв', off: 'Зараз це вимкнено', novote: 'Спочатку проголосуй в опитуванні' };
             vmStep(1);
             $v('vmMsg').textContent = map[e] || (r && r.stale ? 'Опитування вже змінилося' : 'Не вийшло, спробуй ще раз' + (isAdmin ? ' [' + (e || 'no response') + ']' : ''));
         }).catch(function () { VOLT.busy = false; $v('vmYes').textContent = 'Так, надіслати'; vmStep(1); $v('vmMsg').textContent = 'Не вийшло, спробуй ще раз'; });
     }
     $v('vcVoltOpen').onclick = voltOpen;
     $v('vmIn').oninput = function () { this.value = this.value.replace(/\D/g, '').slice(0, 3); $v('vmMsg').textContent = ''; };
-    $v('vmIn').onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); vmAsk(); } };
+    $v('vmIn').onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); $v('vmSt').focus(); } };
+    $v('vmSt').oninput = function () { $v('vmMsg').textContent = ''; stRender(); };
+    $v('vmSt').onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); var l = stFind(this.value); if (!VOLT.st && l.length) stPick(l[0]); vmAsk(); } };
     $v('vmSend').onclick = vmAsk;
     $v('vmYes').onclick = vmSend;
     $v('vmEdit').onclick = function () { vmStep(1); setTimeout(function () { try { $v('vmIn').focus(); $v('vmIn').select(); } catch (e) {} }, 60); };
     $v('vmClose').onclick = voltClose;
+
+    var VB = { ts: 0, el: null, t: null };
+    function showVb(v) {
+        var st = $v('timerStatus'); if (!st) return;
+        var r = st.getBoundingClientRect();
+        if (!VB.el) { VB.el = document.createElement('div'); VB.el.id = 'voltBub'; document.body.appendChild(VB.el); }
+        VB.el.textContent = '⚡️🔌 ' + v.v + ' В, ' + v.a + ', ' + agoText(v.ts);
+        VB.el.style.top = Math.round(r.bottom + 8) + 'px';
+        void VB.el.offsetWidth;
+        VB.el.className = 'show';
+        clearTimeout(VB.t);
+        VB.t = setTimeout(function () { VB.el.className = ''; }, 3000);
+    }
+    window.voltBubble = function (v) {
+        if (!v || !v.v || !v.ts || !v.a) return;
+        if (Math.floor(Date.now() / 1000) - v.ts > 600 || v.ts === VB.ts) return;
+        VB.ts = v.ts;
+        var tries = 0, tm = setInterval(function () {
+            tries++;
+            var st = $v('timerStatus'), app = $v('app');
+            if (tries > 15) { clearInterval(tm); return; }
+            if (!st || !app || app.style.display === 'none' || blocked() || !st.offsetWidth) return;
+            clearInterval(tm); showVb(v);
+        }, 800);
+    };
 
     var PLF = document.createElement('div');
     PLF.id = 'pl-fab';
     PLF.setAttribute('role', 'button');
     PLF.setAttribute('aria-label', 'Що кажуть люди');
     PLF.style.cssText = 'position:fixed;right:24px;bottom:100px;width:56px;height:56px;border-radius:50%;display:flex;justify-content:center;align-items:center;background:' + (window.IS_LITE ? 'rgba(30,30,30,.97)' : 'rgba(30,30,30,.85)') + ';border:1px solid rgba(255,255,255,.15);box-shadow:0 12px 32px rgba(0,0,0,.5);z-index:9996;cursor:pointer;opacity:0;pointer-events:none;transform:scale(.5);transition:all .4s cubic-bezier(.175,.885,.32,1.275);' + (window.IS_LITE ? '' : '-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);');
-    PLF.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h2a2 2 0 0 1 2 2v9l-3-3h-5a2 2 0 0 1-2-2v-1"/><path d="M3 5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7l-4 4z"/></svg>';
+    PLF.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h2a2 2 0 0 1 2 2v9l-3-3h-5a2 2 0 0 1-2-2v-1"/><path d="M3 5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7l-4 4z"/></svg><span id="pl-dot" style="display:none;position:absolute;top:12px;right:12px;width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 12px #22c55e;animation:plPulse 2s infinite;"></span>';
     PLF.onclick = function () { if (window.voteShowResults) window.voteShowResults(RESULT_MS); };
     document.body.appendChild(PLF);
     setInterval(function () {
@@ -2588,6 +2647,7 @@ function onAppReady() {
         PLF.style.opacity = on ? '1' : '0';
         PLF.style.pointerEvents = on ? 'auto' : 'none';
         PLF.style.transform = on ? 'scale(1)' : 'scale(.5)';
+        var d = $v('pl-dot'); if (d) d.style.display = VT.active ? 'block' : 'none';
     }, 600);
 
     var CC_CFG = {
