@@ -1937,7 +1937,7 @@ async function genRender(key) {
         else if (s === 'end-half') { ov.style.display = 'block'; ov.style.width = '50.5%'; ov.style.left = '0'; oc.style.left = '0'; }
     });
     const lines = offs.map(o => `${gClock(gFmt(o.startMin))} ${gFmt(o.startMin)}-${gFmt(o.endMin)}`).join('\n') || '✅ Відключень не заплановано';
-    gCaption = `⚡️💡 ГРАФІК НА ${key} від ХАРКІВОБЛЕНЕРГО (плановий, може не відповідати фактичній ситуації)\n\n${lines}\n\n🆕 У міні-додатку тепер можна поділитись показниками напруги 👉🏻 t.me/valkyelectrifybot/electric`;
+    gCaption = `⚡️💡 ГРАФІК НА ${key} від ХАРКІВОБЛЕНЕРГО (орієнтовний, можливі зміни)\n\n${lines}\n\n🆕 У міні-додатку тепер можна поділитись показниками напруги 👇🏻 \nt.me/valkyelectrifybot/electric`;
     $g('gText').textContent = gCaption;
     try {
         await gLoadLib(); await new Promise(r => setTimeout(r, 200));
