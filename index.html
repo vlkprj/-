@@ -374,6 +374,10 @@
         Сповіщення
     </div>
     <div style="flex-basis: 100%; height: 0; margin-top: -8px;"></div>
+    <div class="f-link" onclick="document.getElementById('queueModal').style.display='flex'" style="cursor: pointer;">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Список черг
+    </div>
     <a href="https://t.me/share/url?url=t.me/valkyelectrifybot/electric&text=💡%20Актуальний%20графік%20відключень%20світла%20у%20Валках" class="f-link" target="_blank">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
         Поділитися
@@ -724,6 +728,7 @@ async function sendResetDay(day) {
         window.crowdInfo = result.crowd || null;
         window.voltLast = result.volt || null;
         if (window.voltBubble) window.voltBubble(window.voltLast);
+        if (window.wxCheck) window.wxCheck(result.wx);
         window.cmOff = !!result.cmOff;
         window.noSchedFlag = !!(data && data.noSchedule);
         if (window.renderVerify) window.renderVerify();
@@ -1238,6 +1243,7 @@ async function sendResetDay(day) {
                 <button id="cmBtn" onclick="toggleComments()" style="background: rgba(96, 165, 250, 0.12); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); padding: 10px 15px; border-radius: 10px; font-weight: 800; font-size: 12px; text-transform: uppercase; cursor: pointer;">
                     ${window.cmOff ? '💬 Увімкнути коментарі' : '💬 Вимкнути коментарі'}
                 </button>
+                <button onclick="openWx()" aria-label="Погода в додатку" style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); padding: 8px 14px; border-radius: 10px; font-size: 18px; line-height: 1.2; cursor: pointer;">🎛️</button>
             </div>`;
         }
 
@@ -1726,6 +1732,29 @@ async function sendResetDay(day) {
     </div>
 </div>
 
+<div id="queueModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+    <div style="background: #111; border: 1px solid #333; border-radius: 20px; width: 100%; max-width: 450px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.5); overflow: hidden;">
+        <div style="padding: 20px 20px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0; font-weight: 900; font-size: 18px; color: var(--c-yellow); display: flex; align-items: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                Список черг
+            </h3>
+            <div onclick="document.getElementById('queueModal').style.display='none'" style="color: #666; font-size: 32px; cursor: pointer; line-height: 1; padding: 0 5px; transition: 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#666'">&times;</div>
+        </div>
+        <div style="padding: 20px; overflow-y: auto; text-align: left;">
+            <div style="font-weight: 900; font-size: 20px; color: #fff; margin-bottom: 16px;">Валки — черга <span style="color: var(--c-yellow);">1.2</span></div>
+            <div style="display: flex; align-items: flex-start; gap: 10px; padding: 14px; background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.25); border-radius: 12px; font-size: 13px; line-height: 1.45; color: #ccc;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--c-yellow)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <div>Зверніть увагу: в інших населених пунктах Валківської громади черги можуть відрізнятися.<br><b style="color: #fff;">Перевірте свою чергу самостійно.</b></div>
+            </div>
+            <div style="margin-top: 14px; font-size: 12px; color: #888; line-height: 1.45;">Ми працюємо над тим, щоб додати до додатка більше населених пунктів громади.</div>
+            <div style="margin-top: 18px; text-align: center;">
+                <a href="https://oblenergo.kharkiv.ua/sites/default/files/pdf/%D0%90%D0%B4%D1%80%D0%B5%D1%81%D0%B8%20%D1%82%D0%B0%20%D1%87%D0%B5%D1%80%D0%B3%D0%B8%2026-27.pdf" target="_blank" rel="noopener" class="f-link" style="display: inline-flex; font-size: 12px; padding: 9px 16px; border-radius: 12px;">Відкрити список черг</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 @keyframes npUp { from { transform: translate(-50%, 40px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 .sw { width: 54px; height: 32px; border-radius: 16px; background: #333; position: relative; cursor: pointer; transition: .2s; flex-shrink: 0; }
@@ -2038,7 +2067,7 @@ function onAppReady() {
 
 .status-box, .timer-box { pointer-events: none; }
 
-#voteCard { display: none; position: fixed; left: 16px; right: 16px; max-width: 420px; margin: 0 auto; bottom: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 880; background: #111; border: 1px solid #333; border-radius: 20px; padding: 14px 16px 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); opacity: 0; -webkit-transform: translateY(24px); transform: translateY(24px); -webkit-transition: opacity .35s ease, -webkit-transform .35s ease; transition: opacity .35s ease, transform .35s ease; }
+#voteCard { display: none; position: fixed; left: 16px; right: 16px; max-width: 420px; margin: 0 auto; bottom: 18px; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 880; background: #111; border: 1px solid #333; border-radius: 20px; padding: 16px 16px 22px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); opacity: 0; -webkit-transform: translateY(24px); transform: translateY(24px); -webkit-transition: opacity .35s ease, -webkit-transform .35s ease; transition: opacity .35s ease, transform .35s ease; }
 #voteCard.lift { bottom: 96px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 #voteCard.show { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0); }
 .vc-top { display: flex; align-items: flex-start; justify-content: space-between; }
@@ -2077,11 +2106,11 @@ function onAppReady() {
 }
 @keyframes vcBubRing { 0%, 76% { opacity: 0; transform: scale(1); } 80% { opacity: .8; } 100% { opacity: 0; transform: scale(1.5); } }
 @media (prefers-reduced-motion: reduce) { #vcCm { display: none; } }
-.vc-cm-row { margin-top: 12px; text-align: center; }
+.vc-cm-row { margin-top: 16px; text-align: center; }
 .vc-cm-open { background: none; border: 1px dashed rgba(255, 255, 255, 0.25); color: #bbb; font-family: inherit; font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .vc-cm-open:active { background: rgba(255, 255, 255, 0.08); }
 .vc-ico { vertical-align: -3px; margin-right: 6px; }
-.vc-volt-row { margin-top: 8px; text-align: center; }
+.vc-volt-row { margin-top: 22px; text-align: center; }
 .vc-volt-open { background: none; border: 1px dashed rgba(255, 255, 255, 0.25); color: #bbb; font-family: inherit; font-size: 13px; font-weight: 700; padding: 8px 14px; border-radius: 12px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 .vc-volt-open:active { background: rgba(255, 255, 255, 0.08); }
 #voltModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; }
@@ -2104,7 +2133,8 @@ function onAppReady() {
 .vc-cm-in:focus { border-color: rgba(251, 191, 36, 0.55); }
 .vc-cm-cnt { width: 24px; margin: 0 6px; text-align: right; font-size: 12px; color: #777; font-variant-numeric: tabular-nums; flex-shrink: 0; }
 .vc-cm-send { width: 42px; height: 42px; flex-shrink: 0; border-radius: 12px; border: 1px solid rgba(251, 191, 36, 0.45); background: rgba(251, 191, 36, 0.1); color: var(--c-yellow); font-size: 16px; cursor: pointer; font-family: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-.vc-cm-msg { min-height: 0; margin-top: 6px; font-size: 12px; color: #f0867d; }
+.vc-cm-msg { min-height: 0; margin-top: 8px; font-size: 12px; color: #f0867d; }
+.vc-cm-form { margin-bottom: 4px; }
 
 .nosched-block { text-align: center; padding: 34px 20px 20px; }
 .nosched-ico { display: flex; justify-content: center; margin-bottom: 14px; color: var(--c-yellow); filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.4)); }
@@ -2134,14 +2164,24 @@ function onAppReady() {
 @keyframes vcBub2 { 0% { opacity:0; transform: translateY(10px) scale(.6); } 12% { opacity:1; transform: translateY(-8px) scale(1); }
   76% { opacity:1; transform: translateY(-150px) scale(1); } 82% { opacity:1; transform: translateY(-156px) scale(1.14); } 100% { opacity:0; transform: translateY(-165px) scale(1.6); } }
 @keyframes vcRing2 { 0%,78% { opacity:0; transform: scale(1); } 82% { opacity:.8; } 100% { opacity:0; transform: scale(1.6); } }
-.vc-cm-note { margin-top: 8px; font-size: 11px; color: #888; line-height: 1.4; }
-.vc-cm-open, .vc-volt-open { position: relative; overflow: hidden; border: 1.5px solid #fbbf24; color: #fde68a; background: rgba(251,191,36,.08); border-radius: 14px; animation: cmPulse 1.6s ease-in-out infinite; }
-.vc-cm-open::after, .vc-volt-open::after { content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); transform: skewX(-20deg); animation: shineSweep 2.4s infinite; }
+.vc-cm-note { margin-top: 18px; font-size: 11px; color: #888; line-height: 1.55; }
+.vc-cm-open, .vc-volt-open { position: relative; overflow: hidden; border: 1.5px solid rgba(251,191,36,.32); color: #d9c98f; background: rgba(251,191,36,.03); border-radius: 14px; animation: cmAlt 6s ease-in-out infinite both; will-change: transform; }
+.vc-volt-open { animation-delay: 3s; }
+.vc-cm-open::after, .vc-volt-open::after { content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); transform: skewX(-20deg); animation: cmShine 6s ease-in-out infinite both; }
+.vc-volt-open::after { animation-delay: 3s; }
+@keyframes cmAlt {
+  0%   { border-color: rgba(251,191,36,.32); color: #d9c98f; background: rgba(251,191,36,.03); box-shadow: 0 0 0 0 rgba(251,191,36,0), 0 0 0 rgba(251,191,36,0); transform: scale(1); }
+  8%   { border-color: #fbbf24; color: #fff3c4; background: rgba(251,191,36,.16); box-shadow: 0 0 0 0 rgba(251,191,36,.55), 0 0 18px rgba(251,191,36,.7); transform: scale(1.05); }
+  26%  { border-color: #fbbf24; color: #fff3c4; background: rgba(251,191,36,.16); box-shadow: 0 0 0 6px rgba(251,191,36,0), 0 0 24px rgba(251,191,36,.75); transform: scale(1.05); }
+  44%  { border-color: #fbbf24; color: #fff3c4; background: rgba(251,191,36,.16); box-shadow: 0 0 0 0 rgba(251,191,36,.4), 0 0 14px rgba(251,191,36,.55); transform: scale(1.05); }
+  54%, 100% { border-color: rgba(251,191,36,.32); color: #d9c98f; background: rgba(251,191,36,.03); box-shadow: 0 0 0 0 rgba(251,191,36,0), 0 0 0 rgba(251,191,36,0); transform: scale(1); }
+}
+@keyframes cmShine { 0%, 6% { left: -60%; } 30%, 100% { left: 160%; } }
 .vc-volt-open.dis { border: 1px dashed rgba(255,255,255,.2); color: #777; background: none; animation: none; }
 .vc-volt-open.dis::after { display: none; }
 .vc-bub.volt { white-space: normal; text-align: center; border-color: rgba(251,191,36,.6); color: #fde68a; }
-#voltBub { position: fixed; left: 50%; max-width: calc(100vw - 32px); box-sizing: border-box; z-index: 900; padding: 7px 14px; border-radius: 999px; background: rgba(20,20,20,.92); border: 1px solid rgba(251,191,36,.45); color: #fde68a; font-size: 12px; font-weight: 800; text-align: center; line-height: 1.3; pointer-events: none; opacity: 0; transform: translate(-50%, 6px); transition: opacity .35s ease, transform .35s ease; }
-#voltBub.show { opacity: 1; transform: translate(-50%, 0); }
+#voltBub { position: fixed; left: 50%; max-width: min(300px, calc(100vw - 32px)); box-sizing: border-box; z-index: 900; padding: 8px 16px; border-radius: 18px; background: rgba(20,20,20,.92); border: 1px solid rgba(251,191,36,.45); color: #fde68a; font-size: 12px; font-weight: 800; text-align: center; line-height: 1.3; pointer-events: none; opacity: 0; transform: translate(-50%, 6px); transition: opacity .35s ease, transform .35s ease; -webkit-tap-highlight-color: transparent; }
+#voltBub.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; cursor: pointer; }
 @keyframes plPulse { 0% { transform: scale(.95); opacity: 1; } 50% { transform: scale(1.15); opacity: .5; } 100% { transform: scale(.95); opacity: 1; } }
 .vm-st-in { width: 100%; box-sizing: border-box; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.18); color: #fff; border-radius: 12px; padding: 12px; font-size: 16px; font-family: inherit; outline: none; }
 .vm-st-in:focus { border-color: rgba(251,191,36,.55); }
@@ -2201,7 +2241,7 @@ function onAppReady() {
         <div class="vc-volt-row" id="vcVoltRow" style="display:none;">
             <button class="vc-volt-open" id="vcVoltOpen" type="button"><svg class="vc-ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 17a8.5 8.5 0 1 1 17 0"/><path d="M12 17l3.6-5"/><circle cx="12" cy="17" r="1.2"/><path d="M3 20.5h18"/></svg>Повідомити напругу</button>
         </div>
-        <div class="vc-cm-note" id="vcNote2" style="display:none;text-align:center;">Ваш коментар живе 2 хвилини. Писати можна раз на 5 хвилин. Будьте чемними.</div>
+        <div class="vc-cm-note" id="vcNote2" style="display:none;text-align:center;"><div>Ваш коментар живе 2 хвилини</div><div>Можна писати раз на 5 хвилин</div><div>Будьте чемними</div></div>
     </div>
 </div>
 
@@ -2301,7 +2341,7 @@ function onAppReady() {
         var app = $v('app'); if (!app || app.style.display === 'none') return true;
         var promo = $v('notifPromo'); if (promo && promo.style.display === 'block') return true;
         var ch = $v('ch-mod'); if (ch && ch.style.opacity === '1') return true;
-        return open('notifModal') || open('genModal') || open('statusModal') || open('pointsModal') || open('infoAlertModal') || open('infoModal') || open('voltModal');
+        return open('notifModal') || open('genModal') || open('statusModal') || open('pointsModal') || open('infoAlertModal') || open('infoModal') || open('voltModal') || open('queueModal') || open('wxModal');
     }
     function waitAndShow() {
         clearInterval(VT.timer);
@@ -2608,28 +2648,57 @@ function onAppReady() {
     $v('vmEdit').onclick = function () { vmStep(1); setTimeout(function () { try { $v('vmIn').focus(); $v('vmIn').select(); } catch (e) {} }, 60); };
     $v('vmClose').onclick = voltClose;
 
-    var VB = { ts: 0, el: null, t: null };
+    var VB = { ts: 0, el: null, t: null, used: false, live: false, pend: null, busy: false }, VB_MS = 25000, VB_MAX_AGE = 1800;
+    function voltAgo(ts) {
+        var m = Math.max(0, Math.floor((Date.now() / 1000 - ts) / 60));
+        return m < 1 ? 'щойно' : m + ' хв. тому';
+    }
+    function vbText(v) { return '⚡️🔌 Напруга: ' + v.v + ' В, ' + v.a + ', ' + voltAgo(v.ts); }
+    function vbHide() {
+        clearTimeout(VB.t); VB.live = false;
+        if (VB.el) VB.el.className = '';
+    }
+    function vbTap() {
+        if (VB.busy || !VB.live) return;
+        VB.busy = true;
+        loadFeed(true).then(function (j) {
+            VB.busy = false;
+            var nv = j && j.volt;
+            if (!VB.live || !nv || !nv.v || !nv.a || !nv.ts || nv.ts <= VB.ts) return;
+            if (Math.floor(Date.now() / 1000) - nv.ts > VB_MAX_AGE) return;
+            window.voltLast = nv; VB.ts = nv.ts;
+            VB.el.textContent = vbText(nv);
+            try { VB.el.animate([{ transform: 'translate(-50%, 0) scale(1.08)' }, { transform: 'translate(-50%, 0) scale(1)' }], { duration: 260, easing: 'ease-out' }); } catch (e) {}
+        }).catch(function () { VB.busy = false; });
+    }
     function showVb(v) {
         var st = $v('timerStatus'); if (!st) return;
         var r = st.getBoundingClientRect();
-        if (!VB.el) { VB.el = document.createElement('div'); VB.el.id = 'voltBub'; document.body.appendChild(VB.el); }
-        VB.el.textContent = '⚡️🔌 ' + v.v + ' В, ' + v.a + ', ' + agoText(v.ts);
+        if (!VB.el) { VB.el = document.createElement('div'); VB.el.id = 'voltBub'; VB.el.onclick = vbTap; document.body.appendChild(VB.el); }
+        VB.ts = v.ts; VB.used = true; VB.live = true;
+        VB.el.textContent = vbText(v);
         VB.el.style.top = Math.round(r.bottom + 8) + 'px';
         void VB.el.offsetWidth;
         VB.el.className = 'show';
         clearTimeout(VB.t);
-        VB.t = setTimeout(function () { VB.el.className = ''; }, 3000);
+        VB.t = setTimeout(vbHide, VB_MS);
     }
     window.voltBubble = function (v) {
         if (!v || !v.v || !v.ts || !v.a) return;
-        if (Math.floor(Date.now() / 1000) - v.ts > 600 || v.ts === VB.ts) return;
-        VB.ts = v.ts;
+        if (Math.floor(Date.now() / 1000) - v.ts > VB_MAX_AGE) return;
+        if (VB.live) {
+            if (v.ts > VB.ts) { VB.ts = v.ts; VB.el.textContent = vbText(v); }
+            return;
+        }
+        if (VB.pend) { if (v.ts > VB.pend.ts) VB.pend = v; return; }
+        if (VB.used || v.ts === VB.ts) return;
+        VB.pend = v;
         var tries = 0, tm = setInterval(function () {
             tries++;
             var st = $v('timerStatus'), app = $v('app');
-            if (tries > 15) { clearInterval(tm); return; }
+            if (tries > 15) { clearInterval(tm); VB.pend = null; return; }
             if (!st || !app || app.style.display === 'none' || blocked() || !st.offsetWidth) return;
-            clearInterval(tm); showVb(v);
+            clearInterval(tm); var pv = VB.pend; VB.pend = null; showVb(pv);
         }, 800);
     };
 
@@ -2785,7 +2854,7 @@ function onAppReady() {
 
     function ccModalOpen() {
         var app = $v('app'); if (!app || app.style.display === 'none') return true;
-        var ids = ['notifModal', 'genModal', 'statusModal', 'pointsModal', 'infoAlertModal', 'infoModal', 'voltModal'];
+        var ids = ['notifModal', 'genModal', 'statusModal', 'pointsModal', 'infoAlertModal', 'infoModal', 'voltModal', 'queueModal', 'wxModal'];
         for (var i = 0; i < ids.length; i++) { var e = $v(ids[i]); if (e && e.style.display === 'flex') return true; }
         return false;
     }
@@ -3509,7 +3578,7 @@ var CAT_CONFIG = {
     }, 1000);
 
     function modalOpen() {
-        var ids = ['notifModal', 'genModal', 'statusModal', 'pointsModal', 'infoAlertModal', 'infoModal', 'voltModal'];
+        var ids = ['notifModal', 'genModal', 'statusModal', 'pointsModal', 'infoAlertModal', 'infoModal', 'voltModal', 'queueModal', 'wxModal'];
         for (var i = 0; i < ids.length; i++) { var e = $c(ids[i]); if (e && e.style.display === 'flex') return true; }
         return false;
     }
@@ -3610,5 +3679,224 @@ var CAT_CONFIG = {
 
 })();
 </script>
+<style>
+#wxLayer { position: fixed; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 940; }
+.wx-frost { position: fixed; border-radius: 0 0 18px 18px; pointer-events: none; opacity: 0; overflow: hidden; transition: opacity 2.8s ease;
+  background: radial-gradient(ellipse at 50% 58%, rgba(210,235,255,0) 26%, rgba(210,235,255,.26) 62%, rgba(235,248,255,.68) 100%);
+  box-shadow: inset 0 0 26px 6px rgba(220,240,255,.75), inset 0 0 70px 10px rgba(150,200,240,.35);
+  -webkit-backdrop-filter: blur(2.5px); backdrop-filter: blur(2.5px); }
+.wx-frost::before { content: ''; position: absolute; left: 0; top: 0; right: 0; bottom: 0; opacity: .55; mix-blend-mode: screen;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .85 0 0 0 0 .93 0 0 0 0 1 0 0 0 1.4 -.55'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.wx-frost.on { opacity: 1; }
+.lite-device .wx-frost { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.wx-tint { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 2s ease; background: linear-gradient(180deg, rgba(40,70,120,.28), rgba(20,40,80,.12)); }
+.wx-tint.on { opacity: 1; }
+.wx-sun { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; }
+.wx-sun i { position: absolute; top: -30%; left: -25%; height: 160%; width: 70px; background: linear-gradient(90deg, transparent, rgba(255,222,130,.32), transparent); filter: blur(5px); opacity: 0; transform: translateX(0) rotate(24deg); animation: wxRay 6s ease-in-out both; }
+.wx-sun i:nth-child(1) { width: 90px; animation-delay: 0s; }
+.wx-sun i:nth-child(2) { width: 40px; animation-delay: .5s; }
+.wx-sun i:nth-child(3) { width: 120px; animation-delay: 1.1s; }
+.wx-sun i:nth-child(4) { width: 50px; animation-delay: 1.8s; }
+.wx-sun i:nth-child(5) { width: 80px; animation-delay: 2.6s; }
+.wx-sun b { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; background: radial-gradient(circle at 100% 0, rgba(255,214,102,.5), rgba(255,214,102,0) 60%); animation: wxGlow 9s ease-in-out both; }
+@keyframes wxRay { 0% { opacity: 0; transform: translateX(0) rotate(24deg); } 15% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; transform: translateX(150vw) rotate(24deg); } }
+@keyframes wxGlow { 0% { opacity: 0; } 30% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+.wx-streak { position: absolute; left: 0; height: 2px; border-radius: 2px; opacity: 0; transform: translateX(-30vw); background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.55)); animation: wxStreak .8s ease-in both; }
+@keyframes wxStreak { 0% { opacity: 0; transform: translateX(-30vw); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateX(130vw); } }
+.wx-leaf { position: absolute; left: -10vw; font-size: 22px; opacity: 0; animation: wxLeaf 2.6s ease-in-out both; }
+@keyframes wxLeaf { 0% { opacity: 0; transform: translate(0,0) rotate(0); } 10% { opacity: 1; } 50% { transform: translate(62vw, calc(var(--dy) * .4 - 34px)) rotate(240deg); } 90% { opacity: 1; } 100% { opacity: 0; transform: translate(130vw, var(--dy)) rotate(540deg); } }
+@media (prefers-reduced-motion: reduce) { #wxLayer { display: none; } }
+.wx-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 14px 8px; border-radius: 16px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); color: #ddd; font-family: inherit; font-size: 13px; font-weight: 800; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.wx-btn span { font-size: 34px; line-height: 1.1; }
+.wx-btn:active { background: rgba(251,191,36,.15); border-color: rgba(251,191,36,.5); }
+</style>
+
+<div id="wxModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); z-index: 10000; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+    <div style="background: #111; border: 1px solid #333; border-radius: 20px; width: 100%; max-width: 360px; padding: 22px 20px 18px; box-sizing: border-box; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+        <div style="text-align: center; font-size: 18px; font-weight: 900; color: #fff; margin-bottom: 8px;">🎛️ Погода в додатку</div>
+        <div style="text-align: center; font-size: 12px; color: #999; line-height: 1.45; margin-bottom: 16px;">Ефект побачать усі, хто відкриє додаток протягом 30 хвилин. По одному разу на людину, кілька секунд.</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button class="wx-btn" type="button" onclick="wxPick('snow')"><span>❄️</span>Сніг</button>
+            <button class="wx-btn" type="button" onclick="wxPick('rain')"><span>☔️</span>Дощ</button>
+            <button class="wx-btn" type="button" onclick="wxPick('sun')"><span>☀️</span>Сонце</button>
+            <button class="wx-btn" type="button" onclick="wxPick('wind')"><span>💨</span>Вітер</button>
+        </div>
+        <button class="vm-alt" type="button" onclick="wxPick('clear')">🧹 Прибрати погоду</button>
+        <div class="vm-close" onclick="closeWx()">Закрити</div>
+    </div>
+</div>
+
+<script>
+(function () {
+  var $w = function (id) { return document.getElementById(id); };
+  var RM = false; try { RM = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+  var LITE = !!window.IS_LITE, cur = null, busy = false;
+  var DUR = { snow: 13000, rain: 12000, sun: 9500, wind: 4200 };
+  var TTL = 1800;
+
+  function host() {
+    var h = $w('wxLayer');
+    if (!h) { h = document.createElement('div'); h.id = 'wxLayer'; document.body.appendChild(h); }
+    return h;
+  }
+  function stop() {
+    if (!cur) return;
+    var c = cur; cur = null;
+    c.dead = true; cancelAnimationFrame(c.raf);
+    c.timers.forEach(clearTimeout);
+    c.undo.forEach(function (f) { try { f(); } catch (e) {} });
+    var h = $w('wxLayer'); if (h) h.innerHTML = '';
+  }
+  function after(ms, fn) { cur.timers.push(setTimeout(fn, ms)); }
+  function canvas(h) {
+    var c = document.createElement('canvas'), dpr = LITE ? 1 : Math.min(2, window.devicePixelRatio || 1);
+    var W = window.innerWidth, H = window.innerHeight;
+    c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+    c.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;';
+    var g = c.getContext('2d'); g.scale(dpr, dpr);
+    h.appendChild(c);
+    return { g: g, W: W, H: H };
+  }
+  function loop(dur, draw) {
+    var me = cur, t0 = performance.now(), last = t0;
+    (function f(now) {
+      if (!me || me.dead) return;
+      var t = now - t0, dt = Math.min(.05, (now - last) / 1000); last = now;
+      if (t > dur) { stop(); return; }
+      draw(dt, Math.max(0, Math.min(1, t / 1500, (dur - t) / 1800)));
+      me.raf = requestAnimationFrame(f);
+    })(t0);
+  }
+  function frost(h, dur) {
+    var hd = document.querySelector('.sticky-header'); if (!hd) return;
+    var r = hd.getBoundingClientRect(), d = document.createElement('div');
+    d.className = 'wx-frost';
+    d.style.cssText = 'left:' + r.left + 'px;top:' + r.top + 'px;width:' + r.width + 'px;height:' + r.height + 'px;';
+    h.appendChild(d); void d.offsetWidth; d.className = 'wx-frost on';
+    after(dur - 3400, function () { d.className = 'wx-frost'; });
+  }
+
+  function snow(h) {
+    var cv = canvas(h), g = cv.g, n = LITE ? 70 : 150, fl = [], i;
+    for (i = 0; i < n; i++) fl.push({ x: Math.random() * cv.W, y: Math.random() * cv.H, r: 1 + Math.random() * 3, v: 30 + Math.random() * 60, a: Math.random() * 6.28, s: .5 + Math.random() });
+    frost(h, DUR.snow);
+    loop(DUR.snow, function (dt, env) {
+      g.clearRect(0, 0, cv.W, cv.H); g.fillStyle = '#fff';
+      fl.forEach(function (f) {
+        f.y += f.v * dt * (.6 + f.r / 3); f.a += dt * f.s; f.x += Math.sin(f.a) * 18 * dt + 8 * dt;
+        if (f.y > cv.H + 5) { f.y = -5; f.x = Math.random() * cv.W; }
+        if (f.x > cv.W + 5) f.x = -5;
+        g.globalAlpha = env * Math.min(.95, .35 + f.r / 5);
+        g.beginPath(); g.arc(f.x, f.y, f.r, 0, 6.2832); g.fill();
+      });
+      g.globalAlpha = 1;
+    });
+  }
+
+  function rain(h) {
+    var cv = canvas(h), g = cv.g, n = LITE ? 70 : 140, d = [], sp = [], i;
+    var tint = document.createElement('div'); tint.className = 'wx-tint'; h.appendChild(tint);
+    void tint.offsetWidth; tint.className = 'wx-tint on';
+    after(DUR.rain - 2600, function () { tint.className = 'wx-tint'; });
+    for (i = 0; i < n; i++) d.push({ x: Math.random() * (cv.W + 120), y: Math.random() * cv.H, l: 10 + Math.random() * 16, v: 700 + Math.random() * 500, a: .25 + Math.random() * .35 });
+    g.lineWidth = 1.2; g.lineCap = 'round';
+    loop(DUR.rain, function (dt, env) {
+      g.clearRect(0, 0, cv.W, cv.H);
+      d.forEach(function (p) {
+        p.y += p.v * dt; p.x -= p.v * dt * .18;
+        if (p.y > cv.H) { if (sp.length < 24 && Math.random() < .5) sp.push({ x: p.x, t: 0 }); p.y = -20; p.x = Math.random() * (cv.W + 120); }
+        g.strokeStyle = 'rgba(190,215,255,' + (p.a * env).toFixed(3) + ')';
+        g.beginPath(); g.moveTo(p.x, p.y); g.lineTo(p.x + p.l * .18, p.y - p.l); g.stroke();
+      });
+      sp = sp.filter(function (s) { s.t += dt; return s.t < .35; });
+      sp.forEach(function (s) {
+        g.strokeStyle = 'rgba(190,215,255,' + (.5 * (1 - s.t / .35) * env).toFixed(3) + ')';
+        g.beginPath(); g.ellipse(s.x, cv.H - 3, 3 + s.t * 30, 1 + s.t * 5, 0, 0, 6.2832); g.stroke();
+      });
+    });
+  }
+
+  function sun(h) {
+    var w = document.createElement('div'); w.className = 'wx-sun';
+    w.innerHTML = '<i></i><i></i><i></i><i></i><i></i><b></b>';
+    h.appendChild(w);
+  }
+
+  function visible(el) { if (!el) return false; var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < window.innerHeight; }
+  function wind(h) {
+    var W = window.innerWidth, H = window.innerHeight, i, n = LITE ? 8 : 16;
+    for (i = 0; i < n; i++) {
+      var s = document.createElement('i'); s.className = 'wx-streak';
+      s.style.cssText = 'top:' + Math.round(Math.random() * H) + 'px;width:' + Math.round(80 + Math.random() * 160) + 'px;animation-delay:' + (Math.random() * 1.8).toFixed(2) + 's;animation-duration:' + (.6 + Math.random() * .5).toFixed(2) + 's;';
+      h.appendChild(s);
+    }
+    for (i = 0; i < 5; i++) {
+      var l = document.createElement('span'); l.className = 'wx-leaf'; l.textContent = '🍃';
+      l.style.cssText = 'top:' + Math.round(H * (.15 + Math.random() * .7)) + 'px;--dy:' + Math.round(-120 + Math.random() * 240) + 'px;animation-delay:' + (Math.random() * 1.2).toFixed(2) + 's;';
+      h.appendChild(l);
+    }
+    var cands = [$w('dateDisplay'), document.querySelector('.disclaimer-box')].filter(visible);
+    if (cands.length) {
+      var el = cands[Math.floor(Math.random() * cands.length)], dx = Math.round(W * 1.3);
+      var ox = document.body.style.overflowX; document.body.style.overflowX = 'hidden';
+      var an = el.animate([
+        { transform: 'translate(0,0) rotate(0deg)', opacity: 1, offset: 0 },
+        { transform: 'translate(-8px,0) rotate(-1.5deg)', opacity: 1, offset: .08 },
+        { transform: 'translate(' + dx + 'px,-50px) rotate(28deg)', opacity: 1, offset: .38 },
+        { transform: 'translate(' + dx + 'px,-50px) rotate(28deg)', opacity: 0, offset: .4 },
+        { transform: 'translate(' + (-dx) + 'px,12px) rotate(-14deg)', opacity: 0, offset: .62 },
+        { transform: 'translate(' + (-dx) + 'px,12px) rotate(-14deg)', opacity: 1, offset: .64 },
+        { transform: 'translate(14px,0) rotate(2deg)', opacity: 1, offset: .88 },
+        { transform: 'translate(0,0) rotate(0deg)', opacity: 1, offset: 1 }
+      ], { duration: 2800, easing: 'ease-in-out' });
+      cur.undo.push(function () { try { an.cancel(); } catch (e) {} document.body.style.overflowX = ox; });
+    }
+  }
+
+  function play(k) {
+    if (RM || !DUR[k]) return;
+    stop();
+    cur = { dead: false, raf: 0, timers: [], undo: [] };
+    var h = host(); h.innerHTML = '';
+    ({ snow: snow, rain: rain, sun: sun, wind: wind })[k](h);
+    after(DUR[k] + 400, stop);
+  }
+  window.wxPlay = play;
+
+  var seenMem = {};
+  function seen(id) { if (seenMem[id]) return true; try { return localStorage.getItem('wx_seen') === String(id); } catch (e) { return false; } }
+  function mark(id) { seenMem[id] = 1; try { localStorage.setItem('wx_seen', String(id)); } catch (e) {} }
+
+  window.wxCheck = function (wx) {
+    if (!wx || !wx.id || !DUR[wx.k]) return;
+    if (Date.now() / 1000 - wx.ts > TTL || seen(wx.id)) return;
+    mark(wx.id);
+    var tries = 0, tm = setInterval(function () {
+      tries++;
+      var app = $w('app');
+      if (tries > 20) { clearInterval(tm); return; }
+      if (!app || app.style.display === 'none') return;
+      clearInterval(tm); setTimeout(function () { play(wx.k); }, 800);
+    }, 700);
+  };
+
+  window.openWx = function () { $w('wxModal').style.display = 'flex'; };
+  window.closeWx = function () { $w('wxModal').style.display = 'none'; };
+  window.wxPick = function (k) {
+    if (busy || typeof gasCall !== 'function') return;
+    busy = true;
+    gasCall({ action: 'set_weather', k: k }).then(function (r) {
+      busy = false;
+      if (r && r.ok) {
+        if (r.id) mark(r.id);
+        closeWx();
+        if (k === 'clear') { stop(); if (window.catToast) window.catToast('🧹 Погоду прибрано', 2400); }
+        else { play(k); if (window.catToast) window.catToast('🎛️ Запущено для всіх', 2400); }
+      } else if (window.catToast) window.catToast('❌ Не вийшло: ' + ((r && r.error) || 'немає відповіді'), 3000);
+    }).catch(function () { busy = false; if (window.catToast) window.catToast('❌ Немає відповіді від сервера', 3000); });
+  };
+})();
+</script>
+
 </body>
 </html>
